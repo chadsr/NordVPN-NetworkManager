@@ -68,7 +68,7 @@ class ConfigHandler(object):
 
 class Importer(object):
     def __init__(self):
-        logging.basicConfig(filename='error.log', level=logging.ERROR)
+        logging.basicConfig(filename='output.log', level=logging.WARNING)
 
         self.config = ConfigHandler()
 
@@ -148,6 +148,7 @@ class Importer(object):
 
             zipfile.extractall(DATA_DIR)
         except (error.URLError) as e:
+            print("Could not resolve", url)
             logging.error(e)
 
     def purge_active_connections(self):
@@ -191,6 +192,7 @@ class Importer(object):
         elif protocol == "udp":
             socket_type = socket.SOCK_DGRAM
         else:
+            logging.warning("Protocol missing from config? Skipping %s", filename)
             return False
 
         s = socket.socket(socket.AF_INET, socket_type)
@@ -200,6 +202,7 @@ class Importer(object):
             s.shutdown(2)
             return True
         except Exception as e:
+            logging.warning("Could not establish a connection. Skipping %s", filename)
             return False
 
     def sync_imports(self):
@@ -212,7 +215,8 @@ class Importer(object):
                 self.remove_connection(connection)
                 purged.append(connection)
 
-        self.active_list.remove(purged)
+        for connection in purged:
+            self.active_list.remove(connection)
 
         # Then begin checking for new
         for filename in os.listdir(DATA_DIR):
