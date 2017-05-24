@@ -1,17 +1,13 @@
 #!/usr/bin/env python3
 import configparser
 import argparse
-
 from urllib import error, request
 import os
 import subprocess
 from io import BytesIO
 from zipfile import ZipFile
-
 import logging
-
 import pickle
-
 import socket
 
 TIMEOUT = 30
@@ -20,17 +16,6 @@ DIR = os.path.dirname(os.path.realpath(__file__))
 DATA_DIR = DIR+'/data/'
 CONFIG_PATH = DIR+'/settings.conf'
 LIST_PATH = DIR+'/.list'
-
-"""
-Features:
-- blacklist certain countriescountry_blacklist = []
-- auto import new connections (whilst removing old, non-existent ones)
-- Change default connect on each run (maybe random, or select a set of countries)
-
-sudo nmcli connection import type openvpn file <FILE>
-
-TODO: Check if file has been modified and if so, replace old one with it
-"""
 
 
 class ConfigHandler(object):
@@ -92,6 +77,7 @@ class Importer(object):
         self.parser.add_argument("--sync", help="Synchronise any new connections, whilst preserving existing connections. (default)", action="store_true")
         self.parser.add_argument("--purge", help="Remove all active connections.", action="store_true")
         self.parser.add_argument("--clean-sync", help="Remove all active connections and synchronise.", action="store_true")
+        self.parser.add_argument("--auto-connect", help="Configure NetworkManager to always auto-connect to the lowest latency server. Specify a country code, or 'all' for all servers", type=str)
 
     def start(self):
         args = self.parser.parse_args()
@@ -103,8 +89,15 @@ class Importer(object):
         elif args.clean_sync:
             self.purge_active_connections()
             self.sync_imports()
-        else:
-            self.sync_imports()
+
+        if args.auto_connect:
+            if self.active_list:
+                if args.auto_connect == "all":
+                    self.select_auto_connect()
+                else:
+                    self.select_auto_connect(args.auto_connect)
+            else:
+                print("No servers active. Please sync first.")
 
         print("Restarting NetworkManager.")
         subprocess.run("systemctl restart NetworkManager.service", shell=True, check=True)
@@ -142,6 +135,64 @@ class Importer(object):
 
     def remove_connection(self, connection_name):
         subprocess.run("nmcli connection delete "+connection_name, shell=True, check=True)
+
+    def select_auto_connect(self, selected_country=False):
+        best_connection = None
+        best_latency = 999999.0
+
+        for connection_name in self.active_list:
+            if selected_country and connection_name[:2] == selected_country:
+                print("Checking latency of:", connection_name)
+                config = configparser.ConfigParser()
+                path = "/etc/NetworkManager/system-connections/"+connection_name
+
+                if os.path.isfile(path):
+                    config.read(path)
+                elif os.path.isfile(path+'_'):
+                    path = path+'_'
+                    config.read(path)
+                else:
+                    print("VPN file not found!", path)
+                    return
+
+                host = config['vpn']['remote'].split(':')[0]
+
+                latency = self.get_latency(host)
+                if latency < best_latency:
+                    best_connection = connection_name
+                    best_latency = latency
+                    print("Best:", best_connection, best_latency)
+
+        if best_connection:
+            self.set_auto_connect(best_connection)
+
+    def set_auto_connect(self, connection):
+        auto_script = """#!/bin/bash
+        if [ "$2" = "up" ]; then
+            nmcli con up id """+connection+"""
+        fi
+        """
+
+        path = "/etc/NetworkManager/dispatcher.d/auto_vpn"
+
+        with open(path, "w") as auto_vpn:
+            print(auto_script, file=auto_vpn)
+
+        self.make_executable(path)
+
+    def make_executable(self, path):
+        mode = os.stat(path).st_mode
+        mode |= (mode & 0o444) >> 2    # copy R bits to X
+        os.chmod(path, mode)
+
+    def get_latency(self, host):
+        output = subprocess.run(['fping', host, '-c 3'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout.decode('utf-8')
+        loss = int(output.strip().split('/')[4].split('%')[0])  # percentage loss
+        if loss == 0:
+            avg_rtt = output.split()[-1].split('/')[1]
+            return float(avg_rtt)
+        else:
+            return 999999
 
     def download_configs(self, url):
         try:
@@ -226,9 +277,9 @@ class Importer(object):
 
             if (country_code in self.white_list) or (not self.white_list and country_code not in self.black_list):
                 test_success = self.test_connection(filename)
-                if (test_success and (split_name[0] not in self.active_list)): # If connection can be established and is not yet imported
+                if (test_success and (split_name[0] not in self.active_list)):  # If connection can be established and is not yet imported
                     self.import_ovpn(filename)
-                elif (not test_success and (split_name[0] in self.active_list)): # If connection failed and it is in our active list, remove it.
+                elif (not test_success and (split_name[0] in self.active_list)):  # If connection failed and it is in our active list, remove it.
                     self.remove_connection(split_name[0])
                     self.purged.append(split_name[0])
 
