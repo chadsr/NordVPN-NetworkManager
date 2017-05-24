@@ -68,6 +68,9 @@ class ConfigHandler(object):
 
 class Importer(object):
     def __init__(self):
+        if os.getuid() != 0:
+            raise NotSudo("This script needs to be run as sudo (due to editing system-connections)")
+
         logging.basicConfig(filename='output.log', level=logging.WARNING)
 
         self.config = ConfigHandler()
@@ -103,7 +106,6 @@ class Importer(object):
         else:
             self.sync_imports()
 
-        self.save_active_list(self.active_list, LIST_PATH)
         print("Restarting NetworkManager.")
         subprocess.run("systemctl restart NetworkManager.service", shell=True, check=True)
 
@@ -136,6 +138,7 @@ class Importer(object):
         split_name = os.path.splitext(filename)
         self.add_credentials(split_name[0])
         self.active_list.append(split_name[0])
+        self.save_active_list(self.active_list, LIST_PATH)
 
     def remove_connection(self, connection_name):
         subprocess.run("nmcli connection delete "+connection_name, shell=True, check=True)
@@ -211,26 +214,31 @@ class Importer(object):
         # first check if anything needs purging from the existing connections
         purged = []
         for connection in self.active_list:
-            if self.get_country_code(connection) in self.black_list:
+            country_code = self.get_country_code(connection)
+            if country_code in self.black_list or country_code not in self.white_list:
                 self.remove_connection(connection)
                 purged.append(connection)
-
-        for connection in purged:
-            self.active_list.remove(connection)
 
         # Then begin checking for new
         for filename in os.listdir(DATA_DIR):
             split_name = os.path.splitext(filename)
             country_code = self.get_country_code(filename)
 
-            if self.white_list:
-                if (split_name[0] not in self.active_list) and (country_code in self.white_list):
-                    if (self.test_connection(filename)):
-                        self.import_ovpn(filename)
-            else:
-                if (split_name[0] not in self.active_list) and (country_code not in self.black_list):
-                    if (self.test_connection(filename)):
-                        self.import_ovpn(filename)
+            if (country_code in self.white_list) or (not self.white_list and country_code not in self.black_list):
+                test_success = self.test_connection(filename)
+                if (test_success and (split_name[0] not in self.active_list)): # If connection can be established and is not yet imported
+                    self.import_ovpn(filename)
+                elif (not test_success and (split_name[0] in self.active_list)): # If connection failed and it is in our active list, remove it.
+                    self.remove_connection(split_name[0])
+                    self.purged.append(split_name[0])
+
+            # Remove any purged from the active list, since we're done syncing
+            for connection in purged:
+                self.active_list.remove(connection)
+
+
+class NotSudo(Exception):
+    pass
 
 
 importer = Importer()
