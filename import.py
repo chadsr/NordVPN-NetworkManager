@@ -80,7 +80,12 @@ class Importer(object):
         self.parser.add_argument("--auto-connect", help="Configure NetworkManager to always auto-connect to the lowest latency server. Specify a country code, or 'all' for all servers", type=str)
 
     def start(self):
-        args = self.parser.parse_args()
+
+        try:
+            args = self.parser.parse_args()
+        except:
+            self.parser.print_help()
+            self.parser.exit(1)
 
         if args.sync:
             self.sync_imports()
@@ -88,6 +93,8 @@ class Importer(object):
             self.purge_active_connections()
         elif args.clean_sync:
             self.purge_active_connections()
+            self.sync_imports()
+        else:
             self.sync_imports()
 
         if args.auto_connect:
