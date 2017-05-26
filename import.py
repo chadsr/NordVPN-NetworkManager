@@ -76,7 +76,7 @@ class Importer(object):
             self.active_list = self.load_active_list(LIST_PATH)
 
         self.parser = argparse.ArgumentParser()
-        self.parser.add_argument("--sync", help="Synchronise any new connections, whilst preserving existing connections. (default)", action="store_true")
+        self.parser.add_argument("--sync", help="Synchronise any new connections, whilst preserving existing connections. (default)", action="store_true", default=True)
         self.parser.add_argument("--purge", help="Remove all active connections.", action="store_true")
         self.parser.add_argument("--clean-sync", help="Remove all active connections and synchronise.", action="store_true")
         self.parser.add_argument("--auto-connect", help="Configure NetworkManager to always auto-connect to the lowest latency server. Specify a country code, or 'all' for all servers", type=str)
