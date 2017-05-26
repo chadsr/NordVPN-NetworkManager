@@ -9,6 +9,8 @@ from zipfile import ZipFile
 import logging
 import pickle
 import socket
+from urllib import request
+import sys
 
 TIMEOUT = 30
 
@@ -16,6 +18,7 @@ DIR = os.path.dirname(os.path.realpath(__file__))
 DATA_DIR = DIR+'/data/'
 CONFIG_PATH = DIR+'/settings.conf'
 LIST_PATH = DIR+'/.list'
+NORD_URL = "https://nordvpn.com/api/files/zip"
 
 
 class ConfigHandler(object):
@@ -56,7 +59,7 @@ class Importer(object):
         if os.getuid() != 0:
             raise NotSudo("This script needs to be run as sudo (due to editing system-connections)")
 
-        logging.basicConfig(filename='output.log', level=logging.WARNING)
+        logging.basicConfig(format='[%(levelname)s]: %(message)s', level=logging.INFO, stream=sys.stdout)
 
         self.config = ConfigHandler()
 
@@ -88,14 +91,14 @@ class Importer(object):
             self.parser.exit(1)
 
         if args.sync:
-            self.sync_imports()
+            self.sync_imports(NORD_URL)
         elif args.purge:
             self.purge_active_connections()
         elif args.clean_sync:
             self.purge_active_connections()
-            self.sync_imports()
+            self.sync_imports(NORD_URL)
         else:
-            self.sync_imports()
+            self.sync_imports(NORD_URL)
 
         if args.auto_connect:
             if self.active_list:
@@ -104,10 +107,15 @@ class Importer(object):
                 else:
                     self.select_auto_connect(args.auto_connect)
             else:
-                print("No servers active. Please sync first.")
+                logging.error("No servers active. Please sync first.")
+                exit
 
-        print("Restarting NetworkManager.")
-        subprocess.run("systemctl restart NetworkManager.service", shell=True, check=True)
+        logging.info("Attempting to restart NetworkManager.")
+        try:
+            subprocess.run("systemctl restart NetworkManager.service", shell=True, check=True)
+            logging.info("NetworkManager restarted successfully!")
+        except Exception as ex:
+            logging.error(ex)
 
     def add_credentials(self, filename):
         try:
@@ -120,7 +128,7 @@ class Importer(object):
                 path = path+'_'
                 config.read(path)
             else:
-                print("VPN file not found!", path)
+                logging.info("VPN file not found! %s", path)
                 return
 
             config['vpn']['password-flags'] = "0"
@@ -134,22 +142,31 @@ class Importer(object):
             print(e)
 
     def import_ovpn(self, filename):
-        subprocess.run("nmcli connection import type openvpn file "+DATA_DIR+filename, shell=True, check=True)
-        split_name = os.path.splitext(filename)
-        self.add_credentials(split_name[0])
-        self.active_list.append(split_name[0])
-        self.save_active_list(self.active_list, LIST_PATH)
+        try:
+            output = subprocess.run(['nmcli', 'connection', 'import', 'type', 'openvpn', 'file', DATA_DIR+filename], stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout.decode('utf-8').strip()
+            logging.info("%s", output)
+            split_name = os.path.splitext(filename)
+            self.add_credentials(split_name[0])
+            self.active_list.append(split_name[0])
+            self.save_active_list(self.active_list, LIST_PATH)
+        except Exception as ex:
+            logging.error(ex)
 
     def remove_connection(self, connection_name):
-        subprocess.run("nmcli connection delete "+connection_name, shell=True, check=True)
+        try:
+            output = subprocess.run(['nmcli', 'connection', 'delete', connection_name], stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout.decode('utf-8').strip()
+            logging.info("%s", output)
+        except Exception as ex:
+            logging.error(ex)
 
     def select_auto_connect(self, selected_country=False):
         best_connection = None
-        best_latency = 999999.0
+        best_rtt = 999999.0
+
+        logging.info("Searching for server with lowest latency...")
 
         for connection_name in self.active_list:
             if selected_country and connection_name[:2] == selected_country:
-                print("Checking latency of:", connection_name)
                 config = configparser.ConfigParser()
                 path = "/etc/NetworkManager/system-connections/"+connection_name
 
@@ -159,16 +176,20 @@ class Importer(object):
                     path = path+'_'
                     config.read(path)
                 else:
-                    print("VPN file not found!", path)
+                    logging.error("VPN file not found!", path)
                     return
 
                 host = config['vpn']['remote'].split(':')[0]
 
-                latency = self.get_latency(host)
-                if latency < best_latency:
+                rtt = self.get_rtt(host)
+                if not rtt:
+                    logging.warning("%s (%s): Unable to test RTT", connection_name, host)
+                elif rtt < best_rtt:
                     best_connection = connection_name
-                    best_latency = latency
-                    print("Best:", best_connection, best_latency)
+                    best_rtt = rtt
+                    logging.info("%s (%s): %dms avg RTT [NEW BEST]", best_connection, host, best_rtt)
+                else:
+                    logging.info("%s (%s): %dms avg RTT", connection_name, host, rtt)
 
         if best_connection:
             self.set_auto_connect(best_connection)
@@ -192,47 +213,68 @@ class Importer(object):
         mode |= (mode & 0o444) >> 2    # copy R bits to X
         os.chmod(path, mode)
 
-    def get_latency(self, host):
-        output = subprocess.run(['fping', host, '-c 3'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout.decode('utf-8')
+    def get_rtt(self, host, ping_attempts=3):
+        output = subprocess.run(['fping', host, '-c', str(ping_attempts)], stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout.decode('utf-8')
         loss = int(output.strip().split('/')[4].split('%')[0])  # percentage loss
-        if loss == 0:
+        if loss < 100:
             avg_rtt = output.split()[-1].split('/')[1]
             return float(avg_rtt)
         else:
-            return 999999
+            return False
 
     def download_configs(self, url):
         try:
-            print("Downloading latest configs from", url)
+            logging.info("Downloading latest configs from %s", url)
             uo = request.urlopen(url, timeout=TIMEOUT)
             zipfile = ZipFile(BytesIO(uo.read()))
 
             zipfile.extractall(DATA_DIR)
         except (error.URLError) as e:
-            print("Could not resolve", url)
             logging.error(e)
 
     def purge_active_connections(self):
-        for connection in self.active_list:
-            self.remove_connection(connection)
+        if self.active_list:
+            logging.info("Removing all active connections...")
+            for connection in self.active_list:
+                self.remove_connection(connection)
 
-        self.active_list = []
+            self.active_list = []
+            self.save_active_list(self.active_list, LIST_PATH)
+
+            logging.info("All active connections removed!")
+        else:
+            logging.info("No active connections to remove.")
 
     def load_active_list(self, path):
-        with open(LIST_PATH, 'rb') as fp:
-            itemlist = pickle.load(fp)
-        return itemlist
+        try:
+            with open(LIST_PATH, 'rb') as fp:
+                itemlist = pickle.load(fp)
+            return itemlist
+        except Exception as ex:
+            logging.error(ex)
+            return None
 
     def save_active_list(self, itemlist, path):
-        with open(LIST_PATH, 'wb') as fp:
-            pickle.dump(itemlist, fp)
-        print("Active list saved.")
+        try:
+            with open(LIST_PATH, 'wb') as fp:
+                pickle.dump(itemlist, fp)
+        except Exception as ex:
+            logging.error(ex)
 
     def get_country_code(self, connection_name):
         # hacky
         return connection_name[:2]
 
-    def test_connection(self, filename):
+    # Generic test to see if we can connect to a host successfully
+    def host_reachable(self, host):
+        try:
+            request.urlopen(host, timeout=1)
+            return True
+        except request.URLError as err:
+            return False
+
+    # Opens a given .ovpn file and tests the given port to see if it's open/available
+    def vpn_reachable(self, filename, timeout=2):
         protocol = ""
         host = ""
         port = ""
@@ -258,41 +300,58 @@ class Importer(object):
 
         s = socket.socket(socket.AF_INET, socket_type)
         try:
-            s.settimeout(5)
+            s.settimeout(timeout)
             s.connect((host, port))
             s.shutdown(2)
             return True
-        except Exception as e:
-            logging.warning("Could not establish a connection. Skipping %s", filename)
+        except Exception as ex:
+            logging.warning("Skipping %s (%s): %s", filename, host, ex)
             return False
 
-    def sync_imports(self):
-        self.download_configs("https://nordvpn.com/api/files/zip")
+    def sync_imports(self, download_url):
+        if self.host_reachable(download_url):
+            self.download_configs(download_url)
 
-        # first check if anything needs purging from the existing connections
-        purged = []
-        for connection in self.active_list:
-            country_code = self.get_country_code(connection)
-            if country_code in self.black_list or country_code not in self.white_list:
-                self.remove_connection(connection)
-                purged.append(connection)
-
-        # Then begin checking for new
-        for filename in os.listdir(DATA_DIR):
-            split_name = os.path.splitext(filename)
-            country_code = self.get_country_code(filename)
-
-            if (country_code in self.white_list) or (not self.white_list and country_code not in self.black_list):
-                test_success = self.test_connection(filename)
-                if (test_success and (split_name[0] not in self.active_list)):  # If connection can be established and is not yet imported
-                    self.import_ovpn(filename)
-                elif (not test_success and (split_name[0] in self.active_list)):  # If connection failed and it is in our active list, remove it.
-                    self.remove_connection(split_name[0])
-                    self.purged.append(split_name[0])
+            logging.info("Checking if any active connections should be removed...")
+            # first check if anything needs purging from the existing connections
+            purged = []
+            for connection in self.active_list:
+                country_code = self.get_country_code(connection)
+                if (country_code in self.black_list) or (country_code not in self.white_list) or (not self.vpn_reachable(connection+'.ovpn')):
+                    self.remove_connection(connection)
+                    purged.append(connection)
 
             # Remove any purged from the active list, since we're done syncing
             for connection in purged:
                 self.active_list.remove(connection)
+                self.save_active_list(self.active_list, LIST_PATH)
+
+            if purged:
+                logging.info("Removed %i active connections.", len(purged))
+            else:
+                logging.info("No active connections to remove.")
+
+            logging.info("Checking for new connections to import...")
+            # Then begin checking for new
+            new_imports = 0
+            for filename in os.listdir(DATA_DIR):
+                split_name = os.path.splitext(filename)
+                country_code = self.get_country_code(filename)
+
+                if (country_code in self.white_list) or (not self.white_list and country_code not in self.black_list):
+                    test_success = self.vpn_reachable(filename)
+                    if (test_success and (split_name[0] not in self.active_list)):  # If connection can be established and is not yet imported
+                        self.import_ovpn(filename)
+                        new_imports += 1
+                    #elif (not test_success and (split_name[0] in self.active_list)):  # If connection failed and it is in our active list, remove it.
+                    #    self.remove_connection(split_name[0])
+                    #    purged.append(split_name[0])
+
+            logging.info("Imported %i new configurations.", new_imports)
+
+        else:
+            logging.warning("Could not establish a connection to %s. Please check your connectivity and try again.", download_url)
+            sys.exit(1)
 
 
 class NotSudo(Exception):
