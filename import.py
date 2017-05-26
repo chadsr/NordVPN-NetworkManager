@@ -9,7 +9,6 @@ from zipfile import ZipFile
 import logging
 import pickle
 import socket
-from urllib import request
 import sys
 
 TIMEOUT = 30
@@ -83,6 +82,7 @@ class Importer(object):
         self.parser.add_argument("--auto-connect", help="Configure NetworkManager to always auto-connect to the lowest latency server. Specify a country code, or 'all' for all servers", type=str)
 
     def start(self):
+        updated = False
 
         try:
             args = self.parser.parse_args()
@@ -91,25 +91,28 @@ class Importer(object):
             self.parser.exit(1)
 
         if args.sync:
-            self.sync_imports(NORD_URL)
+            updated = self.sync_imports(NORD_URL)
         elif args.purge:
             self.purge_active_connections()
         elif args.clean_sync:
-            self.purge_active_connections()
-            self.sync_imports(NORD_URL)
+            updated = self.purge_active_connections()
+            updated = self.sync_imports(NORD_URL)
         else:
-            self.sync_imports(NORD_URL)
+            updated = self.sync_imports(NORD_URL)
 
         if args.auto_connect:
             if self.active_list:
                 if args.auto_connect == "all":
-                    self.select_auto_connect()
+                    updated = self.select_auto_connect()
                 else:
-                    self.select_auto_connect(args.auto_connect)
+                    updated = self.select_auto_connect(args.auto_connect)
             else:
-                logging.error("No servers active. Please sync first.")
-                exit
+                logging.error("No servers active. Please sync before trying to set up an auto-connect.")
 
+        if updated:
+            self.restart_networkmanager()
+
+    def restart_networkmanager(self):
         logging.info("Attempting to restart NetworkManager.")
         try:
             subprocess.run("systemctl restart NetworkManager.service", shell=True, check=True)
@@ -193,6 +196,7 @@ class Importer(object):
 
         if best_connection:
             self.set_auto_connect(best_connection)
+            return True
 
     def set_auto_connect(self, connection):
         auto_script = """#!/bin/bash
@@ -242,6 +246,8 @@ class Importer(object):
             self.save_active_list(self.active_list, LIST_PATH)
 
             logging.info("All active connections removed!")
+
+            return True
         else:
             logging.info("No active connections to remove.")
 
@@ -343,12 +349,14 @@ class Importer(object):
                     if (test_success and (split_name[0] not in self.active_list)):  # If connection can be established and is not yet imported
                         self.import_ovpn(filename)
                         new_imports += 1
-                    #elif (not test_success and (split_name[0] in self.active_list)):  # If connection failed and it is in our active list, remove it.
-                    #    self.remove_connection(split_name[0])
-                    #    purged.append(split_name[0])
 
-            logging.info("Imported %i new configurations.", new_imports)
+            if new_imports > 0:
+                logging.info("Imported %i new configurations.", new_imports)
+            else:
+                logging.info("No new configurations to be imported.")
 
+            if purged or new_imports > 0:  # If any changes have been made
+                return True
         else:
             logging.warning("Could not establish a connection to %s. Please check your connectivity and try again.", download_url)
             sys.exit(1)
