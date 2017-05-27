@@ -195,6 +195,7 @@ class Importer(object):
                     logging.info("%s (%s): %dms avg RTT", connection_name, host, rtt)
 
         if best_connection:
+            logging.info("Selecting %s (%s) for auto-connect.", best_connection, host)
             self.set_auto_connect(best_connection)
             return True
 
