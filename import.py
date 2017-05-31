@@ -13,7 +13,7 @@ import sys
 
 # TODO: Terminate script/wait cleanly if network connection goes down
 
-TIMEOUT = 30
+TIMEOUT = 5
 
 DIR = os.path.dirname(os.path.realpath(__file__))
 DATA_DIR = DIR+'/data/'
@@ -262,7 +262,7 @@ class Importer(object):
             zipfile = ZipFile(BytesIO(uo.read()))
 
             zipfile.extractall(DATA_DIR)
-        except (error.URLError) as e:
+        except (error.URLError) or Exception as e:
             logging.error(e)
 
     def remove_autoconnect(self):
