@@ -20,6 +20,7 @@ DATA_DIR = DIR+'/data/'
 CONFIG_PATH = DIR+'/settings.conf'
 LIST_PATH = DIR+'/.list'
 NORD_URL = "https://nordvpn.com/api/files/zip"
+AUTO_CONNECT_PATH = "/etc/NetworkManager/dispatcher.d/auto_vpn"
 
 
 class ConfigHandler(object):
@@ -235,12 +236,10 @@ class Importer(object):
         fi
         """
 
-        path = "/etc/NetworkManager/dispatcher.d/auto_vpn"
-
-        with open(path, "w") as auto_vpn:
+        with open(AUTO_CONNECT_PATH, "w") as auto_vpn:
             print(auto_script, file=auto_vpn)
 
-        self.make_executable(path)
+        self.make_executable(AUTO_CONNECT_PATH)
 
     def make_executable(self, path):
         mode = os.stat(path).st_mode
@@ -266,7 +265,18 @@ class Importer(object):
         except (error.URLError) as e:
             logging.error(e)
 
+    def remove_autoconnect(self):
+        try:
+            os.remove(AUTO_CONNECT_PATH)
+            return True
+        except OSError:
+            return False
+
     def purge_active_connections(self):
+        removed = self.remove_autoconnect()
+        if removed:
+            logging.info("Auto-Connect file removed.")
+
         if self.active_list:
             logging.info("Removing all active connections...")
             for connection in self.active_list:
