@@ -178,7 +178,7 @@ class Importer(object):
                     for i, element in enumerate(elements):
                         connection[labels[i]] = element
 
-                    if connection['TYPE'] == "vpn" and connection['NAME'] in self.active_list: # Only deactivate VPNs managed by this tool. Preserve any not in the active list
+                    if connection['TYPE'] == "vpn" and connection['NAME'] in self.active_list:  # Only deactivate VPNs managed by this tool. Preserve any not in the active list
                         output = subprocess.run(['nmcli', 'connection', 'down', connection['UUID']], stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout.decode('utf-8').strip()
                         logging.info("%s", output)
 
@@ -189,12 +189,12 @@ class Importer(object):
         best_connection = None
         best_rtt = 999999.0
 
-        self.disconnect_active_vpn() # Disconnect active VPNs, so we get a more reliable benchmark
+        self.disconnect_active_vpn()  # Disconnect active VPNs, so we get a more reliable benchmark
 
         logging.info("Searching for server with lowest latency...")
 
         for connection_name in self.active_list:
-            if selected_country and connection_name[:2] == selected_country:
+            if selected_country and connection_name[:2] == selected_country or not selected_country:
                 config = configparser.ConfigParser()
                 path = "/etc/NetworkManager/system-connections/"+connection_name
 
