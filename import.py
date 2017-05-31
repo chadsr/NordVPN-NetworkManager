@@ -185,7 +185,7 @@ class Importer(object):
         except Exception as ex:
             logging.error(ex)
 
-    def select_auto_connect(self, selected_country=False):
+    def select_auto_connect(self, selected_country=False, acceptable_rtt=2.0):
         best_connection = None
         best_rtt = 999999.0
 
@@ -215,9 +215,13 @@ class Importer(object):
                 elif rtt < best_rtt:
                     best_connection = connection_name
                     best_rtt = rtt
-                    logging.info("%s (%s): %dms avg RTT [NEW BEST]", best_connection, host, best_rtt)
+                    logging.info("%s (%s): %fms avg RTT [NEW BEST]", best_connection, host, best_rtt)
+
+                    if best_rtt <= acceptable_rtt:
+                        logging.info("%s (%s): RTT <= acceptable RTT (%f). Stopping here.", best_connection, host, acceptable_rtt)
+                        break
                 else:
-                    logging.info("%s (%s): %dms avg RTT", connection_name, host, rtt)
+                    logging.info("%s (%s): %fms avg RTT", connection_name, host, rtt)
 
         if best_connection:
             logging.info("Selecting %s (%s) for auto-connect.", best_connection, host)
