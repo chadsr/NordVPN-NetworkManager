@@ -11,6 +11,8 @@ import pickle
 import socket
 import sys
 
+# TODO: Terminate script/wait cleanly if network connection goes down
+
 TIMEOUT = 30
 
 DIR = os.path.dirname(os.path.realpath(__file__))
@@ -162,9 +164,32 @@ class Importer(object):
         except Exception as ex:
             logging.error(ex)
 
+    def disconnect_active_vpn(self):
+        logging.info('Attempting to disconnect any active VPN connections.')
+
+        try:
+            lines = subprocess.run(['nmcli', 'connection', 'show', '--active'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout.decode('utf-8').split('\n')
+            labels = lines[0].split()
+
+            for line in lines[1:]:
+                if line:
+                    elements = line.split()
+                    connection = {}
+                    for i, element in enumerate(elements):
+                        connection[labels[i]] = element
+
+                    if connection['TYPE'] == "vpn" and connection['NAME'] in self.active_list: # Only deactivate VPNs managed by this tool. Preserve any not in the active list
+                        output = subprocess.run(['nmcli', 'connection', 'down', connection['UUID']], stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout.decode('utf-8').strip()
+                        logging.info("%s", output)
+
+        except Exception as ex:
+            logging.error(ex)
+
     def select_auto_connect(self, selected_country=False):
         best_connection = None
         best_rtt = 999999.0
+
+        self.disconnect_active_vpn() # Disconnect active VPNs, so we get a more reliable benchmark
 
         logging.info("Searching for server with lowest latency...")
 
