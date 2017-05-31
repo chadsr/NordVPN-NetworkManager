@@ -215,13 +215,13 @@ class Importer(object):
                 elif rtt < best_rtt:
                     best_connection = connection_name
                     best_rtt = rtt
-                    logging.info("%s (%s): %fms avg RTT [NEW BEST]", best_connection, host, best_rtt)
+                    logging.info("%s (%s): %.2fms avg RTT [NEW BEST]", best_connection, host, best_rtt)
 
                     if best_rtt <= acceptable_rtt:
-                        logging.info("%s (%s): RTT <= acceptable RTT (%f). Stopping here.", best_connection, host, acceptable_rtt)
+                        logging.info("%s (%s): RTT <= acceptable RTT (%.2f). Stopping here.", best_connection, host, acceptable_rtt)
                         break
                 else:
-                    logging.info("%s (%s): %fms avg RTT", connection_name, host, rtt)
+                    logging.info("%s (%s): %.2fms avg RTT", connection_name, host, rtt)
 
         if best_connection:
             logging.info("Selecting %s (%s) for auto-connect.", best_connection, host)
@@ -252,7 +252,7 @@ class Importer(object):
         loss = int(output.strip().split('/')[4].split('%')[0])  # percentage loss
         if loss < 100:
             avg_rtt = output.split()[-1].split('/')[1]
-            return float(avg_rtt)
+            return round(float(avg_rtt), 2)
         else:
             return False
 
