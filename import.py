@@ -78,7 +78,7 @@ class Importer(object):
             self.active_list = self.load_active_list(LIST_PATH)
 
         self.parser = argparse.ArgumentParser()
-        self.parser.add_argument("--sync", help="Synchronise any new connections, whilst preserving existing connections. (default)", action="store_true", default=True)
+        self.parser.add_argument("--sync", help="Synchronise any new connections, whilst preserving existing connections. (default)", action="store_true")
         self.parser.add_argument("--purge", help="Remove all active connections.", action="store_true")
         self.parser.add_argument("--clean-sync", help="Remove all active connections and synchronise.", action="store_true")
         self.parser.add_argument("--auto-connect", help="Configure NetworkManager to always auto-connect to the lowest latency server. Specify a country code, or 'all' for all servers", type=str)
@@ -91,6 +91,8 @@ class Importer(object):
         except:
             self.parser.print_help()
             self.parser.exit(1)
+
+        self.disconnect_active_vpn()  # Disconnect active VPNs, so we get a more reliable benchmark
 
         if args.sync:
             updated = self.sync_imports(NORD_URL)
@@ -185,11 +187,9 @@ class Importer(object):
         except Exception as ex:
             logging.error(ex)
 
-    def select_auto_connect(self, selected_country=False, acceptable_rtt=2.0):
+    def select_auto_connect(self, selected_country=False, acceptable_rtt=5.0):
         best_connection = None
         best_rtt = 999999.0
-
-        self.disconnect_active_vpn()  # Disconnect active VPNs, so we get a more reliable benchmark
 
         logging.info("Searching for server with lowest latency...")
 
