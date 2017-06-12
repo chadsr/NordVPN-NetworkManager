@@ -363,7 +363,7 @@ class Importer(object):
             purged = []
             for connection in self.active_list:
                 country_code = self.get_country_code(connection)
-                if (country_code in self.black_list) or (country_code not in self.white_list) or (not self.vpn_reachable(connection+'.ovpn')):
+                if (country_code in self.black_list and not self.white_list) or (self.white_list and country_code not in self.white_list) or (not self.vpn_reachable(connection+'.ovpn')):
                     self.remove_connection(connection)
                     purged.append(connection)
 
