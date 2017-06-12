@@ -16,3 +16,14 @@ This tool was put together quickly as an experimental way of handling .ovpn conf
 
 ## Requirements
 - fping (for benchmarking)
+
+## Usage
+*Basic synchronise and select auto-connect server:*
+```
+sudo ./nordvpn-nm.py --sync --auto-connect nl
+```
+
+*View descriptions of other options:*
+```
+sudo ./nordvpn-nm.py --help
+```
