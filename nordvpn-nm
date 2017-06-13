@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 import configparser
 import argparse
 from urllib import error, request
@@ -36,6 +37,10 @@ class ConfigHandler(object):
         self.data['Credentials']['username'] = ''
         self.data['Credentials']['password'] = ''
 
+        self.data['Benchmarking'] = {}
+        self.data['Benchmarking']['ping-attempts'] = ''
+        self.data['Benchmarking']['acceptable-rtt'] = ''
+
     def save(self, path):
         with open(path, 'w') as config_file:
             self.data.write(config_file)
@@ -54,6 +59,12 @@ class ConfigHandler(object):
 
     def get_whitelist(self):
         return self.data['General']['country-whitelist'].split(' ')
+
+    def get_acceptable_rtt(self):
+        return float(self.data['Benchmarking']['acceptable-rtt'])
+
+    def get_ping_attempts(self):
+        return int(self.data['Benchmarking']['ping-attempts'])
 
 
 class Importer(object):
@@ -188,9 +199,11 @@ class Importer(object):
         except Exception as ex:
             logging.error(ex)
 
-    def select_auto_connect(self, selected_country=False, acceptable_rtt=5.0):
+    def select_auto_connect(self, selected_country=False):
         best_connection = None
         best_rtt = 999999.0
+
+        acceptable_rtt = self.config.get_acceptable_rtt()
 
         logging.info("Searching for server with lowest latency...")
 
@@ -246,7 +259,9 @@ class Importer(object):
         mode |= (mode & 0o444) >> 2    # copy R bits to X
         os.chmod(path, mode)
 
-    def get_rtt(self, host, ping_attempts=3):
+    def get_rtt(self, host):
+        ping_attempts = self.config.get_ping_attempts()
+
         output = subprocess.run(['fping', host, '-c', str(ping_attempts)], stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout.decode('utf-8')
         loss = int(output.strip().split('/')[4].split('%')[0])  # percentage loss
         if loss < 100:
