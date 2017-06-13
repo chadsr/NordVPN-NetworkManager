@@ -55,10 +55,18 @@ class ConfigHandler(object):
         return self.data['Credentials']['password']
 
     def get_blacklist(self):
-        return self.data['General']['country-blacklist'].split(' ')
+        blacklist = self.data['General']['country-blacklist']
+        if blacklist:
+            return blacklist.split(' ')
+        else:
+            return None
 
     def get_whitelist(self):
-        return self.data['General']['country-whitelist'].split(' ')
+        whitelist = self.data['General']['country-whitelist']
+        if whitelist:
+            return whitelist.split(' ')
+        else:
+            return None
 
     def get_acceptable_rtt(self):
         return float(self.data['Benchmarking']['acceptable-rtt'])
@@ -378,7 +386,8 @@ class Importer(object):
             purged = []
             for connection in self.active_list:
                 country_code = self.get_country_code(connection)
-                if (country_code in self.black_list and not self.white_list) or (self.white_list and country_code not in self.white_list) or (not self.vpn_reachable(connection+'.ovpn')):
+                # If there is a blacklist (and no whitelist) and it contains the country code, or there is a whitelist and it does not contain the country code, or the vpn server is not reachable
+                if (self.black_list and country_code in self.black_list and not self.white_list) or (self.white_list and country_code not in self.white_list) or (not self.vpn_reachable(connection+'.ovpn')):
                     self.remove_connection(connection)
                     purged.append(connection)
 
@@ -393,13 +402,15 @@ class Importer(object):
                 logging.info("No active connections to remove.")
 
             logging.info("Checking for new connections to import...")
+
             # Then begin checking for new
             new_imports = 0
             for filename in os.listdir(DATA_DIR):
                 split_name = os.path.splitext(filename)
                 country_code = self.get_country_code(filename)
 
-                if (country_code in self.white_list) or (not self.white_list and country_code not in self.black_list):
+                # If there is a whitelist and the country code is in the whitelist, or if there is no whitelist and there is a blacklist not containing the country code, or there is neither lists
+                if (self.white_list and country_code in self.white_list) or (not self.white_list and self.black_list and country_code not in self.black_list) or (not self.white_list and not self.black_list):
                     test_success = self.vpn_reachable(filename)
                     if (test_success and (split_name[0] not in self.active_list)):  # If connection can be established and is not yet imported
                         self.import_ovpn(filename)
