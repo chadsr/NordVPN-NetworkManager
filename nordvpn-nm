@@ -11,6 +11,7 @@ import logging
 import pickle
 import socket
 import sys
+from time import sleep
 
 # TODO: Terminate script/wait cleanly if network connection goes down
 
@@ -23,8 +24,11 @@ LIST_PATH = DIR+'/.list'
 NORD_URL = "https://nordvpn.com/api/files/zip"
 AUTO_CONNECT_PATH = "/etc/NetworkManager/dispatcher.d/auto_vpn"
 
+DUMMY_USERNAME = 'yourusername'
+DUMMY_PASSWORD = 'yourpassword'
 
 class ConfigHandler(object):
+
     def __init__(self):
         self.data = configparser.ConfigParser()
 
@@ -34,12 +38,12 @@ class ConfigHandler(object):
         self.data['General']['country-whitelist'] = '# simply write country codes separated by spaces e.g. "country-whitelist = us ca" If this is non-empty, the blacklist is ignored'
 
         self.data['Credentials'] = {}
-        self.data['Credentials']['username'] = ''
-        self.data['Credentials']['password'] = ''
+        self.data['Credentials']['username'] = DUMMY_USERNAME
+        self.data['Credentials']['password'] = DUMMY_PASSWORD
 
         self.data['Benchmarking'] = {}
-        self.data['Benchmarking']['ping-attempts'] = ''
-        self.data['Benchmarking']['acceptable-rtt'] = ''
+        self.data['Benchmarking']['ping-attempts'] = '3'
+        self.data['Benchmarking']['acceptable-rtt'] = '5'
 
     def save(self, path):
         with open(path, 'w') as config_file:
@@ -49,10 +53,18 @@ class ConfigHandler(object):
         self.data.read(path)
 
     def get_username(self):
-        return self.data['Credentials']['username']
+        username = self.data['Credentials']['username']
+        if username and username != DUMMY_USERNAME:
+            return username
+        else:
+            return None
 
     def get_password(self):
-        return self.data['Credentials']['password']
+        password = self.data['Credentials']['password']
+        if password and password != DUMMY_PASSWORD:
+            return password
+        else:
+            return None
 
     def get_blacklist(self):
         blacklist = self.data['General']['country-blacklist']
@@ -88,10 +100,17 @@ class Importer(object):
         self.white_list = []
         if os.path.isfile(CONFIG_PATH):
             self.config.load(CONFIG_PATH)
+
+            if not self.config.get_username() or not self.config.get_password():
+                logging.warning("Username and/or password missing. Connections will be added with no credentials!")
+                sleep(5)  # Wait for a few seconds, incase user wants to cancel
+
+
             self.black_list = self.config.get_blacklist()
             self.white_list = self.config.get_whitelist()
         else:
             self.config.save(CONFIG_PATH)
+            logging.warning("No settings.conf found. Default settings created.")
 
         self.active_list = []
         if os.path.isfile(LIST_PATH):
@@ -158,10 +177,14 @@ class Importer(object):
                 logging.info("VPN file not found! %s", path)
                 return
 
-            config['vpn']['password-flags'] = "0"
-            config['vpn']['username'] = self.config.get_username()
-            config['vpn-secrets'] = {}
-            config['vpn-secrets']['password'] = self.config.get_password()
+            username = self.config.get_username()
+            password = self.config.get_password()
+
+            if username and password:
+                config['vpn']['password-flags'] = "0"
+                config['vpn']['username'] = username
+                config['vpn-secrets'] = {}
+                config['vpn-secrets']['password'] = password
 
             with open(path, 'w') as config_file:
                 config.write(config_file)
