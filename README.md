@@ -1,6 +1,8 @@
 # NordVPN-NetworkManager
 
-This tool was put together quickly as an experimental way of handling .ovpn configs when it comes to NetworkManager. Currently it's specific to NordVPN, but maybe in the future it will be adapted into a general OpenVPN tool.
+This tool removes the need for manually handling OpenVPN configurations from NordVPN. It will synchronise the best servers from selected countries into the NetworkManager VPN list. An active connection can then be chosen to auto-connect to, whenever NetworkManager brings an network connection up.
+
+More documentation will be available when this repository is ready for public use.
 
 **Warning:**
 *This tool is still highly experimental and is definitely not yet robust enough to use reliably. I take no responsibility for any unforseen problems it may cause.*
@@ -9,10 +11,8 @@ This tool was put together quickly as an experimental way of handling .ovpn conf
 - Downloads the latest NordVPN configuration files
 - Provides a config for whitelisting or blacklisting certains countries by country code.
 - Automatically adds user credentials to the imported configurations.
-- Checks if servers are up before importing, by attempting to create a socket to the specified port.
-- Removes active configurations if they have since gone down.
-- Finds the best server to automatically connect to, using the average ping RTT (not super reliable, I know)
-- Sets the auto connect server for all NetworkManager connections, instead of per connection. (optional)
+- Imports the best server of each category (based on latency and server load) from each of the selected countries in $HOME/.nordnm/settings.conf
+- Sets the auto connect server of your choice for all NetworkManager connections, instead of per connection. (optional)
 
 ## Requirements
 - fping (for benchmarking)
@@ -20,10 +20,10 @@ This tool was put together quickly as an experimental way of handling .ovpn conf
 ## Usage
 *Basic synchronise and select auto-connect server:*
 ```
-sudo ./nordvpn-nm --sync --auto-connect nl
+sudo nordnm --sync --auto-connect nl normal tcp
 ```
 
 *View descriptions of other options:*
 ```
-sudo ./nordvpn-nm --help
+sudo nordnm --help
 ```
