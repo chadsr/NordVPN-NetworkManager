@@ -162,7 +162,7 @@ class Importer(object):
 
     def generate_connection_name(self, server, protocol):
         short_name = server['domain'].split('.')[0]
-        connection_name = short_name + '.' + protocol + ' ['
+        connection_name = short_name + '.' + protocol + '['
 
         for i, category in enumerate(server['categories']):
             category_name = self.VPN_CATEGORIES[category['name']]
