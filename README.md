@@ -20,10 +20,10 @@ More documentation will be available when this repository is ready for public us
 ## Usage
 *Basic synchronise and select auto-connect server:*
 ```
-sudo nordnm --sync --auto-connect nl normal tcp
+sudo python3 nordnm --sync --auto-connect nl normal tcp
 ```
 
 *View descriptions of other options:*
 ```
-sudo nordnm --help
+sudo python3 nordnm --help
 ```
