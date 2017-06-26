@@ -193,7 +193,7 @@ class Importer(object):
                 start = timer()
                 self.best_servers = benchmarking.get_best_servers(valid_server_list, ping_attempts)
                 end = timer()
-                logger.info("Done benchmarking. Took %0.2f seconds.", end-start)
+                self.logger.info("Done benchmarking. Took %0.2f seconds.", end-start)
 
                 updated = self.purge_active_connections()  # Purge all old connections until a better sync routine is added
 
