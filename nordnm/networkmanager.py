@@ -75,7 +75,7 @@ def import_connection(file_path, connection_name, username=None, password=None):
         shutil.copy(file_path, temp_path)
 
         output = subprocess.run(['nmcli', 'connection', 'import', 'type', 'openvpn', 'file', temp_path], stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout.decode('utf-8').strip()
-        #logger.info("%s", output)
+        logger.info("%s", output)
         os.remove(temp_path)
 
         if username and password:
@@ -91,7 +91,7 @@ def import_connection(file_path, connection_name, username=None, password=None):
 def remove_connection(connection_name):
     try:
         output = subprocess.run(['nmcli', 'connection', 'delete', connection_name], stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout.decode('utf-8').strip()
-        #logger.info("%s", output)
+        logger.info("%s", output)
         return True
     except Exception as ex:
         logger.error(ex)
