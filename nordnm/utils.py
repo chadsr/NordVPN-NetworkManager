@@ -23,7 +23,7 @@ def chown_path_to_user(path):
 
 def extract_zip(input_stream, output_path):
     try:
-        zipfile = ZipFile(BytesIO(input_stream.read()))
+        zipfile = ZipFile(BytesIO(input_stream))
         zipfile.extractall(output_path)
         file_list = zipfile.namelist()
         return True

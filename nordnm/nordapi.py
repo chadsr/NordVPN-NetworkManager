@@ -1,4 +1,4 @@
-from urllib import error, request
+import requests
 import json
 from operator import itemgetter
 import logging
@@ -17,46 +17,36 @@ VPN_CATEGORIES = {
     }
 
 logger = logging.getLogger(__name__)
+logging.getLogger("requests").setLevel(logging.CRITICAL)  # Small hack to hide info logs from requests
 
 
 def get_server_list(sort_by_load=False):
     try:
-        resp = request.urlopen(API_ADDR + '/server', timeout=TIMEOUT)
-        server_list = json.load(resp)
+        resp = requests.get(API_ADDR + '/server', timeout=TIMEOUT)
+        server_list = resp.json()
 
         if sort_by_load:
             return sorted(server_list, key=itemgetter('load'))
         else:
             return server_list
-    except (error.URLError) or Exception as ex:
+    except Exception as ex:
         logger.error(ex)
         return None
 
 
 def get_nameservers():
     try:
-        resp = request.urlopen(API_ADDR + '/dns/smart', timeout=TIMEOUT).read()
-        return resp
-    except (error.URLError) or Exception as ex:
+        resp = requests.get(API_ADDR + '/dns/smart', timeout=TIMEOUT)
+        return resp.json()
+    except Exception as ex:
         logger.error(ex)
         return None
 
 
 def get_configs():
     try:
-        resp = request.urlopen(API_ADDR + '/files/zipv2', timeout=TIMEOUT)
-        return resp
-    except (error.URLError) or Exception as ex:
+        resp = requests.get(API_ADDR + '/files/zipv2', timeout=TIMEOUT)
+        return resp.content
+    except Exception as ex:
         logger.error(ex)
         return None
-
-
-'''
-def get_server_loads():
-    try:
-        resp = request.urlopen(API_ADDR + '/server/stats', timeout=TIMEOUT)
-        return json.load(resp)
-    except (error.URLError) or Exception as ex:
-        logger.error(ex)
-        return None
-'''
