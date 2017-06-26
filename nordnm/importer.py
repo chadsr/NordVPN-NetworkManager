@@ -3,6 +3,7 @@ from credentials import CredentialsHandler
 import nordapi
 import networkmanager
 import utils
+import benchmarking
 
 import argparse
 import os
@@ -11,6 +12,7 @@ import sys
 from collections import defaultdict
 from fnmatch import fnmatch
 import logging
+from timeit import default_timer as timer
 
 # TODO: Terminate script/wait cleanly if network connection goes down
 
@@ -26,15 +28,6 @@ CREDENTIALS_PATH = os.path.join(ROOT_DIR, 'credentials')
 
 
 class Importer(object):
-    VPN_CATEGORIES = {
-        'Standard VPN servers': 'normal',
-        'P2P': 'p2p',
-        'Double VPN': 'double',
-        'Dedicated IP servers': 'dedicated',
-        'Onion over VPN': 'onion',
-        'Anti DDoS': 'ddos',
-        }
-
     def __init__(self):
         self.logger = logging.getLogger(__name__)
 
@@ -151,27 +144,32 @@ class Importer(object):
         except Exception as ex:
             self.logger.error(ex)
 
-    def get_server_score(self, server):
-        load = server['load']
-        domain = server['domain']
-        self.logger.info("Scoring %s", domain)
-        ping_attempts = self.config.get_ping_attempts()
-        rtt = utils.get_rtt(domain, ping_attempts)
-        score = int((1/(rtt*load+1)*1000))  # TODO: Improve scoring function
-        return score
+    def country_is_selected(self, country_code):
+        # If (there is a whitelist and the country code is whitelisted) or (there is no whitelist, but there is a blacklist and it's not in the blacklist) or (there is no whitelist or blacklist)
+        if (self.white_list and country_code in self.white_list) or (not self.white_list and self.black_list and country_code not in self.black_list) or (not self.white_list and not self.black_list):
+            return True
+        else:
+            return False
 
-    def generate_connection_name(self, server, protocol):
-        short_name = server['domain'].split('.')[0]
-        connection_name = short_name + '.' + protocol + '['
+    def get_valid_servers(self):
+        full_server_list = nordapi.get_server_list(sort_by_load=True)
 
-        for i, category in enumerate(server['categories']):
-            category_name = self.VPN_CATEGORIES[category['name']]
-            if i > 0:  # prepend a separator if there is more than one category
-                category_name = '|' + category_name
+        if full_server_list:
+            valid_server_list = []
 
-            connection_name = connection_name + category_name
+            for server in full_server_list:
+                country_code = server['flag']
+                has_openvpn_tcp = server['features']['openvpn_tcp']
+                has_openvpn_udp = server['features']['openvpn_udp']
 
-        return connection_name + ']'
+                # If the server country has been selected and the server has OpenVPN enabled
+                if self.country_is_selected(country_code) and (has_openvpn_tcp or has_openvpn_udp):
+                    valid_server_list.append(server)
+
+            return valid_server_list
+        else:
+            self.logger.error("Could not fetch the server list from NordVPN.")
+            return None
 
     def sync_servers(self):
         updated = False
@@ -179,42 +177,23 @@ class Importer(object):
         username = self.credentials.get_username()
         password = self.credentials.get_password()
 
-        configs = nordapi.get_configs()
-        if configs:
-            utils.extract_zip(configs, OVPN_DIR)
+        self.logger.info("Checking for new connections to import...")
 
-            self.logger.info("Checking for new connections to import...")
+        valid_server_list = self.get_valid_servers()
+        if valid_server_list:
+            configs = nordapi.get_configs()
+            if configs:
+                utils.extract_zip(configs, OVPN_DIR)
 
-            server_list = nordapi.get_server_list(sort_by_load=True)
-            if server_list:
                 networkmanager.disconnect_active_vpn(self.active_list)  # Disconnect active Nord VPNs, so we get a more reliable benchmark
 
-                for server in server_list:
-                    supported_protocols = []
-                    if server['features']['openvpn_udp']:
-                        supported_protocols.append('udp')
-                    if server['features']['openvpn_tcp']:
-                        supported_protocols.append('tcp')
+                ping_attempts = self.config.get_ping_attempts() # We are going to be multiprocessing within a class instance, so this needs getting outside of the multiprocessing
+                self.logger.info("Finding best servers to synchronise...")
 
-                    if supported_protocols:
-                        country_code = server['flag']
-
-                        # If (there is a whitelist and the country code is whitelisted) or (there is no whitelist, but there is a blacklist and it's not in the blacklist) or (there is no whitelist or blacklist)
-                        if (self.white_list and country_code in self.white_list) or (not self.white_list and self.black_list and country_code not in self.black_list) or (not self.white_list and not self.black_list):
-                            domain = server['domain']
-                            score = self.get_server_score(server)
-
-                            for category in server['categories']:
-                                category_name = self.VPN_CATEGORIES[category['name']]
-
-                                for protocol in supported_protocols:
-                                    best_score = 0
-                                    if self.best_servers[country_code, category_name, protocol]:
-                                        best_score = self.best_servers[country_code, category_name, protocol]['score']
-
-                                    if score > best_score:
-                                        name = self.generate_connection_name(server, protocol)
-                                        self.best_servers[country_code, category_name, protocol] = {'name': name, 'domain': domain, 'score': score}
+                start = timer()
+                self.best_servers = benchmarking.get_best_servers(valid_server_list, ping_attempts)
+                end = timer()
+                logger.info("Done benchmarking. Took %0.2f seconds.", end-start)
 
                 updated = self.purge_active_connections()  # Purge all old connections until a better sync routine is added
 
@@ -239,10 +218,9 @@ class Importer(object):
                     self.logger.info("No new connections added.")
 
                 return updated
-
             else:
-                self.logger.error("Could not fetch the server list from NordVPN. Exiting.")
+                self.logger.error("Could not download the latest configs. Please check your connectivity and try again.")
                 sys.exit(1)
         else:
-            self.logger.error("Could not download the latest configs. Please check your connectivity and try again.")
+            self.logger.error("No servers found to sync. Exiting.")
             sys.exit(1)

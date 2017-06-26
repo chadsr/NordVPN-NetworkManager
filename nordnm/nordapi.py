@@ -6,6 +6,16 @@ import logging
 API_ADDR = 'https://api.nordvpn.com'
 TIMEOUT = 5
 
+# Mapping of NordVPN category names to their short internal names
+VPN_CATEGORIES = {
+    'Standard VPN servers': 'normal',
+    'P2P': 'p2p',
+    'Double VPN': 'double',
+    'Dedicated IP servers': 'dedicated',
+    'Onion over VPN': 'onion',
+    'Anti DDoS': 'ddos',
+    }
+
 logger = logging.getLogger(__name__)
 
 
