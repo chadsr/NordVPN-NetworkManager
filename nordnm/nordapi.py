@@ -1,5 +1,4 @@
 import requests
-import json
 from operator import itemgetter
 import logging
 
