@@ -70,7 +70,7 @@ class Importer(object):
         if args.sync:
             updated = self.sync_servers()
         elif args.purge:
-            self.purge_active_connections()
+            updated = self.purge_active_connections()
         else:
             updated = self.sync_servers()
 
