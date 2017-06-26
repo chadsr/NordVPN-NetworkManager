@@ -51,14 +51,14 @@ class ConfigHandler(object):
     def get_blacklist(self):
         blacklist = self.config.get('General', 'country-blacklist')
         if blacklist:
-            return blacklist.split(' ')
+            return [code.upper() for code in blacklist.split(' ')]
         else:
             return None
 
     def get_whitelist(self):
         whitelist = self.config.get('General', 'country-whitelist')
         if whitelist:
-            return whitelist.split(' ')
+            return [code.upper() for code in whitelist.split(' ')]
         else:
             return None
 
