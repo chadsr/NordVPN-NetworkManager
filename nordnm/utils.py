@@ -58,11 +58,11 @@ def make_executable(file_path):
     """
 
 
-def get_rtt(host, ping_attempts):
-    output = subprocess.run(['fping', host, '-c', str(ping_attempts)], stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout.decode('utf-8')
-    loss = int(output.strip().split('/')[4].split('%')[0])  # percentage loss
-    if loss < 100:
-        avg_rtt = output.split()[-1].split('/')[1]
-        return round(float(avg_rtt), 2)
-    else:
-        return 99999
+def get_rtt_loss(host, ping_attempts):
+    output = subprocess.run(['ping', host, '-c', str(ping_attempts)], stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout.decode('utf-8')
+    output_lines = output.splitlines()
+
+    loss = int(output_lines[-2].split()[5].split('%')[0])
+    avg_rtt = float(output_lines[-1].split()[3].split('/')[1])
+
+    return (avg_rtt, loss)
