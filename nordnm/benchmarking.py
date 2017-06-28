@@ -23,8 +23,14 @@ def generate_connection_name(server, protocol):
 def get_server_score(server, ping_attempts):
     load = server['load']
     domain = server['domain']
-    rtt = utils.get_rtt(domain, ping_attempts)
-    score = int((1/(rtt*load+1)*1000))  # TODO: Improve scoring function
+    rtt, loss = utils.get_rtt_loss(domain, ping_attempts)
+
+    # If packet loss is >= 5%, return a score of zero (worst score)
+    if loss < 5:
+        score = int((1/(rtt*load+1)*1000))  # TODO: Improve scoring function
+    else:
+        score = 0
+
     return score
 
 
