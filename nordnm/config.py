@@ -66,11 +66,11 @@ class ConfigHandler(object):
     def get_ping_attempts(self):
         try:
             ping_attempts = int(self.config.get('Benchmarking', 'ping-attempts'))
-            if ping_attempts > 0: # If ping-attempts is zero or smaller, revert to default
+            if ping_attempts > 0:  # If ping-attempts is zero or smaller, revert to default
                 return ping_attempts
         except:
             pass
 
         self.logger.warning("Invalid ping-attempts value. Using default value of %d.", self.DEFAULT_PING_ATTEMPTS)
-        self.config.set('Benchmarking', 'ping-attempts', str(self.DEFAULT_PING_ATTEMPTS)) # Lets set the default, so we only get this warning once
+        self.config.set('Benchmarking', 'ping-attempts', str(self.DEFAULT_PING_ATTEMPTS))  # Lets set the default, so we only get this warning once
         return self.DEFAULT_PING_ATTEMPTS

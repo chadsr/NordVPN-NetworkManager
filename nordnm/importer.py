@@ -19,7 +19,7 @@ from timeit import default_timer as timer
 # TODO: Put these paths somewhere more appropriate
 HOME_DIR = os.path.expanduser('~' + utils.get_current_user())
 USER_DIR = os.path.join(HOME_DIR, '.nordnm/')
-OVPN_DIR = os.path.join(USER_DIR, 'ovpn/')
+OVPN_DIR = os.path.join(USER_DIR, 'configs/')
 CONFIG_PATH = os.path.join(USER_DIR, 'settings.conf')
 
 ROOT_DIR = '/usr/share/nordnm/'
@@ -31,14 +31,7 @@ class Importer(object):
     def __init__(self):
         self.logger = logging.getLogger(__name__)
 
-        if not os.path.exists(USER_DIR):
-            os.mkdir(USER_DIR)
-            utils.chown_path_to_user(USER_DIR)
-            os.mkdir(OVPN_DIR)
-            utils.chown_path_to_user(OVPN_DIR)
-
-        if not os.path.exists(ROOT_DIR):
-            os.mkdir(ROOT_DIR)
+        self.create_directories()
 
         self.config = ConfigHandler(CONFIG_PATH)
         self.credentials = CredentialsHandler(CREDENTIALS_PATH)
@@ -81,6 +74,17 @@ class Importer(object):
         if updated:
             networkmanager.restart()
 
+    def create_directories(self):
+        if not os.path.exists(USER_DIR):
+            os.mkdir(USER_DIR)
+            utils.chown_path_to_user(USER_DIR)
+
+        if not os.path.exists(OVPN_DIR):
+            os.mkdir(OVPN_DIR)
+            utils.chown_path_to_user(OVPN_DIR)
+
+        if not os.path.exists(ROOT_DIR):
+            os.mkdir(ROOT_DIR)
 
     def get_ovpn_path(self, domain, protocol):
         wildcard = domain+'.'+protocol+'*'
