@@ -40,12 +40,18 @@ def get_server_list(sort_by_load=False):
 
 
 def get_nameservers():
+    return ['162.242.211.137', '78.46.223.24']
+
+    # Apparently this is not the standard DNS endpoint, but something to do with 'smart-play' and no longer provides valid nameservers
+    # so for now we will just return a static list...
+    """
     try:
         resp = requests.get(API_ADDR + '/dns/smart', headers=HEADERS, timeout=TIMEOUT)
         return resp.json()
     except Exception as ex:
         logger.error(ex)
         return None
+    """
 
 
 def get_configs():
