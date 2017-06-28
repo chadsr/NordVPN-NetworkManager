@@ -7,9 +7,11 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# Since we're running with root priveledges, this will return
+
+# Since we're running with root priveledges, this will return the current username
 def get_current_user():
     return os.getenv("SUDO_USER")
+
 
 # Change the owner and group of a given path to the current user
 def chown_path_to_user(path):
@@ -21,11 +23,19 @@ def chown_path_to_user(path):
     else:
         return False
 
-def extract_zip(input_stream, output_path):
+
+def extract_zip(input_stream, output_path, chown_to_user=True):
     try:
         zipfile = ZipFile(BytesIO(input_stream))
         zipfile.extractall(output_path)
         file_list = zipfile.namelist()
+
+        if chown_to_user:
+            # chown the extracted files to the current user, instead of root
+            for file_name in file_list:
+                file_path = os.path.join(output_path, file_name)
+                chown_path_to_user(file_path)
+
         return True
     except Exception as ex:
         logger.error(ex)
