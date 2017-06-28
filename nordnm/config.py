@@ -4,6 +4,7 @@ import configparser
 import logging
 import os
 
+
 class ConfigHandler(object):
     DEFAULT_PING_ATTEMPTS = 3
 

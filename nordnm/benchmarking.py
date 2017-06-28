@@ -56,7 +56,7 @@ def compare_server(server, best_servers, ping_attempts):
 def get_num_processes(num_servers):
     # Since each process is not resource heavy and simply takes time waiting for pings, maximise the number of processes (within constraints of the current configuration)
     soft_limit, _ = resource.getrlimit(resource.RLIMIT_NOFILE)
-    max_processes = int(soft_limit/multiprocessing.cpu_count()) # This doesn't particularly make sense right now...
+    max_processes = int(soft_limit/multiprocessing.cpu_count())  # This doesn't particularly make sense right now...
 
     if num_servers > max_processes:
         return max_processes
