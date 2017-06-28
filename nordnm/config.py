@@ -6,7 +6,7 @@ import os
 
 
 class ConfigHandler(object):
-    DEFAULT_PING_ATTEMPTS = 3
+    DEFAULT_PING_ATTEMPTS = 5
 
     def __init__(self, path):
         self.logger = logging.getLogger(__name__)
