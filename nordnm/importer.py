@@ -81,20 +81,21 @@ class Importer(object):
         if updated:
             networkmanager.restart()
 
+
     def get_ovpn_path(self, domain, protocol):
         wildcard = domain+'.'+protocol+'*'
-        file_name = None
+        file_path = None
 
         try:
             for f in os.listdir(OVPN_DIR):
                 file_path = os.path.join(OVPN_DIR, f)
                 if os.path.isfile(file_path):
                     if fnmatch(f, wildcard):
-                        file_name = f
+                        file_path = os.path.join(OVPN_DIR, f)
         except Exception as ex:
             self.logger.error(ex)
 
-        return OVPN_DIR + file_name
+        return file_path
 
     def select_auto_connect(self, country_code, category='normal', protocol='tcp'):
         selected_parameters = (country_code.upper(), category, protocol)
@@ -188,7 +189,7 @@ class Importer(object):
 
                 networkmanager.disconnect_active_vpn(self.active_list)  # Disconnect active Nord VPNs, so we get a more reliable benchmark
 
-                ping_attempts = self.config.get_ping_attempts() # We are going to be multiprocessing within a class instance, so this needs getting outside of the multiprocessing
+                ping_attempts = self.config.get_ping_attempts()  # We are going to be multiprocessing within a class instance, so this needs getting outside of the multiprocessing
                 self.logger.info("Finding best servers to synchronise...")
 
                 start = timer()
