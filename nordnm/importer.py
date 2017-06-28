@@ -88,18 +88,19 @@ class Importer(object):
 
     def get_ovpn_path(self, domain, protocol):
         wildcard = domain+'.'+protocol+'*'
-        file_path = None
+        ovpn_path = None
 
         try:
             for f in os.listdir(OVPN_DIR):
                 file_path = os.path.join(OVPN_DIR, f)
                 if os.path.isfile(file_path):
                     if fnmatch(f, wildcard):
-                        file_path = os.path.join(OVPN_DIR, f)
+                        ovpn_path = os.path.join(OVPN_DIR, f)
+
         except Exception as ex:
             self.logger.error(ex)
 
-        return file_path
+        return ovpn_path
 
     def select_auto_connect(self, country_code, category='normal', protocol='tcp'):
         selected_parameters = (country_code.upper(), category, protocol)
