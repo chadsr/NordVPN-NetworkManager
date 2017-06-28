@@ -176,6 +176,7 @@ class Importer(object):
 
         username = self.credentials.get_username()
         password = self.credentials.get_password()
+        dns_list = nordapi.get_nameservers()
 
         self.logger.info("Checking for new connections to import...")
 
@@ -206,7 +207,7 @@ class Importer(object):
 
                         if name not in self.active_list:
                             file_path = self.get_ovpn_path(domain, protocol)
-                            if networkmanager.import_connection(file_path, name, username, password):
+                            if networkmanager.import_connection(file_path, name, username, password, dns_list):
                                 updated = True
                                 new_connections += 1
                                 self.active_list.append(name)

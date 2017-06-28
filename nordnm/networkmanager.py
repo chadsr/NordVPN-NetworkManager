@@ -43,32 +43,58 @@ def remove_autoconnect():
         return False
 
 
-def add_connection_credentials(connection_name, username, password):
+def get_connection_config(connection_name):
     try:
         config = configparser.ConfigParser()
         path = "/etc/NetworkManager/system-connections/" + connection_name
 
         if os.path.isfile(path):
             config.read(path)
+            return config
         else:
-            logger.info("VPN file not found! %s", path)
+            logger.info("VPN config file not found! %s", path)
             return False
+    except Exception as ex:
+        logger.error(ex)
+        return False
 
-        config['vpn']['password-flags'] = "0"
-        config['vpn']['username'] = username
-        config['vpn-secrets'] = {}
-        config['vpn-secrets']['password'] = password
+
+def save_connection_config(connection_name, config):
+    try:
+        path = "/etc/NetworkManager/system-connections/" + connection_name
 
         with open(path, 'w') as config_file:
             config.write(config_file)
-
         return True
     except Exception as ex:
         logger.error(ex)
         return False
 
 
-def import_connection(file_path, connection_name, username=None, password=None):
+def disable_ipv6(config):
+    config['ipv6']['method'] = 'ignore'
+    return config
+
+
+def set_dns_nameservers(config, dns_list):
+    dns_string = ';'.join(map(str, dns_list))
+
+    config['ipv4']['dns'] = dns_string
+    config['ipv4']['ignore-auto-dns'] = 'true'
+
+    return config
+
+
+def add_connection_credentials(config, username, password):
+    config['vpn']['password-flags'] = "0"
+    config['vpn']['username'] = username
+    config['vpn-secrets'] = {}
+    config['vpn-secrets']['password'] = password
+
+    return config
+
+
+def import_connection(file_path, connection_name, username=None, password=None, dns_list=None, ipv6=False):
     try:
         # Create a temporary config with the new name, for importing (and delete afterwards)
         temp_path = os.path.join(os.path.dirname(file_path), connection_name + '.ovpn')
@@ -78,14 +104,25 @@ def import_connection(file_path, connection_name, username=None, password=None):
         logger.info("%s", output)
         os.remove(temp_path)
 
-        if username and password:
-            add_connection_credentials(connection_name, username, password)
+        config = get_connection_config(connection_name)
+        if config:
+            if username and password:
+                config = add_connection_credentials(config, username, password)
+
+            if dns_list:
+                config = set_dns_nameservers(config, dns_list)
+
+            if not ipv6:
+                config = disable_ipv6(config)
+
+            save_connection_config(connection_name, config)
+        else:
+            return False
 
         return True
     except Exception as ex:
         logger.error(ex)
-
-    return False
+        return False
 
 
 def remove_connection(connection_name):
