@@ -122,7 +122,7 @@ class Importer(object):
             networkmanager.set_auto_connect(connection_name)
             return True
         else:
-            self.logger.warninq("No active server found matching %s %s %s. Check your input and try again.")
+            self.logger.warning("No active server found matching %s %s %s. Check your input and try again.")
             return False
 
     def purge_active_connections(self, remove_autoconnect=True):
