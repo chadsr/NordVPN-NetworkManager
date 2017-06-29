@@ -22,10 +22,10 @@ More documentation will be available when this repository is ready for public us
 pip3 install -r requirements.txt
 ```
 
-## Usage
-*Basic synchronise and select auto-connect server:*
+## Usage Examples
+*get the latest configs, synchronise and then select auto-connect server:*
 ```
-sudo python3 nordnm --sync --auto-connect nl normal tcp
+sudo python3 nordnm --update --sync --auto-connect nl normal tcp
 ```
 
 *View descriptions of other options:*

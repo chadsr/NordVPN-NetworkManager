@@ -47,7 +47,7 @@ class Importer(object):
 
         self.parser = argparse.ArgumentParser()
         self.parser.add_argument("--update", help="Get the latest OpenVPN configuration files from NordVPN", action="store_true")
-        self.parser.add_argument("--sync", help="Synchronise best servers (based on load and latency) to NetworkManager", action="store_true")
+        self.parser.add_argument("--sync", help="Synchronise best servers (based on load and latency) to NetworkManager (default)", action="store_true")
         self.parser.add_argument("--purge", help="Remove all active connections and auto-connect (if configured)", action="store_true")
         self.parser.add_argument("--auto-connect", nargs=3, metavar=('[COUNTRY_CODE]', '[VPN_TYPE]', '[PROTOCOL]'), help="Configure NetworkManager to always auto-connect to the lowest latency server. Takes country code, category and protocol")
 
@@ -67,7 +67,7 @@ class Importer(object):
         elif args.purge:
             updated = self.purge_active_connections()
         else:
-            self.parser.print_help()
+            updated = self.sync_servers()
 
         if args.auto_connect:
             if args.auto_connect:
@@ -216,6 +216,8 @@ class Importer(object):
                 self.best_servers = benchmarking.get_best_servers(valid_server_list, ping_attempts)
                 end = timer()
                 self.logger.info("Done benchmarking. Took %0.2f seconds.", end-start)
+
+                updated = self.purge_active_connections() # Purge all old connections until a better sync routine is added
 
                 new_connections = 0
                 for key in self.best_servers.keys():
