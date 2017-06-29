@@ -46,9 +46,9 @@ class Importer(object):
         self.best_servers = defaultdict(dict)
 
         self.parser = argparse.ArgumentParser()
-        self.parser.add_argument("--sync", help="Synchronise best servers (based on load and latency) to NetworkManager (Default)", action="store_true")
+        self.parser.add_argument("--update", help="Get the latest OpenVPN configuration files from NordVPN", action="store_true")
+        self.parser.add_argument("--sync", help="Synchronise best servers (based on load and latency) to NetworkManager", action="store_true")
         self.parser.add_argument("--purge", help="Remove all active connections and auto-connect (if configured)", action="store_true")
-        # self.parser.add_argument("--clean-sync", help="Remove all active connections and synchronise.", action="store_true")
         self.parser.add_argument("--auto-connect", nargs=3, metavar=('[COUNTRY_CODE]', '[VPN_TYPE]', '[PROTOCOL]'), help="Configure NetworkManager to always auto-connect to the lowest latency server. Takes country code, category and protocol")
 
     def start(self):
@@ -60,12 +60,14 @@ class Importer(object):
             self.parser.print_help()
             self.parser.exit(1)
 
+        if args.update:
+            self.get_configs()
         if args.sync:
             updated = self.sync_servers()
         elif args.purge:
             updated = self.purge_active_connections()
         else:
-            updated = self.sync_servers()
+            self.parser.print_help()
 
         if args.auto_connect:
             if args.auto_connect:
@@ -85,6 +87,15 @@ class Importer(object):
 
         if not os.path.exists(ROOT_DIR):
             os.mkdir(ROOT_DIR)
+
+    def get_configs(self):
+        self.logger.info("Attempting to download and extract the latest NordVPN configurations.")
+
+        configs = nordapi.get_configs()
+        if configs:
+            utils.extract_zip(configs, OVPN_DIR)
+        else:
+            self.logger.error("Could not retrieve configs from NordVPN")
 
     def get_ovpn_path(self, domain, protocol):
         wildcard = domain+'.'+protocol+'*'
@@ -177,6 +188,13 @@ class Importer(object):
             self.logger.error("Could not fetch the server list from NordVPN.")
             return None
 
+    def configs_exist(self):
+        configs = os.listdir(OVPN_DIR)
+        if configs:
+            return True
+        else:
+            return False
+
     def sync_servers(self):
         updated = False
 
@@ -186,12 +204,9 @@ class Importer(object):
 
         self.logger.info("Checking for new connections to import...")
 
-        valid_server_list = self.get_valid_servers()
-        if valid_server_list:
-            configs = nordapi.get_configs()
-            if configs:
-                utils.extract_zip(configs, OVPN_DIR)
-
+        if self.configs_exist():
+            valid_server_list = self.get_valid_servers()
+            if valid_server_list:
                 networkmanager.disconnect_active_vpn(self.active_list)  # Disconnect active Nord VPNs, so we get a more reliable benchmark
 
                 ping_attempts = self.config.get_ping_attempts()  # We are going to be multiprocessing within a class instance, so this needs getting outside of the multiprocessing
@@ -202,8 +217,6 @@ class Importer(object):
                 end = timer()
                 self.logger.info("Done benchmarking. Took %0.2f seconds.", end-start)
 
-                updated = self.purge_active_connections()  # Purge all old connections until a better sync routine is added
-
                 new_connections = 0
                 for key in self.best_servers.keys():
                     if self.best_servers[key]:
@@ -213,11 +226,14 @@ class Importer(object):
 
                         if name not in self.active_list:
                             file_path = self.get_ovpn_path(domain, protocol)
-                            if networkmanager.import_connection(file_path, name, username, password, dns_list):
-                                updated = True
-                                new_connections += 1
-                                self.active_list.append(name)
-                                self.save_active_list(self.active_list, LIST_PATH)
+                            if file_path:
+                                if networkmanager.import_connection(file_path, name, username, password, dns_list):
+                                    updated = True
+                                    new_connections += 1
+                                    self.active_list.append(name)
+                                    self.save_active_list(self.active_list, LIST_PATH)
+                            else:
+                                self.logger.warning("Could not find a configuration file for %s. Skipping.", name)
 
                 if new_connections > 0:
                     self.logger.info("%i new connections added.", new_connections)
@@ -226,8 +242,8 @@ class Importer(object):
 
                 return updated
             else:
-                self.logger.error("Could not download the latest configs. Please check your connectivity and try again.")
+                self.logger.error("No servers found to sync. Exiting.")
                 sys.exit(1)
         else:
-            self.logger.error("No servers found to sync. Exiting.")
+            self.logger.error("Can't find any OpenVPN configuration files. Please run --update before syncing.")
             sys.exit(1)
