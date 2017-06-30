@@ -8,8 +8,6 @@ import os
 
 def main(argv):
     importer = Importer()
-    importer.start()
-
 
 if __name__ == "__main__":
     if os.getuid() != 0:
