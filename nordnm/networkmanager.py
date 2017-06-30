@@ -42,10 +42,9 @@ def get_interfaces(wifi=True, ethernet=True):
 
 def set_auto_connect(connection):
     interfaces = '|'.join(get_interfaces())
-    print(interfaces)
 
     auto_script = """#!/bin/bash
-    if [[ "$1" =~ """+interfaces+""" ]] && ["$2" = "up"]; then
+    if [[ "$1" =~ """+interfaces+""" ]] && [ "$2" = "up" ]; then
         nmcli con up id '"""+connection+"""'
     fi"""
 
