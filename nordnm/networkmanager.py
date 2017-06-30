@@ -18,8 +18,8 @@ def restart():
         logger.info("NetworkManager restarted successfully!")
         return True
     except Exception as ex:
-        return False
         logger.error(ex)
+        return False
 
 
 def set_auto_connect(connection):
