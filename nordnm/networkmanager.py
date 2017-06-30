@@ -22,12 +22,32 @@ def restart():
         return False
 
 
+def get_interfaces(wifi=True, ethernet=True):
+    lines = subprocess.run(['nmcli', 'dev', 'status'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout.decode('utf-8').split('\n')
+    labels = lines[0].split()
+
+    interfaces = []
+    for line in lines[1:]:
+        if line:
+            elements = line.split()
+            interface = {}
+            for i, element in enumerate(elements):
+                interface[labels[i]] = element
+
+            if (wifi and interface['TYPE'] == 'wifi') or (ethernet and interface['TYPE'] == 'ethernet'):
+                interfaces.append(interface['DEVICE'])
+
+    return interfaces
+
+
 def set_auto_connect(connection):
+    interfaces = '|'.join(get_interfaces())
+    print(interfaces)
+
     auto_script = """#!/bin/bash
-    if [ "$2" = "up" ]; then
+    if [[ "$1" =~ """+interfaces+""" ]] && ["$2" = "up"]; then
         nmcli con up id '"""+connection+"""'
-    fi
-    """
+    fi"""
 
     with open(AUTO_CONNECT_PATH, "w") as auto_vpn:
         print(auto_script, file=auto_vpn)
