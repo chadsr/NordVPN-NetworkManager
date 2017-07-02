@@ -30,7 +30,7 @@ def get_server_score(server, ping_attempts):
     if load < 100:
         rtt, loss = utils.get_rtt_loss(domain, ping_attempts)
         if loss < 5:  # Similarly, if packet loss is >= 5%, the connection is not reliable. Keep the starting score.
-            score = 1 / numpy.log(load * rtt + 1)  # Maximise the score for smaller values of ln(load * rtt + 1)
+            score = 1 / numpy.log(load + rtt) # Maximise the score for smaller values of ln(load + rtt)
 
     return score
 
