@@ -4,6 +4,7 @@ import nordapi
 import multiprocessing
 from functools import partial
 import resource
+import numpy
 
 
 def generate_connection_name(server, protocol):
@@ -23,13 +24,13 @@ def generate_connection_name(server, protocol):
 def get_server_score(server, ping_attempts):
     load = server['load']
     domain = server['domain']
-    rtt, loss = utils.get_rtt_loss(domain, ping_attempts)
+    score = 0  # Lowest starting score
 
-    # If packet loss is >= 5%, return a score of zero (worst score)
-    if loss < 5:
-        score = int((1/(rtt*load+1)*1000))  # TODO: Improve scoring function
-    else:
-        score = 0
+    # If a server is at 100% load, we don't need to waste time pinging. Just keep starting score.
+    if load < 100:
+        rtt, loss = utils.get_rtt_loss(domain, ping_attempts)
+        if loss < 5:  # Similarly, if packet loss is >= 5%, the connection is not reliable. Keep the starting score.
+            score = 1 / numpy.log(load * rtt + 1)  # Maximise the score for smaller values of ln(load * rtt + 1)
 
     return score
 
