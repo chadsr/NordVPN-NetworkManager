@@ -4,6 +4,9 @@ import nordapi
 import multiprocessing
 from functools import partial
 import resource
+import numpy
+import os
+import subprocess
 
 
 def generate_connection_name(server, protocol):
@@ -23,13 +26,13 @@ def generate_connection_name(server, protocol):
 def get_server_score(server, ping_attempts):
     load = server['load']
     domain = server['domain']
-    rtt, loss = utils.get_rtt_loss(domain, ping_attempts)
+    score = 0  # Lowest starting score
 
-    # If packet loss is >= 5%, return a score of zero (worst score)
-    if loss < 5:
-        score = int((1/(rtt*load+1)*1000))  # TODO: Improve scoring function
-    else:
-        score = 0
+    # If a server is at 100% load, we don't need to waste time pinging. Just keep starting score.
+    if load < 100:
+        rtt, loss = utils.get_rtt_loss(domain, ping_attempts)
+        if loss < 5:  # Similarly, if packet loss is >= 5%, the connection is not reliable. Keep the starting score.
+            score = 1 / numpy.log(load + rtt) # Maximise the score for smaller values of ln(load + rtt)
 
     return score
 
@@ -60,14 +63,7 @@ def compare_server(server, best_servers, ping_attempts):
 
 
 def get_num_processes(num_servers):
-    # Since each process is not resource heavy and simply takes time waiting for pings, maximise the number of processes (within constraints of the current configuration)
-    soft_limit, _ = resource.getrlimit(resource.RLIMIT_NOFILE)
-    max_processes = int(soft_limit/multiprocessing.cpu_count())  # This doesn't particularly make sense right now...
-
-    if num_servers > max_processes:
-        return max_processes
-    else:
-        return num_servers
+    return multiprocessing.cpu_count()  # Let's just use the cpu count until a more reliable function is finished and tested properly
 
 
 def get_best_servers(server_list, ping_attempts):
