@@ -172,6 +172,18 @@ class Importer(object):
         else:
             return False
 
+    def has_valid_categories(self, server):
+        valid_categories = self.config.get_categories()
+
+        for category in server['categories']:
+            category_name = category['name'].lower()
+
+            # If the server has a category that we don't want, ignore it completely
+            if category_name not in valid_categories:
+                return False
+
+        return True
+
     def get_valid_servers(self):
         full_server_list = nordapi.get_server_list(sort_by_load=True)
 
@@ -184,7 +196,7 @@ class Importer(object):
                 has_openvpn_udp = server['features']['openvpn_udp']
 
                 # If the server country has been selected and the server has OpenVPN enabled
-                if self.country_is_selected(country_code) and (has_openvpn_tcp or has_openvpn_udp):
+                if self.country_is_selected(country_code) and (has_openvpn_tcp or has_openvpn_udp) and self.has_valid_categories(server):
                     valid_server_list.append(server)
 
             return valid_server_list
