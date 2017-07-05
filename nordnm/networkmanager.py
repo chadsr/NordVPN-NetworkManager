@@ -44,7 +44,7 @@ def set_auto_connect(connection):
     interfaces = '|'.join(get_interfaces())
 
     auto_script = """#!/bin/bash
-    if [[ "$1" =~ """+interfaces+""" ]] && [ "$2" = "up" ]; then
+    if [[ "$1" =~ """+interfaces+""" ]] && [[ "$2" =~ up|connectivity-change ]]; then
         nmcli con up id '"""+connection+"""'
     fi"""
 
