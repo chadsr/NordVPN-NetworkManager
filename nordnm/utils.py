@@ -62,13 +62,17 @@ def get_rtt_loss(host, ping_attempts):
     output = subprocess.run(['ping', host, '-c', str(ping_attempts)], stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout.decode('utf-8')
     output_lines = output.splitlines()
 
-    split_info = output_lines[-2].split()
-    split_rtt = output_lines[-1].split()
+    try:
+        split_info = output_lines[-2].split()
+        split_rtt = output_lines[-1].split()
 
-    packets_recieved = int(split_info[3])
-    if packets_recieved == 0: # If no packets recieved back, return loss of 100% and None as RTT
+        packets_recieved = int(split_info[3])
+        if packets_recieved == 0: # If no packets recieved back, return loss of 100% and None as RTT
+            return (None, 100)
+        else:
+            loss = int(split_info[5].split('%')[0])
+            avg_rtt = float(split_rtt[3].split('/')[1])
+            return (avg_rtt, loss)
+    except IndexError as ex:
+        print("Could not interpret output of ping command.\nOutput: %s", output)
         return (None, 100)
-    else:
-        loss = int(split_info[5].split('%')[0])
-        avg_rtt = float(split_rtt[3].split('/')[1])
-        return (avg_rtt, loss)

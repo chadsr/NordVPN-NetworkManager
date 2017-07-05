@@ -44,7 +44,7 @@ def set_auto_connect(connection):
     interfaces = '|'.join(get_interfaces())
 
     auto_script = """#!/bin/bash
-    if [[ "$1" =~ """+interfaces+""" ]] && [ "$2" = "up" ]; then
+    if [[ "$1" =~ """+interfaces+""" ]] && [[ "$2" =~ up|connectivity-change ]]; then
         nmcli con up id '"""+connection+"""'
     fi"""
 
@@ -120,7 +120,7 @@ def import_connection(file_path, connection_name, username=None, password=None, 
         shutil.copy(file_path, temp_path)
 
         output = subprocess.run(['nmcli', 'connection', 'import', 'type', 'openvpn', 'file', temp_path], stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout.decode('utf-8').strip()
-        logger.info("%s", output)
+        #logger.info("%s", output)
         os.remove(temp_path)
 
         config = get_connection_config(connection_name)
@@ -147,7 +147,7 @@ def import_connection(file_path, connection_name, username=None, password=None, 
 def remove_connection(connection_name):
     try:
         output = subprocess.run(['nmcli', 'connection', 'delete', connection_name], stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout.decode('utf-8').strip()
-        logger.info("%s", output)
+        #logger.info("%s", output)
         return True
     except Exception as ex:
         logger.error(ex)

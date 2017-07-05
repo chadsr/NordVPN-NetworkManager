@@ -1,4 +1,5 @@
 import utils
+import nordapi
 
 import configparser
 import logging
@@ -17,13 +18,21 @@ class ConfigHandler(object):
         if self.load():  # If we successfully load an existing config
             self.logger.info("Existing configuration loaded.")
         else:
-            self.logger.warning("No existing configuration found. Saving default settings.")
+            self.logger.warning("No existing configuration found. Saving default settings to %s.", self.path)
             # Generate default config
-            self.config.add_section('General')
-            self.config.set('General', '# simply write country codes separated by spaces e.g. country-blacklist = GB US')
-            self.config.set('General', 'country-blacklist', '')
-            self.config.set('General', '\n# same as above. If this is non-empty, the blacklist is ignored')
-            self.config.set('General', 'country-whitelist', '')
+            self.config.add_section('Countries')
+            self.config.set('Countries', '# simply write country codes separated by spaces e.g. country-blacklist = GB US')
+            self.config.set('Countries', 'country-blacklist', '')
+            self.config.set('Countries', '\n# same as above. If this is non-empty, the blacklist is ignored')
+            self.config.set('Countries', 'country-whitelist', '')
+
+            self.config.add_section('Categories')
+            for category in nordapi.VPN_CATEGORIES.keys():
+                self.config.set('Categories', category.replace(' ', '-'), 'true')
+
+            self.config.add_section('Protocols')
+            self.config.set('Protocols', 'tcp', 'true')
+            self.config.set('Protocols', 'udp', 'true')
 
             self.config.add_section('Benchmarking')
             self.config.set('Benchmarking', 'ping-attempts', str(self.DEFAULT_PING_ATTEMPTS))
@@ -50,18 +59,39 @@ class ConfigHandler(object):
         return False
 
     def get_blacklist(self):
-        blacklist = self.config.get('General', 'country-blacklist')
+        blacklist = self.config.get('Countries', 'country-blacklist')
         if blacklist:
             return [code.upper() for code in blacklist.split(' ')]
         else:
             return None
 
     def get_whitelist(self):
-        whitelist = self.config.get('General', 'country-whitelist')
+        whitelist = self.config.get('Countries', 'country-whitelist')
         if whitelist:
             return [code.upper() for code in whitelist.split(' ')]
         else:
             return None
+
+    def get_categories(self):
+        categories = []
+
+        for category in nordapi.VPN_CATEGORIES.keys():
+            category_name = category.replace(' ', '-')
+            if self.config.getboolean('Categories', category_name):
+                categories.append(category)
+
+        return categories
+
+    def get_protocols(self):
+        protocols = []
+
+        if self.config.getboolean('Protocols', 'tcp'):
+            protocols.append('tcp')
+
+        if self.config.getboolean('Protocols', 'udp'):
+            protocols.append('udp')
+
+        return protocols
 
     def get_ping_attempts(self):
         try:

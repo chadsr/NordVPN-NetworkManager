@@ -4,6 +4,8 @@ import nordapi
 import multiprocessing
 from functools import partial
 import numpy
+import os
+import subprocess
 
 
 def generate_connection_name(server, protocol):
@@ -34,11 +36,11 @@ def get_server_score(server, ping_attempts):
     return score
 
 
-def compare_server(server, best_servers, ping_attempts):
+def compare_server(server, best_servers, ping_attempts, valid_protocols):
     supported_protocols = []
-    if server['features']['openvpn_udp']:
+    if server['features']['openvpn_udp'] and 'udp' in valid_protocols:
         supported_protocols.append('udp')
-    if server['features']['openvpn_tcp']:
+    if server['features']['openvpn_tcp'] and 'tcp' in valid_protocols:
         supported_protocols.append('tcp')
 
     country_code = server['flag']
@@ -59,19 +61,12 @@ def compare_server(server, best_servers, ping_attempts):
                 best_servers[country_code, category_name, protocol] = {'name': name, 'domain': domain, 'score': score}
 
 
-def get_num_processes(num_servers):
-    return multiprocessing.cpu_count()  # Let's just use the cpu count until a more reliable function is finished and tested properly
-
-
-def get_best_servers(server_list, ping_attempts):
+def get_best_servers(server_list, ping_attempts, valid_protocols):
     manager = multiprocessing.Manager()
     best_servers = manager.dict()
 
-    num_servers = len(server_list)
-    num_processes = get_num_processes(num_servers)
-
-    pool = multiprocessing.Pool(num_processes)
-    pool.map(partial(compare_server, best_servers=best_servers, ping_attempts=ping_attempts), server_list)
+    pool = multiprocessing.Pool()
+    pool.map(partial(compare_server, best_servers=best_servers, ping_attempts=ping_attempts, valid_protocols=valid_protocols), server_list)
     pool.close()
 
     return best_servers
