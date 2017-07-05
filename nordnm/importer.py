@@ -176,13 +176,21 @@ class Importer(object):
         valid_categories = self.config.get_categories()
 
         for category in server['categories']:
-            category_name = category['name'].lower()
-
             # If the server has a category that we don't want, ignore it completely
-            if category_name not in valid_categories:
+            if category['name'] not in valid_categories:
                 return False
 
         return True
+
+    def has_valid_protocol(self, server):
+        valid_protocols = self.config.get_protocols()
+        has_openvpn_tcp = server['features']['openvpn_tcp']
+        has_openvpn_udp = server['features']['openvpn_udp']
+
+        if ('tcp' in valid_protocols and has_openvpn_tcp) or ('udp' in valid_protocols and has_openvpn_udp):
+            return True
+        else:
+            return False
 
     def get_valid_servers(self):
         full_server_list = nordapi.get_server_list(sort_by_load=True)
@@ -192,11 +200,9 @@ class Importer(object):
 
             for server in full_server_list:
                 country_code = server['flag']
-                has_openvpn_tcp = server['features']['openvpn_tcp']
-                has_openvpn_udp = server['features']['openvpn_udp']
 
-                # If the server country has been selected and the server has OpenVPN enabled
-                if self.country_is_selected(country_code) and (has_openvpn_tcp or has_openvpn_udp) and self.has_valid_categories(server):
+                # If the server country has been selected, it has a selected protocol and selected categories
+                if self.country_is_selected(country_code) and self.has_valid_protocol(server) and self.has_valid_categories(server):
                     valid_server_list.append(server)
 
             return valid_server_list
@@ -225,11 +231,12 @@ class Importer(object):
             if valid_server_list:
                 networkmanager.disconnect_active_vpn(self.active_list)  # Disconnect active Nord VPNs, so we get a more reliable benchmark
 
-                ping_attempts = self.config.get_ping_attempts()  # We are going to be multiprocessing within a class instance, so this needs getting outside of the multiprocessing
                 self.logger.info("Finding best servers to synchronise...")
 
                 start = timer()
-                self.best_servers = benchmarking.get_best_servers(valid_server_list, ping_attempts)
+                ping_attempts = self.config.get_ping_attempts()  # We are going to be multiprocessing within a class instance, so this needs getting outside of the multiprocessing
+                valid_protocols = self.config.get_protocols()
+                self.best_servers = benchmarking.get_best_servers(valid_server_list, ping_attempts, valid_protocols)
                 end = timer()
                 self.logger.info("Done benchmarking. Took %0.2f seconds.", end-start)
 

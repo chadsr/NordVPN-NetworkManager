@@ -37,11 +37,11 @@ def get_server_score(server, ping_attempts):
     return score
 
 
-def compare_server(server, best_servers, ping_attempts):
+def compare_server(server, best_servers, ping_attempts, valid_protocols):
     supported_protocols = []
-    if server['features']['openvpn_udp']:
+    if server['features']['openvpn_udp'] and 'udp' in valid_protocols:
         supported_protocols.append('udp')
-    if server['features']['openvpn_tcp']:
+    if server['features']['openvpn_tcp'] and 'tcp' in valid_protocols:
         supported_protocols.append('tcp')
 
     country_code = server['flag']
@@ -81,16 +81,12 @@ def get_num_processes(num_servers):
         return num_servers
 
 
-def get_best_servers(server_list, ping_attempts):
+def get_best_servers(server_list, ping_attempts, valid_protocols):
     manager = multiprocessing.Manager()
     best_servers = manager.dict()
 
-    num_servers = len(server_list)
-    num_processes = get_num_processes(num_servers)
-    print("Number of processes:", num_processes)
-
-    pool = multiprocessing.Pool(num_processes)
-    pool.map(partial(compare_server, best_servers=best_servers, ping_attempts=ping_attempts), server_list)
+    pool = multiprocessing.Pool()
+    pool.map(partial(compare_server, best_servers=best_servers, ping_attempts=ping_attempts, valid_protocols=valid_protocols), server_list)
     pool.close()
 
     return best_servers

@@ -30,6 +30,10 @@ class ConfigHandler(object):
             for category in nordapi.VPN_CATEGORIES.keys():
                 self.config.set('Categories', category.replace(' ', '-'), 'true')
 
+            self.config.add_section('Protocols')
+            self.config.set('Protocols', 'tcp', 'true')
+            self.config.set('Protocols', 'udp', 'true')
+
             self.config.add_section('Benchmarking')
             self.config.set('Benchmarking', 'ping-attempts', str(self.DEFAULT_PING_ATTEMPTS))
 
@@ -71,11 +75,23 @@ class ConfigHandler(object):
     def get_categories(self):
         categories = []
 
-        for category in self.config['Categories']:
-            if self.config.getboolean('Categories', category):
-                categories.append(category.replace('-', ' '))
+        for category in nordapi.VPN_CATEGORIES.keys():
+            category_name = category.replace(' ', '-')
+            if self.config.getboolean('Categories', category_name):
+                categories.append(category)
 
         return categories
+
+    def get_protocols(self):
+        protocols = []
+
+        if self.config.getboolean('Protocols', 'tcp'):
+            protocols.append('tcp')
+
+        if self.config.getboolean('Protocols', 'udp'):
+            protocols.append('udp')
+
+        return protocols
 
     def get_ping_attempts(self):
         try:
