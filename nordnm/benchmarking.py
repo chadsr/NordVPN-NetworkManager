@@ -3,7 +3,6 @@ import nordapi
 
 import multiprocessing
 from functools import partial
-import resource
 import numpy
 import os
 import subprocess
@@ -60,25 +59,6 @@ def compare_server(server, best_servers, ping_attempts, valid_protocols):
             if score > best_score:
                 name = generate_connection_name(server, protocol)
                 best_servers[country_code, category_name, protocol] = {'name': name, 'domain': domain, 'score': score}
-
-
-def get_num_processes(num_servers):
-    # Since each process is not resource heavy and simply takes time waiting for pings, maximise the number of processes (within constraints of the current configuration)
-
-    # Maximum open file descriptors of current configuration
-    soft_limit, _ = resource.getrlimit(resource.RLIMIT_NOFILE)
-
-    # Find how many file descriptors are already in use by the parent process
-    ppid = os.getppid()
-    used_file_descriptors = int(subprocess.run('ls -l /proc/'+str(ppid)+'/fd | wc -l', shell=True, stdout=subprocess.PIPE).stdout.decode('utf-8'))
-
-    # Max processes is the number of file descriptors left, before the sof limit (configuration maximum) is reached
-    max_processes = soft_limit - used_file_descriptors
-
-    if num_servers > max_processes:
-        return max_processes
-    else:
-        return num_servers
 
 
 def get_best_servers(server_list, ping_attempts, valid_protocols):
