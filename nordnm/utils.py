@@ -39,8 +39,8 @@ def extract_zip(input_stream, output_path, chown_to_user=True):
             for file_name in file_list:
                 file_path = os.path.join(output_path, file_name)
                 chown_path_to_user(file_path)
-
         return True
+
     except Exception as ex:
         logger.error(ex)
         return False
@@ -52,31 +52,33 @@ def make_executable(file_path):
             st = os.stat(file_path)
             os.chmod(file_path, st.st_mode | stat.S_IEXEC)
             return True
+
     except Exception as ex:
         logger.error(ex)
         return False
-    """
-    mode = os.stat(path).st_mode
-    mode |= (mode & 0o444) >> 2    # copy R bits to X
-    os.chmod(path, mode);
-    """
 
 
 def get_rtt_loss(host, ping_attempts):
-    output = subprocess.run(['ping', host, '-c', str(ping_attempts)], stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout.decode('utf-8')
-    output_lines = output.splitlines()
-
     try:
+        output = subprocess.run(['ping', host, '-c', str(ping_attempts)], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output.check_returncode()
+
+        lines = output.stdout.decode('utf-8').splitlines()
+
         split_info = output_lines[-2].split()
         split_rtt = output_lines[-1].split()
 
         packets_recieved = int(split_info[3])
-        if packets_recieved == 0: # If no packets recieved back, return loss of 100% and None as RTT
-            return (None, 100)
-        else:
+        if packets_recieved > 0:
             loss = int(split_info[5].split('%')[0])
             avg_rtt = float(split_rtt[3].split('/')[1])
             return (avg_rtt, loss)
+
     except IndexError as ex:
-        print("Could not interpret output of ping command.\nOutput: %s", output)
-        return (None, 100)
+        logger.error("Could not interpret output of ping command.\nOutput: %s", output)
+
+    except subprocess.CalledProcessError:
+        error = utils.format_std_string(output.stderr)
+        logger.error(error)
+
+    return (None, 100) # If anything failed, return rtt as None and 100% loss
