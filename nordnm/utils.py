@@ -24,6 +24,10 @@ def chown_path_to_user(path):
         return False
 
 
+def format_std_string(input_string):
+    return input_string.decode('utf-8').replace('\n', ' ')
+
+
 def extract_zip(input_stream, output_path, chown_to_user=True):
     try:
         zipfile = ZipFile(BytesIO(input_stream))

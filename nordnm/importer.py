@@ -12,6 +12,7 @@ import sys
 from collections import defaultdict
 from fnmatch import fnmatch
 import logging
+import copy
 from timeit import default_timer as timer
 
 # TODO: Terminate script/wait cleanly if network connection goes down
@@ -23,7 +24,7 @@ OVPN_DIR = os.path.join(USER_DIR, 'configs/')
 CONFIG_PATH = os.path.join(USER_DIR, 'settings.conf')
 
 ROOT_DIR = '/usr/share/nordnm/'
-LIST_PATH = os.path.join(ROOT_DIR, 'active.list')
+ACTIVE_SERVERS_PATH = os.path.join(ROOT_DIR, 'active_servers')
 CREDENTIALS_PATH = os.path.join(ROOT_DIR, 'credentials')
 
 
@@ -56,9 +57,9 @@ class Importer(object):
         self.black_list = self.config.get_blacklist()
         self.white_list = self.config.get_whitelist()
 
-        self.active_list = []
-        if os.path.isfile(LIST_PATH):
-            self.active_list = self.load_active_list(LIST_PATH)
+        self.active_servers = {}
+        if os.path.isfile(ACTIVE_SERVERS_PATH):
+            self.active_servers = self.load_active_servers(ACTIVE_SERVERS_PATH)
 
         self.best_servers = defaultdict(dict)
 
@@ -135,13 +136,16 @@ class Importer(object):
             if removed:
                 self.logger.info("Auto-Connect file removed.")
 
-        if self.active_list:
+        if self.active_servers:
             self.logger.info("Removing all active connections...")
-            for connection in self.active_list:
-                networkmanager.remove_connection(connection)
+            active_servers = copy.copy(self.active_servers)
+            for key in self.active_servers.keys():
+                connection_name = self.active_servers[key]['name']
+                networkmanager.remove_connection(connection_name)
+                active_servers.pop(key)
+                self.save_active_servers(active_servers, ACTIVE_SERVERS_PATH)  # Save after every successful removal, in case importer is killed abruptly
 
-            self.active_list = []
-            self.save_active_list(self.active_list, LIST_PATH)
+            self.active_servers = active_servers
 
             self.logger.info("All active connections removed!")
 
@@ -149,19 +153,19 @@ class Importer(object):
         else:
             self.logger.info("No active connections to remove.")
 
-    def load_active_list(self, path):
+    def load_active_servers(self, path):
         try:
-            with open(LIST_PATH, 'rb') as fp:
-                itemlist = pickle.load(fp)
-            return itemlist
+            with open(ACTIVE_SERVERS_PATH, 'rb') as fp:
+                active_servers = pickle.load(fp)
+            return active_servers
         except Exception as ex:
             self.logger.error(ex)
             return None
 
-    def save_active_list(self, itemlist, path):
+    def save_active_servers(self, active_servers, path):
         try:
-            with open(LIST_PATH, 'wb') as fp:
-                pickle.dump(itemlist, fp)
+            with open(ACTIVE_SERVERS_PATH, 'wb') as fp:
+                pickle.dump(active_servers, fp)
         except Exception as ex:
             self.logger.error(ex)
 
@@ -210,6 +214,13 @@ class Importer(object):
             self.logger.error("Could not fetch the server list from NordVPN.")
             return None
 
+    def connection_exists(self, connection_name):
+        for connection in self.active_servers.values():
+            if connection_name == connection['name']:
+                return True
+
+        return False
+
     def configs_exist(self):
         configs = os.listdir(OVPN_DIR)
         if configs:
@@ -229,7 +240,7 @@ class Importer(object):
         if self.configs_exist():
             valid_server_list = self.get_valid_servers()
             if valid_server_list:
-                networkmanager.disconnect_active_vpn(self.active_list)  # Disconnect active Nord VPNs, so we get a more reliable benchmark
+                networkmanager.disconnect_active_vpn(self.active_servers)  # Disconnect active Nord VPNs, so we get a more reliable benchmark
 
                 self.logger.info("Finding best servers to synchronise...")
 
@@ -244,21 +255,21 @@ class Importer(object):
 
                 new_connections = 0
                 for key in self.best_servers.keys():
-                    if self.best_servers[key]:
+                    name = self.best_servers[key]['name']
+
+                    if not self.connection_exists(name):
                         domain = self.best_servers[key]['domain']
                         protocol = key[2]
-                        name = self.best_servers[key]['name']
 
-                        if name not in self.active_list:
-                            file_path = self.get_ovpn_path(domain, protocol)
-                            if file_path:
-                                if networkmanager.import_connection(file_path, name, username, password, dns_list):
-                                    updated = True
-                                    new_connections += 1
-                                    self.active_list.append(name)
-                                    self.save_active_list(self.active_list, LIST_PATH)
-                            else:
-                                self.logger.warning("Could not find a configuration file for %s. Skipping.", name)
+                        file_path = self.get_ovpn_path(domain, protocol)
+                        if file_path:
+                            if networkmanager.import_connection(file_path, name, username, password, dns_list):
+                                updated = True
+                                new_connections += 1
+                                self.active_servers[key] = self.best_servers[key]
+                                self.save_active_servers(self.active_servers, ACTIVE_SERVERS_PATH)
+                        else:
+                            self.logger.warning("Could not find a configuration file for %s. Skipping.", name)
 
                 if new_connections > 0:
                     self.logger.info("%i new connections added.", new_connections)
