@@ -3,11 +3,11 @@ import nordapi
 
 import multiprocessing
 from functools import partial
-import resource
 import numpy
 import os
 import subprocess
 from decimal import Decimal
+import resource
 
 
 def generate_connection_name(server, protocol):
