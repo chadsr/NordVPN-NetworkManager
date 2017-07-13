@@ -7,6 +7,7 @@ import resource
 import numpy
 import os
 import subprocess
+from decimal import Decimal
 
 
 def generate_connection_name(server, protocol):
@@ -32,7 +33,7 @@ def get_server_score(server, ping_attempts):
     if load < 100:
         rtt, loss = utils.get_rtt_loss(domain, ping_attempts)
         if loss < 5:  # Similarly, if packet loss is >= 5%, the connection is not reliable. Keep the starting score.
-            score = 1 / numpy.log(load + rtt) # Maximise the score for smaller values of ln(load + rtt)
+            score = round(Decimal(1 / numpy.log(load + rtt)), 4)  # Maximise the score for smaller values of ln(load + rtt)
 
     return score
 
@@ -73,7 +74,7 @@ def get_num_processes(num_servers):
     used_file_descriptors = int(subprocess.run('ls -l /proc/'+str(ppid)+'/fd | wc -l', shell=True, stdout=subprocess.PIPE).stdout.decode('utf-8'))
 
     # Max processes is the number of file descriptors left, before the sof limit (configuration maximum) is reached
-    max_processes = soft_limit - used_file_descriptors
+    max_processes = int((soft_limit - used_file_descriptors) / 2)
 
     if num_servers > max_processes:
         return max_processes
@@ -85,7 +86,10 @@ def get_best_servers(server_list, ping_attempts, valid_protocols):
     manager = multiprocessing.Manager()
     best_servers = manager.dict()
 
-    pool = multiprocessing.Pool()
+    num_servers = len(server_list)
+    num_processes = get_num_processes(num_servers)
+
+    pool = multiprocessing.Pool(num_processes, maxtasksperchild=1)
     pool.map(partial(compare_server, best_servers=best_servers, ping_attempts=ping_attempts, valid_protocols=valid_protocols), server_list)
     pool.close()
 
