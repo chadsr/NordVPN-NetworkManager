@@ -65,8 +65,8 @@ def get_rtt_loss(host, ping_attempts):
 
         lines = output.stdout.decode('utf-8').splitlines()
 
-        split_info = output_lines[-2].split()
-        split_rtt = output_lines[-1].split()
+        split_info = lines[-2].split()
+        split_rtt = lines[-1].split()
 
         packets_recieved = int(split_info[3])
         if packets_recieved > 0:
