@@ -1,3 +1,5 @@
+import utils
+
 import os
 import stat
 from io import BytesIO
@@ -75,7 +77,7 @@ def get_rtt_loss(host, ping_attempts):
             return (avg_rtt, loss)
 
     except IndexError as ex:
-        logger.error("Could not interpret output of ping command.\nOutput: %s", output)
+        logger.error("Could not interpret output of ping command.\nOutput: %s", ex)
 
     except subprocess.CalledProcessError:
         error = utils.format_std_string(output.stderr)
