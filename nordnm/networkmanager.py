@@ -14,30 +14,50 @@ logger = logging.getLogger(__name__)
 def restart():
     logger.info("Attempting to restart NetworkManager.")
     try:
-        subprocess.run("systemctl restart NetworkManager.service", shell=True, check=True)
+        output = subprocess.run(['systemctl', 'restart', 'NetworkManager.service'])
+        output.check_returncode()
         logger.info("NetworkManager restarted successfully!")
         return True
+
+    except subprocess.CalledProcessError:
+        error = utils.format_std_string(output.stderr)
+        logger.error(error)
+        return False
+
     except Exception as ex:
         logger.error(ex)
         return False
 
 
 def get_interfaces(wifi=True, ethernet=True):
-    lines = subprocess.run(['nmcli', 'dev', 'status'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout.decode('utf-8').split('\n')
-    labels = lines[0].split()
+    try:
+        output = subprocess.run(['nmcli', 'dev', 'status'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output.check_returncode()
 
-    interfaces = []
-    for line in lines[1:]:
-        if line:
-            elements = line.split()
-            interface = {}
-            for i, element in enumerate(elements):
-                interface[labels[i]] = element
+        lines = output.stdout.decode('utf-8').split('\n')
+        labels = lines[0].split()
 
-            if (wifi and interface['TYPE'] == 'wifi') or (ethernet and interface['TYPE'] == 'ethernet'):
-                interfaces.append(interface['DEVICE'])
+        interfaces = []
+        for line in lines[1:]:
+            if line:
+                elements = line.split()
+                interface = {}
+                for i, element in enumerate(elements):
+                    interface[labels[i]] = element
 
-    return interfaces
+                if (wifi and interface['TYPE'] == 'wifi') or (ethernet and interface['TYPE'] == 'ethernet'):
+                    interfaces.append(interface['DEVICE'])
+
+        return interfaces
+
+    except subprocess.CalledProcessError:
+        error = utils.format_std_string(output.stderr)
+        logger.error(error)
+        return False
+
+    except Exception as ex:
+        logger.error(ex)
+        return False
 
 
 def set_auto_connect(connection):
@@ -119,9 +139,9 @@ def import_connection(file_path, connection_name, username=None, password=None, 
         temp_path = os.path.join(os.path.dirname(file_path), connection_name + '.ovpn')
         shutil.copy(file_path, temp_path)
 
-        output = subprocess.run(['nmcli', 'connection', 'import', 'type', 'openvpn', 'file', temp_path], stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout.decode('utf-8').strip()
-        #logger.info("%s", output)
+        output = subprocess.run(['nmcli', 'connection', 'import', 'type', 'openvpn', 'file', temp_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         os.remove(temp_path)
+        output.check_returncode()
 
         config = get_connection_config(connection_name)
         if config:
@@ -139,6 +159,12 @@ def import_connection(file_path, connection_name, username=None, password=None, 
             return False
 
         return True
+
+    except subprocess.CalledProcessError:
+        error = utils.format_std_string(output.stderr)
+        logger.error(error)
+        return False
+
     except Exception as ex:
         logger.error(ex)
         return False
@@ -146,19 +172,28 @@ def import_connection(file_path, connection_name, username=None, password=None, 
 
 def remove_connection(connection_name):
     try:
-        output = subprocess.run(['nmcli', 'connection', 'delete', connection_name], stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout.decode('utf-8').strip()
-        #logger.info("%s", output)
+        output = subprocess.run(['nmcli', 'connection', 'delete', connection_name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output.check_returncode()
+
         return True
+
+    except subprocess.CalledProcessError:
+        error = utils.format_std_string(output.stderr)
+        logger.error(error)
+        return False
+
     except Exception as ex:
         logger.error(ex)
         return False
 
 
-def disconnect_active_vpn(active_list):
+def disconnect_active_vpn(active_servers):
     logger.info('Attempting to disconnect any active VPN connections.')
 
     try:
-        lines = subprocess.run(['nmcli', 'connection', 'show', '--active'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout.decode('utf-8').split('\n')
+        output = subprocess.run(['nmcli', 'connection', 'show', '--active'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output.check_returncode()
+        lines = output.stdout.decode('utf-8').split('\n')
         labels = lines[0].split()
 
         for line in lines[1:]:
@@ -168,11 +203,17 @@ def disconnect_active_vpn(active_list):
                 for i, element in enumerate(elements):
                     connection[labels[i]] = element
 
-                if connection['TYPE'] == "vpn" and connection['NAME'] in active_list:  # Only deactivate VPNs managed by this tool. Preserve any not in the active list
-                    output = subprocess.run(['nmcli', 'connection', 'down', connection['UUID']], stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout.decode('utf-8').strip()
-                    logger.info("%s", output)
+                if connection['TYPE'] == "vpn":  # Only deactivate VPNs managed by this tool. Preserve any not in the active list
+                    for server in active_servers.values():
+                        if connection['NAME'] == server['name']:
+                            output = subprocess.run(['nmcli', 'connection', 'down', connection['UUID']], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                            output.check_returncode()
 
         return True
+    except subprocess.CalledProcessError:
+        error = utils.format_std_string(output.stderr)
+        logger.error(error)
+        return False
 
     except Exception as ex:
         logger.error(ex)
