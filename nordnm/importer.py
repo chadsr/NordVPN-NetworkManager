@@ -254,6 +254,7 @@ class Importer(object):
 
                 new_connections = 0
                 for key in best_servers.keys():
+                    imported = True
                     name = best_servers[key]['name']
 
                     if not self.connection_exists(name):
@@ -265,10 +266,15 @@ class Importer(object):
                             if networkmanager.import_connection(file_path, name, username, password, dns_list):
                                 updated = True
                                 new_connections += 1
-                                self.active_servers[key] = best_servers[key]
-                                self.save_active_servers(self.active_servers, ACTIVE_SERVERS_PATH)
+                            else:
+                                imported = False
                         else:
                             self.logger.warning("Could not find a configuration file for %s. Skipping.", name)
+
+                    # If the connection already existed, or the import was successful, add the server combination to the active servers
+                    if imported:
+                        self.active_servers[key] = best_servers[key]
+                        self.save_active_servers(self.active_servers, ACTIVE_SERVERS_PATH)
 
                 if new_connections > 0:
                     self.logger.info("%i new connections added.", new_connections)
