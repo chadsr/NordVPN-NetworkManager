@@ -61,8 +61,6 @@ class Importer(object):
         if os.path.isfile(ACTIVE_SERVERS_PATH):
             self.active_servers = self.load_active_servers(ACTIVE_SERVERS_PATH)
 
-        self.best_servers = defaultdict(dict)
-
     def run(self, update, sync, purge, auto_connect):
         updated = False
 
@@ -121,13 +119,13 @@ class Importer(object):
     def select_auto_connect(self, country_code, category='normal', protocol='tcp'):
         selected_parameters = (country_code.upper(), category, protocol)
 
-        if selected_parameters in self.best_servers:
-            connection_name = self.best_servers[selected_parameters]['name']
+        if selected_parameters in self.active_servers:
+            connection_name = self.active_servers[selected_parameters]['name']
             logging.info("Setting '%s' as auto-connect server.", connection_name)
             networkmanager.set_auto_connect(connection_name)
             return True
         else:
-            self.logger.warning("No active server found matching %s %s %s. Check your input and try again.")
+            self.logger.warning("No active server found matching (%s, %s, %s). Check your input and try again.", country_code, category, protocol)
             return False
 
     def purge_active_connections(self, remove_autoconnect=True):
@@ -247,18 +245,20 @@ class Importer(object):
                 start = timer()
                 ping_attempts = self.config.get_ping_attempts()  # We are going to be multiprocessing within a class instance, so this needs getting outside of the multiprocessing
                 valid_protocols = self.config.get_protocols()
-                self.best_servers = benchmarking.get_best_servers(valid_server_list, ping_attempts, valid_protocols)
+                best_servers = benchmarking.get_best_servers(valid_server_list, ping_attempts, valid_protocols)
+
                 end = timer()
                 self.logger.info("Done benchmarking. Took %0.2f seconds.", end-start)
 
                 updated = self.purge_active_connections()  # Purge all old connections until a better sync routine is added
 
                 new_connections = 0
-                for key in self.best_servers.keys():
-                    name = self.best_servers[key]['name']
+                for key in best_servers.keys():
+                    imported = True
+                    name = best_servers[key]['name']
 
                     if not self.connection_exists(name):
-                        domain = self.best_servers[key]['domain']
+                        domain = best_servers[key]['domain']
                         protocol = key[2]
 
                         file_path = self.get_ovpn_path(domain, protocol)
@@ -266,10 +266,15 @@ class Importer(object):
                             if networkmanager.import_connection(file_path, name, username, password, dns_list):
                                 updated = True
                                 new_connections += 1
-                                self.active_servers[key] = self.best_servers[key]
-                                self.save_active_servers(self.active_servers, ACTIVE_SERVERS_PATH)
+                            else:
+                                imported = False
                         else:
                             self.logger.warning("Could not find a configuration file for %s. Skipping.", name)
+
+                    # If the connection already existed, or the import was successful, add the server combination to the active servers
+                    if imported:
+                        self.active_servers[key] = best_servers[key]
+                        self.save_active_servers(self.active_servers, ACTIVE_SERVERS_PATH)
 
                 if new_connections > 0:
                     self.logger.info("%i new connections added.", new_connections)
