@@ -18,8 +18,19 @@ More documentation will be available when this repository is ready for public us
 - Sets the auto connect server of your choice for all NetworkManager connections, instead of per connection. (optional)
 
 ## Requirements
+### System
+#### Debian/Ubuntu
 ```
-pip3 install -r requirements.txt
+sudo apt update && sudo apt install openvpn network-manager-openvpn-gnome
+```
+#### Arch
+```
+sudo pacman -S openvpn networkmanager-openvpn
+```
+
+### Python
+```
+sudo -H pip3 install -r requirements.txt
 ```
 
 ## Usage Examples
