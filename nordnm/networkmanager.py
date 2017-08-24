@@ -29,6 +29,36 @@ def restart():
         return False
 
 
+# This currently performs unexpectedly with names containing spaces
+# TODO: Fix for connection names containing spaces
+def get_vpn_connections():
+    try:
+        output = subprocess.run(['nmcli', 'connection', 'show'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output.check_returncode()
+
+        lines = output.stdout.decode('utf-8').split('\n')
+        labels = list(reversed(lines[0].split()))
+
+        vpn_connections = []
+        for line in lines[1:]:
+            if line:
+                elements = line.split()
+                connection = {}
+                for i, element in enumerate(reversed(elements)):
+                    if i < len(labels):
+                        connection[labels[i]] = element
+
+                if (connection['TYPE'] == 'vpn'):
+                    vpn_connections.append(connection['NAME'])
+
+        return vpn_connections
+
+    except subprocess.CalledProcessError:
+        error = utils.format_std_string(output.stderr)
+        logger.error(error)
+        return False
+
+
 def get_interfaces(wifi=True, ethernet=True):
     try:
         output = subprocess.run(['nmcli', 'dev', 'status'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
