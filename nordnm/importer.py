@@ -9,7 +9,6 @@ import argparse
 import os
 import pickle
 import sys
-from collections import defaultdict
 from fnmatch import fnmatch
 import logging
 import copy
@@ -136,11 +135,13 @@ class Importer(object):
 
         if self.active_servers:
             self.logger.info("Removing all active connections...")
-            active_servers = copy.copy(self.active_servers)
+            active_servers = copy.deepcopy(self.active_servers)
             for key in self.active_servers.keys():
                 connection_name = self.active_servers[key]['name']
-                networkmanager.remove_connection(connection_name)
-                active_servers.pop(key)
+                if self.connection_exists(connection_name):
+                    networkmanager.remove_connection(connection_name)
+
+                del active_servers[key]
                 self.save_active_servers(active_servers, ACTIVE_SERVERS_PATH)  # Save after every successful removal, in case importer is killed abruptly
 
             self.active_servers = active_servers
@@ -213,11 +214,12 @@ class Importer(object):
             return None
 
     def connection_exists(self, connection_name):
-        for connection in self.active_servers.values():
-            if connection_name == connection['name']:
-                return True
+        vpn_connections = networkmanager.get_vpn_connections()
 
-        return False
+        if vpn_connections and connection_name in vpn_connections:
+            return True
+        else:
+            return False
 
     def configs_exist(self):
         configs = os.listdir(OVPN_DIR)

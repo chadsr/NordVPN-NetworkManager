@@ -80,7 +80,11 @@ def get_rtt_loss(host, ping_attempts):
         logger.error("Could not interpret output of ping command.\nOutput: %s", ex)
 
     except subprocess.CalledProcessError:
-        error = utils.format_std_string(output.stderr)
-        logger.error(error)
+        err = utils.format_std_string(output.stderr)
+        if err:
+            logger.error("Ping failed with error: %s", err)
+        else:
+            out = utils.format_std_string(output.stdout)
+            logger.warning("Ping failed with output: %s", out)
 
-    return (None, 100) # If anything failed, return rtt as None and 100% loss
+    return (None, 100)  # If anything failed, return rtt as None and 100% loss
