@@ -30,7 +30,7 @@ sudo pacman -S openvpn networkmanager-openvpn
 
 ### Python
 ```
-pip3 install -r requirements.txt
+sudo -H pip3 install -r requirements.txt
 ```
 
 ## Usage Examples
