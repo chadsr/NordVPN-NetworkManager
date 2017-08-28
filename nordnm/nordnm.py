@@ -6,7 +6,6 @@ import utils
 import benchmarking
 
 import argparse
-import argcomplete
 import os
 import pickle
 import sys
@@ -34,10 +33,8 @@ class NordNM(object):
         parser.add_argument('-u', '--update', help='Get the latest OpenVPN configuration files from NordVPN', action='store_true')
         parser.add_argument('-s', '--sync', help="Synchronise best servers (based on load and latency) to NetworkManager", action="store_true")
         parser.add_argument('-p', '--purge', help='Remove all active connections and auto-connect (if configured)', action='store_true')
-        parser.add_argument('-a', '--auto-connect', nargs=3, metavar=('[COUNTRY_CODE]', '[VPN_TYPE]', '[PROTOCOL]'), choices=('tcp', 'udp'), help='Configure NetworkManager to always auto-connect to the lowest latency server. Takes country code, category and protocol')
+        parser.add_argument('-a', '--auto-connect', nargs=3, metavar=('[COUNTRY_CODE]', '[VPN_TYPE]', '[PROTOCOL]'), help='Configure NetworkManager to always auto-connect to the lowest latency server. Takes country code, category and protocol')
         parser.add_argument('-c', '--credentials', help='Change the existing saved credentials', action='store_true')
-
-        argcomplete.autocomplete(parser)
 
         try:
             args = parser.parse_args()
@@ -70,7 +67,7 @@ class NordNM(object):
         self.setup()
 
         if credentials:
-            self.credentials.save_new_credentials()
+            self.
 
         if update:
             self.get_configs()
