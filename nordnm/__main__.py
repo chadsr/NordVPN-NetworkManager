@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 
-from importer import Importer
+from nordnm import NordNM
 import sys
 import logging
 import os
 
 
 def main(argv):
-    importer = Importer()
+    NordNM()
+
 
 if __name__ == "__main__":
     if os.getuid() != 0:

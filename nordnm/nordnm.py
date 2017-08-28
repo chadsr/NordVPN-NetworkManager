@@ -6,6 +6,7 @@ import utils
 import benchmarking
 
 import argparse
+import argcomplete
 import os
 import pickle
 import sys
@@ -27,21 +28,24 @@ ACTIVE_SERVERS_PATH = os.path.join(ROOT_DIR, 'active_servers')
 CREDENTIALS_PATH = os.path.join(ROOT_DIR, 'credentials')
 
 
-class Importer(object):
+class NordNM(object):
     def __init__(self):
         parser = argparse.ArgumentParser()
         parser.add_argument('-u', '--update', help='Get the latest OpenVPN configuration files from NordVPN', action='store_true')
         parser.add_argument('-s', '--sync', help="Synchronise best servers (based on load and latency) to NetworkManager", action="store_true")
         parser.add_argument('-p', '--purge', help='Remove all active connections and auto-connect (if configured)', action='store_true')
-        parser.add_argument('-a', '--auto-connect', nargs=3, metavar=('[COUNTRY_CODE]', '[VPN_TYPE]', '[PROTOCOL]'), help='Configure NetworkManager to always auto-connect to the lowest latency server. Takes country code, category and protocol')
+        parser.add_argument('-a', '--auto-connect', nargs=3, metavar=('[COUNTRY_CODE]', '[VPN_TYPE]', '[PROTOCOL]'), choices=('tcp', 'udp'), help='Configure NetworkManager to always auto-connect to the lowest latency server. Takes country code, category and protocol')
+        parser.add_argument('-c', '--credentials', help='Change the existing saved credentials', action='store_true')
+
+        argcomplete.autocomplete(parser)
 
         try:
             args = parser.parse_args()
         except:
             sys.exit(1)
 
-        if args.update or args.sync or args.purge or args.auto_connect:
-            self.run(args.update, args.sync, args.purge, args.auto_connect)
+        if args.credentials or args.update or args.sync or args.purge or args.auto_connect:
+            self.run(args.credentials, args.update, args.sync, args.purge, args.auto_connect)
         else:
             parser.print_help()
 
@@ -60,10 +64,13 @@ class Importer(object):
         if os.path.isfile(ACTIVE_SERVERS_PATH):
             self.active_servers = self.load_active_servers(ACTIVE_SERVERS_PATH)
 
-    def run(self, update, sync, purge, auto_connect):
+    def run(self, credentials, update, sync, purge, auto_connect):
         updated = False
 
         self.setup()
+
+        if credentials:
+            self.credentials.save_new_credentials()
 
         if update:
             self.get_configs()
