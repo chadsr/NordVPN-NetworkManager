@@ -67,7 +67,7 @@ class NordNM(object):
         self.setup()
 
         if credentials:
-            self.
+            self.credentials.save_new_credentials()
 
         if update:
             self.get_configs()
