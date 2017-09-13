@@ -50,22 +50,87 @@ Arch
 2. Installation
 ---------------
 
+**Please note:** This tool requires Python 3.5 or later. (May change in
+the future)
+
 ::
 
     sudo -H pip3 install nordnm
 
-3. Usage Examples
------------------
+3. Usage
+--------
 
-*Get the latest configs, synchronise and then select a "normal"
-Netherlands server using tcp as auto-connect server:*
+Setup/Update Configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ::
 
-    sudo nordnm --update --sync --auto-connect nl normal tcp
+    sudo nordnm --update
 
-*View descriptions of other options:*
+This will download the latest openvpn configuration files, prompt you
+for your account credentials and also create a settings file
+($HOME/.nordnm/settings.conf). Currently, you will need to manually edit
+the settings file with your desired configuration.
+
+If you experience connections failing, you may want to run the update
+parameter again, since the configuration files may have been updated.
+
+Synchronising
+~~~~~~~~~~~~~
+
+::
+
+    sudo nordnm --sync
+
+This option will use your current settings to find the best server for
+each country, category and protocol combination that you have enabled.
+The configurations will then be added to NetworkManager automatically,
+ready to use.
+
+Auto-Connect to a Server
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+::
+
+    sudo nordnm --auto-connect <country_code> <category> <protocol>
+
+Auto-connect allows you to choose a server from your already
+synchronised configurations to automatically connect to whenever an
+Internet enabled network interface (e.g. wifi/ethernet) connects to a
+network.
+
+Remove All Connections
+~~~~~~~~~~~~~~~~~~~~~~
+
+::
+
+    sudo nordnm --purge
+
+Removes all of the synchronised VPN configurations from NetworkManager
+and any enabled auto-connection setup.
+
+Update Credentials
+~~~~~~~~~~~~~~~~~~
+
+::
+
+    sudo nordnm --credentials
+
+Allows you to re-enter your account credentials via the terminal,
+instead of editing files manually.
+
+Help
+~~~~
 
 ::
 
     sudo nordnm --help
+
+Simply display all the options above with a short description.
+
+Suggestions/Bugs
+----------------
+
+If you have any feature suggestions or find an interesting bug, please
+let me know. More intuitive options and fixes will be coming in the
+future.
