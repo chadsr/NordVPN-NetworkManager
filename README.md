@@ -1,11 +1,11 @@
-# NordVPN-NetworkManager
+# NordNM
 
 This tool removes the need for manually handling OpenVPN configurations from NordVPN. It will synchronise the best servers from chosen countries into the NetworkManager VPN list. A synchronised VPN can then be chosen to auto-connect to, whenever NetworkManager brings an network connection up.
 
-More documentation will be available when this repository is ready for public use.
+More documentation will be available when this tool is out of Alpha releases.
 
 **Warning:**
-*This tool is still highly experimental and is definitely not yet robust enough to use reliably. I take no responsibility for any unforseen problems it may cause.*
+*This tool is still highly under development and is not yet robust enough to use reliably. I take no responsibility for any unforseen problems it may cause.*
 
 ## Features:
 - Uses the latest NordVPN OpenVPN configuration files.
@@ -17,29 +17,35 @@ More documentation will be available when this repository is ready for public us
 - Disables IPv6 by default, to avoid IPv6 leaks.
 - Sets the auto connect server of your choice for all NetworkManager connections, instead of per connection. (optional)
 
-## Requirements
-### System
-#### Debian/Ubuntu
+## 1. Requirements
+
+### Debian/Ubuntu
 ```
-sudo apt update && sudo apt install openvpn network-manager-openvpn-gnome
-```
-#### Arch
-```
-sudo pacman -S openvpn networkmanager-openvpn
+sudo apt update && sudo apt install openvpn network-manager network-manager-gnome network-manager-openvpn-gnome
 ```
 
-### Python
+### Arch
+
 ```
-sudo -H pip3 install -r requirements.txt
+sudo pacman -S networkmanager openvpn networkmanager-openvpn
 ```
 
-## Usage Examples
-*get the latest configs, synchronise and then select auto-connect server:*
+## 2. Installation
+
 ```
-sudo python3 nordnm --update --sync --auto-connect nl normal tcp
+sudo -H pip3 install nordnm
+```
+
+## 3. Usage Examples
+
+*Get the latest configs, synchronise and then select a "normal" Netherlands server using tcp as auto-connect server:*
+
+```
+sudo nordnm --update --sync --auto-connect nl normal tcp
 ```
 
 *View descriptions of other options:*
+
 ```
-sudo python3 nordnm --help
+sudo nordnm --help
 ```

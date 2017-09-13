@@ -1,2 +1,2 @@
-numpy==1.13.0
-requests==2.18.1
+numpy>=1.13.0
+requests>=2.18.1

@@ -1,1 +1,4 @@
 nordnm/__pycache__/
+*.pyc
+dist/
+*.egg-info

@@ -1,9 +1,12 @@
-from config import ConfigHandler
-from credentials import CredentialsHandler
-import nordapi
-import networkmanager
-import utils
-import benchmarking
+#!/usr/bin/env python3
+
+from nordnm.credentials import CredentialsHandler
+from nordnm.config import ConfigHandler
+from nordnm import nordapi
+from nordnm import networkmanager
+from nordnm import utils
+from nordnm import benchmarking
+from nordnm import paths
 
 import argparse
 import os
@@ -14,34 +17,23 @@ import logging
 import copy
 from timeit import default_timer as timer
 
-# TODO: Terminate script/wait cleanly if network connection goes down
 
-# TODO: Put these paths somewhere more appropriate
-HOME_DIR = os.path.expanduser('~' + utils.get_current_user())
-USER_DIR = os.path.join(HOME_DIR, '.nordnm/')
-OVPN_DIR = os.path.join(USER_DIR, 'configs/')
-CONFIG_PATH = os.path.join(USER_DIR, 'settings.conf')
-
-ROOT_DIR = '/usr/share/nordnm/'
-ACTIVE_SERVERS_PATH = os.path.join(ROOT_DIR, 'active_servers')
-CREDENTIALS_PATH = os.path.join(ROOT_DIR, 'credentials')
-
-
-class Importer(object):
+class NordNM(object):
     def __init__(self):
         parser = argparse.ArgumentParser()
         parser.add_argument('-u', '--update', help='Get the latest OpenVPN configuration files from NordVPN', action='store_true')
         parser.add_argument('-s', '--sync', help="Synchronise best servers (based on load and latency) to NetworkManager", action="store_true")
         parser.add_argument('-p', '--purge', help='Remove all active connections and auto-connect (if configured)', action='store_true')
         parser.add_argument('-a', '--auto-connect', nargs=3, metavar=('[COUNTRY_CODE]', '[VPN_TYPE]', '[PROTOCOL]'), help='Configure NetworkManager to always auto-connect to the lowest latency server. Takes country code, category and protocol')
+        parser.add_argument('-c', '--credentials', help='Change the existing saved credentials', action='store_true')
 
         try:
             args = parser.parse_args()
         except:
             sys.exit(1)
 
-        if args.update or args.sync or args.purge or args.auto_connect:
-            self.run(args.update, args.sync, args.purge, args.auto_connect)
+        if args.credentials or args.update or args.sync or args.purge or args.auto_connect:
+            self.run(args.credentials, args.update, args.sync, args.purge, args.auto_connect)
         else:
             parser.print_help()
 
@@ -50,20 +42,23 @@ class Importer(object):
 
         self.create_directories()
 
-        self.config = ConfigHandler(CONFIG_PATH)
-        self.credentials = CredentialsHandler(CREDENTIALS_PATH)
+        self.config = ConfigHandler(paths.SETTINGS)
+        self.credentials = CredentialsHandler(paths.CREDENTIALS)
 
         self.black_list = self.config.get_blacklist()
         self.white_list = self.config.get_whitelist()
 
         self.active_servers = {}
-        if os.path.isfile(ACTIVE_SERVERS_PATH):
-            self.active_servers = self.load_active_servers(ACTIVE_SERVERS_PATH)
+        if os.path.isfile(paths.ACTIVE_SERVERS):
+            self.active_servers = self.load_active_servers(paths.ACTIVE_SERVERS)
 
-    def run(self, update, sync, purge, auto_connect):
+    def run(self, credentials, update, sync, purge, auto_connect):
         updated = False
 
         self.setup()
+
+        if credentials:
+            self.credentials.save_new_credentials()
 
         if update:
             self.get_configs()
@@ -79,23 +74,20 @@ class Importer(object):
             networkmanager.restart()
 
     def create_directories(self):
-        if not os.path.exists(USER_DIR):
-            os.mkdir(USER_DIR)
-            utils.chown_path_to_user(USER_DIR)
+        if not os.path.exists(paths.DIR_ROOT):
+            os.mkdir(paths.DIR_ROOT)
+            utils.chown_path_to_user(paths.DIR_ROOT)
 
-        if not os.path.exists(OVPN_DIR):
-            os.mkdir(OVPN_DIR)
-            utils.chown_path_to_user(OVPN_DIR)
-
-        if not os.path.exists(ROOT_DIR):
-            os.mkdir(ROOT_DIR)
+        if not os.path.exists(paths.DIR_OVPN):
+            os.mkdir(paths.DIR_OVPN)
+            utils.chown_path_to_user(paths.DIR_OVPN)
 
     def get_configs(self):
         self.logger.info("Attempting to download and extract the latest NordVPN configurations.")
 
         configs = nordapi.get_configs()
         if configs:
-            utils.extract_zip(configs, OVPN_DIR)
+            utils.extract_zip(configs, paths.DIR_OVPN)
         else:
             self.logger.error("Could not retrieve configs from NordVPN")
 
@@ -104,11 +96,11 @@ class Importer(object):
         ovpn_path = None
 
         try:
-            for f in os.listdir(OVPN_DIR):
-                file_path = os.path.join(OVPN_DIR, f)
+            for f in os.listdir(paths.DIR_OVPN):
+                file_path = os.path.join(paths.DIR_OVPN, f)
                 if os.path.isfile(file_path):
                     if fnmatch(f, wildcard):
-                        ovpn_path = os.path.join(OVPN_DIR, f)
+                        ovpn_path = os.path.join(paths.DIR_OVPN, f)
 
         except Exception as ex:
             self.logger.error(ex)
@@ -142,7 +134,7 @@ class Importer(object):
                     networkmanager.remove_connection(connection_name)
 
                 del active_servers[key]
-                self.save_active_servers(active_servers, ACTIVE_SERVERS_PATH)  # Save after every successful removal, in case importer is killed abruptly
+                self.save_active_servers(active_servers, paths.ACTIVE_SERVERS)  # Save after every successful removal, in case importer is killed abruptly
 
             self.active_servers = active_servers
 
@@ -154,7 +146,7 @@ class Importer(object):
 
     def load_active_servers(self, path):
         try:
-            with open(ACTIVE_SERVERS_PATH, 'rb') as fp:
+            with open(paths.ACTIVE_SERVERS, 'rb') as fp:
                 active_servers = pickle.load(fp)
             return active_servers
         except Exception as ex:
@@ -163,7 +155,7 @@ class Importer(object):
 
     def save_active_servers(self, active_servers, path):
         try:
-            with open(ACTIVE_SERVERS_PATH, 'wb') as fp:
+            with open(paths.ACTIVE_SERVERS, 'wb') as fp:
                 pickle.dump(active_servers, fp)
         except Exception as ex:
             self.logger.error(ex)
@@ -222,7 +214,7 @@ class Importer(object):
             return False
 
     def configs_exist(self):
-        configs = os.listdir(OVPN_DIR)
+        configs = os.listdir(paths.DIR_OVPN)
         if configs:
             return True
         else:
@@ -276,7 +268,7 @@ class Importer(object):
                     # If the connection already existed, or the import was successful, add the server combination to the active servers
                     if imported:
                         self.active_servers[key] = best_servers[key]
-                        self.save_active_servers(self.active_servers, ACTIVE_SERVERS_PATH)
+                        self.save_active_servers(self.active_servers, paths.ACTIVE_SERVERS)
 
                 if new_connections > 0:
                     self.logger.info("%i new connections added.", new_connections)

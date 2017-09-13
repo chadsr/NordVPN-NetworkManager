@@ -16,7 +16,6 @@ class CredentialsHandler(object):
         if self.load():
             self.logger.info("Existing credentials loaded.")
         else:
-            self.logger.info("No credentials found. Please input below:")
             self.save_new_credentials()
 
     def save(self):
@@ -55,11 +54,16 @@ class CredentialsHandler(object):
         username = None
         password = None
 
+        print("\nPlease input your NordVPN credentials:")
+
         while not username and not password:
-            username = input("Username: ")
+            username = input("Username/Email: ")
             password = getpass.getpass("Password: ")
 
-        self.config.add_section(self.SECTION_TITLE)
+        if not self.config.has_section(self.SECTION_TITLE):
+            self.config.add_section(self.SECTION_TITLE)
+
         self.config.set(self.SECTION_TITLE, 'username', username)
         self.config.set(self.SECTION_TITLE, 'password', password)
         self.save()
+        self.logger.info("New credentials saved successfully!")

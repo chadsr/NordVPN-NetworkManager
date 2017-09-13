@@ -1,5 +1,5 @@
-import utils
-import nordapi
+from nordnm import utils
+from nordnm import nordapi
 
 import configparser
 import logging
@@ -16,7 +16,7 @@ class ConfigHandler(object):
         self.config = configparser.ConfigParser(allow_no_value=True)
 
         if self.load():  # If we successfully load an existing config
-            self.logger.info("Existing configuration loaded.")
+            self.logger.info("Existing configuration loaded. (%s)", self.path)
         else:
             self.logger.warning("No existing configuration found. Saving default settings to %s.", self.path)
             # Generate default config
