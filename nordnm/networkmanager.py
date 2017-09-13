@@ -1,4 +1,4 @@
-import utils
+from nordnm import utils
 
 import subprocess
 import shutil

@@ -1,5 +1,5 @@
-import utils
-import nordapi
+from nordnm import utils
+from nordnm import nordapi
 
 import configparser
 import logging

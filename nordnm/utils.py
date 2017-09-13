@@ -1,18 +1,21 @@
-import utils
-
 import os
 import stat
 from io import BytesIO
 from zipfile import ZipFile
 import subprocess
 import logging
+import getpass
 
 logger = logging.getLogger(__name__)
 
 
 # Since we're running with root priveledges, this will return the current username
 def get_current_user():
-    return os.getenv("SUDO_USER")
+    username = os.getenv("SUDO_USER")
+    if not username:
+        username = getpass.getuser()
+
+    return username
 
 
 # Change the owner and group of a given path to the current user
@@ -80,11 +83,11 @@ def get_rtt_loss(host, ping_attempts):
         logger.error("Could not interpret output of ping command.\nOutput: %s", ex)
 
     except subprocess.CalledProcessError:
-        err = utils.format_std_string(output.stderr)
+        err = format_std_string(output.stderr)
         if err:
             logger.error("Ping failed with error: %s", err)
         else:
-            out = utils.format_std_string(output.stdout)
+            out = format_std_string(output.stdout)
             logger.warning("Ping failed with output: %s", out)
 
     return (None, 100)  # If anything failed, return rtt as None and 100% loss
