@@ -11,18 +11,11 @@ if sys.version_info < (PYTHON_VERSION, PYTHON_SUBVERSION):
 
 
 def get_readme():
-    try:
-        import pypandoc
-        long_description = pypandoc.convert('README.md', 'rst')
-        long_description = long_description.replace("\r", "")
-    except OSError:
-        print("ERROR: Pandoc not found. Long_description conversion failure.")
-        import io
-        # pandoc is not installed, fallback to using raw contents
-        with io.open('README.md', encoding="utf-8") as f:
-            long_description = f.read()
+    with open('README.rst', encoding='utf-8') as f:
+        readme = f.read()
+        f.close()
 
-    return long_description
+    return readme
 
 
 def get_requirements():
