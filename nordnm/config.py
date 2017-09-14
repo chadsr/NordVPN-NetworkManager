@@ -13,37 +13,60 @@ class ConfigHandler(object):
         self.logger = logging.getLogger(__name__)
 
         self.path = path
-        self.config = configparser.ConfigParser(allow_no_value=True)
 
         if self.load():  # If we successfully load an existing config
-            self.logger.info("Existing configuration loaded. (%s)", self.path)
+            self.logger.info("Existing settings loaded. (%s)", self.path)
         else:
-            self.logger.warning("No existing configuration found. Saving default settings to %s.", self.path)
-            # Generate default config
-            self.config.add_section('Countries')
-            self.config.set('Countries', '# simply write country codes separated by spaces e.g. country-blacklist = GB US')
-            self.config.set('Countries', 'country-blacklist', '')
-            self.config.set('Countries', '\n# same as above. If this is non-empty, the blacklist is ignored')
-            self.config.set('Countries', 'country-whitelist', '')
+            self.logger.warning("No existing settingss found!", self.path)
 
-            self.config.add_section('Categories')
-            for category in nordapi.VPN_CATEGORIES.keys():
-                self.config.set('Categories', category.replace(' ', '-'), 'true')
+            # Prompt for a new config
+            self.save_new_config()
 
-            self.config.add_section('Protocols')
-            self.config.set('Protocols', 'tcp', 'true')
-            self.config.set('Protocols', 'udp', 'true')
+    def save_new_config(self):
+        self.logger.info("Prompting for new settings.\n")
 
-            self.config.add_section('Benchmarking')
-            self.config.set('Benchmarking', 'ping-attempts', str(self.DEFAULT_PING_ATTEMPTS))
+        self.config = configparser.ConfigParser(allow_no_value=True)
 
-            self.save()  # And save it
+        # Prompt for which countries to synchronise
+        # First offer the whitelist, if the user chooses to skip the whitelist, offer the blacklist
+        blacklist = ''
+        whitelist = input("If you wish to synchronise only specific countries, enter their country codes separated by spaces. (Press enter to skip): ")
+        if not whitelist:
+            blacklist = input("If you wish to blacklist specific countries, enter their country codes separated by spaces. (Press enter to skip): ")
+
+        # Populate the Countries section with out input data
+        self.config.add_section('Countries')
+        self.config.set('Countries', '# simply write country codes separated by spaces e.g. country-blacklist = GB US')
+        self.config.set('Countries', 'country-blacklist', blacklist)
+        self.config.set('Countries', '\n# same as above. If this is non-empty, the blacklist is ignored')
+        self.config.set('Countries', 'country-whitelist', whitelist)
+
+        # Prompt for which categories to enable
+        self.config.add_section('Categories')
+        for category in nordapi.VPN_CATEGORIES.keys():
+            answer = str(utils.input_yes_no("Enable category '%s'?" % category)).lower()
+            self.config.set('Categories', category.replace(' ', '-'), answer)
+
+        self.config.add_section('Protocols')
+        answer = str(utils.input_yes_no("Enable TCP configurations?")).lower()
+        self.config.set('Protocols', 'tcp', answer)
+        answer = str(utils.input_yes_no("Enable UDP configurations?")).lower()
+        self.config.set('Protocols', 'udp', answer)
+
+        self.config.add_section('Benchmarking')
+        ping_attempts = input("Input how many ping attempts to make when benchmarking servers (Default: %i attempts): " % self.DEFAULT_PING_ATTEMPTS)
+        if not ping_attempts:
+            ping_attempts = str(self.DEFAULT_PING_ATTEMPTS)
+        self.config.set('Benchmarking', 'ping-attempts', ping_attempts)
+
+        self.save()  # And save it
 
     def save(self):
         try:
             with open(self.path, 'w') as config_file:
                 self.config.write(config_file)
             utils.chown_path_to_user(self.path)
+            self.logger.info("Settings saved successfully.")
             return True
         except Exception as ex:
             self.logger.error(ex)
@@ -52,6 +75,7 @@ class ConfigHandler(object):
     def load(self):
         if os.path.isfile(self.path):
             try:
+                self.config = configparser.ConfigParser(allow_no_value=True)
                 self.config.read(self.path)
                 return True
             except Exception as ex:

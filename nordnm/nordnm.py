@@ -24,16 +24,17 @@ class NordNM(object):
         parser.add_argument('-u', '--update', help='Get the latest OpenVPN configuration files from NordVPN', action='store_true')
         parser.add_argument('-s', '--sync', help="Synchronise best servers (based on load and latency) to NetworkManager", action="store_true")
         parser.add_argument('-p', '--purge', help='Remove all active connections and auto-connect (if configured)', action='store_true')
-        parser.add_argument('-a', '--auto-connect', nargs=3, metavar=('[COUNTRY_CODE]', '[VPN_TYPE]', '[PROTOCOL]'), help='Configure NetworkManager to always auto-connect to the lowest latency server. Takes country code, category and protocol')
-        parser.add_argument('-c', '--credentials', help='Change the existing saved credentials', action='store_true')
+        parser.add_argument('-a', '--auto-connect', nargs=3, metavar=('[COUNTRY_CODE]', '[VPN_TYPE]', '[PROTOCOL]'), help='Configure NetworkManager to auto-connect to chosen server type. Takes country code, category and protocol')
+        parser.add_argument('--credentials', help='Change the existing saved credentials', action='store_true')
+        parser.add_argument('--settings', help='Change the existing saved settings', action='store_true')
 
         try:
             args = parser.parse_args()
         except:
             sys.exit(1)
 
-        if args.credentials or args.update or args.sync or args.purge or args.auto_connect:
-            self.run(args.credentials, args.update, args.sync, args.purge, args.auto_connect)
+        if args.credentials or args.settings or args.update or args.sync or args.purge or args.auto_connect:
+            self.run(args.credentials, args.settings, args.update, args.sync, args.purge, args.auto_connect)
         else:
             parser.print_help()
 
@@ -52,13 +53,16 @@ class NordNM(object):
         if os.path.isfile(paths.ACTIVE_SERVERS):
             self.active_servers = self.load_active_servers(paths.ACTIVE_SERVERS)
 
-    def run(self, credentials, update, sync, purge, auto_connect):
+    def run(self, credentials, settings, update, sync, purge, auto_connect):
         updated = False
 
         self.setup()
 
         if credentials:
             self.credentials.save_new_credentials()
+
+        if settings:
+            self.config.save_new_config()
 
         if update:
             self.get_configs()
@@ -83,13 +87,15 @@ class NordNM(object):
             utils.chown_path_to_user(paths.DIR_OVPN)
 
     def get_configs(self):
-        self.logger.info("Attempting to download and extract the latest NordVPN configurations.")
+        self.logger.info("Attempting to download and extract the latest NordVPN OpenVPN configuration files.")
 
         configs = nordapi.get_configs()
         if configs:
             utils.extract_zip(configs, paths.DIR_OVPN)
         else:
-            self.logger.error("Could not retrieve configs from NordVPN")
+            self.logger.error("Failed to retrieve configuration files from NordVPN")
+
+        self.logger.info("Configuration files downloaded and extracted to %s successfully" % paths.DIR_OVPN)
 
     def get_ovpn_path(self, domain, protocol):
         wildcard = domain+'.'+protocol+'*'
@@ -202,7 +208,7 @@ class NordNM(object):
 
             return valid_server_list
         else:
-            self.logger.error("Could not fetch the server list from NordVPN.")
+            self.logger.error("Could not fetch the server list from NordVPN. Check your Internet connectivity.")
             return None
 
     def connection_exists(self, connection_name):

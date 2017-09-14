@@ -9,6 +9,21 @@ import getpass
 logger = logging.getLogger(__name__)
 
 
+# A simple input for yes/no questions
+def input_yes_no(question):
+    yes = set(['yes', 'y'])
+    no = set(['no', 'n'])
+
+    while True:
+        choice = input(question + " (y/n): ").lower()
+        if choice in yes:
+            return True
+        elif choice in no:
+            return False
+        else:
+            print("Please respond with y or n\n")
+
+
 # Since we're running with root priveledges, this will return the current username
 def get_current_user():
     username = os.getenv("SUDO_USER")
