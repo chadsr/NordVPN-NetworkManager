@@ -118,7 +118,7 @@ class NordNM(object):
 
         if selected_parameters in self.active_servers:
             connection_name = self.active_servers[selected_parameters]['name']
-            logging.info("Setting '%s' as auto-connect server.", connection_name)
+            self.logger.info("Setting '%s' as auto-connect server.", connection_name)
             networkmanager.set_auto_connect(connection_name)
             return True
         else:
