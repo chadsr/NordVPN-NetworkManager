@@ -3,3 +3,4 @@ nordnm/__pycache__/
 dist/
 *.egg-info
 *.log
+build/
