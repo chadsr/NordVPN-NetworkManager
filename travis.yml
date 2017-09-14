@@ -1,0 +1,23 @@
+language: python
+python:
+  - "3.5"
+  - "3.5-dev" # 3.5 development branch
+  - "3.6"
+  - "3.6-dev" # 3.6 development branch
+  - "3.7-dev" # 3.7 development branch
+  - "nightly"
+
+install:
+  - python setup.py install
+
+script:
+  - pytest
+
+deploy:
+  provider: pypi
+  user: "Chadsr"
+  password:
+    secure: "rlIoLZTDoD9OcdTP61nAduGu+iqSPgghiSXKAGsRaPsTqrsi8T06lOIE9kBOxImafiuOzpz/V85bWArVxmWX9e2aK2+TYD33D1Ve56NkFmqEvw0uIkzskhmM+RxevYH2gCNF9tQhWknBkraqf2LZzotc2+Aq3KIZztitm/fs5rKkjI4Nj+lpCJ7o9OQlPEJYSwb5ocxytrTuxWgmH9wGYZF3bWsuRDBlJypFVZfvq72OVNqoDD592Ezq2Oy6MfL/Elb7MZaYfcdPO2vLO02dRnIoIph35iQrRoiWw0p7Xy0jrhuVJXutcFrdHkBStcZ/VbdIjSh4KaporieBcJ4dUirLuRxLSpy8tixyGKDV+vMf64dULpjTaIBMv7N1BFurAEyZn/yOaTX/iBkfoBRGDfeeAvF+SNltza6Mnjok1juLvWUo+Gx+d7GJO6mcyYZUJ1ml62KRge2zszFuj/sOkDHDU0IfBw/nae6fBY1hBR8YObU89aW8C/k4ScP2SBouneskskfJ+Oql4huaDrQAkZC/FBjeoR0SpS4uB9tMk8A1RDd22kkuIrKe3DTj5GquxqsK8tRSM1VO+TRNoywGccjy4zzRo8RUyRrYq4JlVgKpN1k5CbyzHo0u0ANhiiHoKmGK+NdpKstL3E5NKnpH1PgEBLrqkR2kPlBXpUgohwQ="
+  on:
+    branch: master
+    tags: true
