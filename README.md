@@ -1,5 +1,7 @@
 # NordNM
 
+[![Build Status](https://travis-ci.org/Chadsr/NordVPN-NetworkManager.svg?branch=testing)](https://travis-ci.org/Chadsr/NordVPN-NetworkManager)
+
 This tool removes the need for manually handling OpenVPN configurations from NordVPN. It will synchronise the best servers from chosen countries into the NetworkManager VPN list. A synchronised VPN can then be chosen to auto-connect to, whenever NetworkManager brings an network connection up.
 
 More documentation will be available when this tool is out of Alpha releases.
