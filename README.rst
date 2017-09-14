@@ -1,6 +1,8 @@
 NordNM
 ======
 
+|Build Status|
+
 This tool removes the need for manually handling OpenVPN configurations
 from NordVPN. It will synchronise the best servers from chosen countries
 into the NetworkManager VPN list. A synchronised VPN can then be chosen
@@ -119,6 +121,15 @@ Update Credentials
 Allows you to re-enter your account credentials via the terminal,
 instead of editing files manually.
 
+Update Settings
+~~~~~~~~~~~~~~~
+
+::
+
+    sudo nordnm --settings
+
+Allows you to re-enter synchronisation settings.
+
 Help
 ~~~~
 
@@ -134,3 +145,6 @@ Suggestions/Bugs
 If you have any feature suggestions or find an interesting bug, please
 let me know. More intuitive options and fixes will be coming in the
 future.
+
+.. |Build Status| image:: https://travis-ci.org/Chadsr/NordVPN-NetworkManager.svg?branch=testing
+   :target: https://travis-ci.org/Chadsr/NordVPN-NetworkManager
