@@ -24,7 +24,7 @@ class NordNM(object):
         parser.add_argument('-u', '--update', help='Get the latest OpenVPN configuration files from NordVPN', action='store_true')
         parser.add_argument('-s', '--sync', help="Synchronise best servers (based on load and latency) to NetworkManager", action="store_true")
         parser.add_argument('-p', '--purge', help='Remove all active connections and auto-connect (if configured)', action='store_true')
-        parser.add_argument('-a', '--auto-connect', nargs=3, metavar=('[COUNTRY_CODE]', '[VPN_TYPE]', '[PROTOCOL]'), help='Configure NetworkManager to always auto-connect to the lowest latency server. Takes country code, category and protocol')
+        parser.add_argument('-a', '--auto-connect', nargs=3, metavar=('[COUNTRY_CODE]', '[VPN_TYPE]', '[PROTOCOL]'), help='Configure NetworkManager to auto-connect to chosen server type. Takes country code, category and protocol')
         parser.add_argument('--credentials', help='Change the existing saved credentials', action='store_true')
         parser.add_argument('--settings', help='Change the existing saved settings', action='store_true')
 

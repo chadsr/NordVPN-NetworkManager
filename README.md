@@ -88,6 +88,14 @@ sudo nordnm --credentials
 
 Allows you to re-enter your account credentials via the terminal, instead of editing files manually.
 
+### Update Settings
+
+```
+sudo nordnm --settings
+```
+
+Allows you to re-enter synchronisation settings.
+
 ### Help
 
 ```
