@@ -146,5 +146,5 @@ If you have any feature suggestions or find an interesting bug, please
 let me know. More intuitive options and fixes will be coming in the
 future.
 
-.. |Build Status| image:: https://travis-ci.org/Chadsr/NordVPN-NetworkManager.svg?branch=testing
+.. |Build Status| image:: https://travis-ci.org/Chadsr/NordVPN-NetworkManager.svg?branch=master
    :target: https://travis-ci.org/Chadsr/NordVPN-NetworkManager
