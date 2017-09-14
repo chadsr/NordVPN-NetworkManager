@@ -7,12 +7,10 @@ python:
   - "3.7-dev" # 3.7 development branch
   - "nightly"
 
-install:
-  - python setup.py install
+install: true
 
-# No tests as of now
-#script:
-#  - pytest
+script:
+  - python setup.py install
 
 deploy:
   provider: pypi
