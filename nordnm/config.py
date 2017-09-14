@@ -17,7 +17,7 @@ class ConfigHandler(object):
         if self.load():  # If we successfully load an existing config
             self.logger.info("Existing settings loaded. (%s)", self.path)
         else:
-            self.logger.warning("No existing settingss found!", self.path)
+            self.logger.warning("No existing settingss found!")
 
             # Prompt for a new config
             self.save_new_config()
