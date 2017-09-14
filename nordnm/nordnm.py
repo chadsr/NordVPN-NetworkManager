@@ -98,7 +98,7 @@ class NordNM(object):
         self.logger.info("Configuration files downloaded and extracted to %s successfully" % paths.DIR_OVPN)
 
     def get_ovpn_path(self, domain, protocol):
-        wildcard = domain+'.'+protocol+'*'
+        wildcard = domain + '.' + protocol + '*'
         ovpn_path = None
 
         try:
@@ -248,7 +248,7 @@ class NordNM(object):
                 best_servers = benchmarking.get_best_servers(valid_server_list, ping_attempts, valid_protocols)
 
                 end = timer()
-                self.logger.info("Done benchmarking. Took %0.2f seconds.", end-start)
+                self.logger.info("Done benchmarking. Took %0.2f seconds.", end - start)
 
                 updated = self.purge_active_connections()  # Purge all old connections until a better sync routine is added
 
