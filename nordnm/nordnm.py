@@ -92,10 +92,9 @@ class NordNM(object):
         configs = nordapi.get_configs()
         if configs:
             utils.extract_zip(configs, paths.DIR_OVPN)
+            self.logger.info("Configuration files downloaded and extracted to %s successfully" % paths.DIR_OVPN)
         else:
             self.logger.error("Failed to retrieve configuration files from NordVPN")
-
-        self.logger.info("Configuration files downloaded and extracted to %s successfully" % paths.DIR_OVPN)
 
     def get_ovpn_path(self, domain, protocol):
         wildcard = domain + '.' + protocol + '*'
