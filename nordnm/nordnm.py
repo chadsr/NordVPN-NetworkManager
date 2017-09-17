@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 from nordnm.credentials import CredentialsHandler
 from nordnm.config import ConfigHandler
 from nordnm import nordapi
