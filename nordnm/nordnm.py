@@ -1,5 +1,5 @@
 from nordnm.credentials import CredentialsHandler
-from nordnm.config import ConfigHandler
+from nordnm.settings import SettingsHandler
 from nordnm import nordapi
 from nordnm import networkmanager
 from nordnm import utils
@@ -41,11 +41,11 @@ class NordNM(object):
 
         self.create_directories()
 
-        self.config = ConfigHandler(paths.SETTINGS)
+        self.settings = SettingsHandler(paths.SETTINGS)
         self.credentials = CredentialsHandler(paths.CREDENTIALS)
 
-        self.black_list = self.config.get_blacklist()
-        self.white_list = self.config.get_whitelist()
+        self.black_list = self.settings.get_blacklist()
+        self.white_list = self.settings.get_whitelist()
 
         self.active_servers = {}
         if os.path.isfile(paths.ACTIVE_SERVERS):
@@ -60,7 +60,7 @@ class NordNM(object):
             self.credentials.save_new_credentials()
 
         if settings:
-            self.config.save_new_config()
+            self.settings.save_new_settings()
 
         if update:
             self.get_configs()
@@ -90,7 +90,7 @@ class NordNM(object):
         configs = nordapi.get_configs()
         if configs:
             utils.extract_zip(configs, paths.DIR_OVPN)
-            self.logger.info("Configuration files downloaded and extracted to %s successfully" % paths.DIR_OVPN)
+            self.logger.info("Configuration files downloaded and extracted successfully. (%s)" % paths.DIR_OVPN)
         else:
             self.logger.error("Failed to retrieve configuration files from NordVPN")
 
@@ -171,7 +171,7 @@ class NordNM(object):
             return False
 
     def has_valid_categories(self, server):
-        valid_categories = self.config.get_categories()
+        valid_categories = self.settings.get_categories()
 
         for category in server['categories']:
             # If the server has a category that we don't want, ignore it completely
@@ -181,7 +181,7 @@ class NordNM(object):
         return True
 
     def has_valid_protocol(self, server):
-        valid_protocols = self.config.get_protocols()
+        valid_protocols = self.settings.get_protocols()
         has_openvpn_tcp = server['features']['openvpn_tcp']
         has_openvpn_udp = server['features']['openvpn_udp']
 
@@ -240,8 +240,8 @@ class NordNM(object):
                 self.logger.info("Finding best servers to synchronise...")
 
                 start = timer()
-                ping_attempts = self.config.get_ping_attempts()  # We are going to be multiprocessing within a class instance, so this needs getting outside of the multiprocessing
-                valid_protocols = self.config.get_protocols()
+                ping_attempts = self.settings.get_ping_attempts()  # We are going to be multiprocessing within a class instance, so this needs getting outside of the multiprocessing
+                valid_protocols = self.settings.get_protocols()
                 best_servers = benchmarking.get_best_servers(valid_server_list, ping_attempts, valid_protocols)
 
                 end = timer()
