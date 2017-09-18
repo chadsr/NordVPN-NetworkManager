@@ -69,13 +69,10 @@ Setup/Update Configuration
 
     sudo nordnm --update
 
-This will download the latest openvpn configuration files, prompt you
-for your account credentials and also create a settings file
-($HOME/.nordnm/settings.conf). Currently, you will need to manually edit
-the settings file with your desired configuration.
-
-If you experience connections failing, you may want to run the update
-parameter again, since the configuration files may have been updated.
+Downloads the latest openvpn configuration files from the NordVPN
+website and stores them locally. *If you experience connections failing
+suddenly, try running the update parameter again, since the
+configuration files may have been updated.*
 
 Synchronising
 ~~~~~~~~~~~~~
@@ -94,7 +91,7 @@ Auto-Connect to a Server
 
 ::
 
-    sudo nordnm --auto-connect <country_code> <category> <protocol>
+    sudo nordnm --auto-connect [COUNTRY_CODE] [VPN_TYPE] [PROTOCOL]
 
 Auto-connect allows you to choose a server from your already
 synchronised configurations to automatically connect to whenever an
