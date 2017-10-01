@@ -5,6 +5,7 @@ import shutil
 import os
 import configparser
 import logging
+import re
 
 AUTO_CONNECT_PATH = "/etc/NetworkManager/dispatcher.d/auto_vpn"
 
@@ -70,7 +71,7 @@ def get_interfaces(wifi=True, ethernet=True):
         interfaces = []
         for line in lines[1:]:
             if line:
-                elements = line.split()
+                elements = re.split(r'\s{2,}', line.strip()) # TODO: Find a better solution for splitting the line. Can't rely of connection names not having 2 or more spaces
                 interface = {}
                 for i, element in enumerate(elements):
                     interface[labels[i]] = element
@@ -91,17 +92,20 @@ def get_interfaces(wifi=True, ethernet=True):
 
 
 def set_auto_connect(connection):
-    interfaces = '|'.join(get_interfaces())
+    interfaces = get_interfaces()
 
-    auto_script = """#!/bin/bash
-    if [[ "$1" =~ """+interfaces+""" ]] && [[ "$2" =~ up|connectivity-change ]]; then
-        nmcli con up id '"""+connection+"""'
-    fi"""
+    if interfaces:
+        interface_string = '|'.join(interfaces)
 
-    with open(AUTO_CONNECT_PATH, "w") as auto_vpn:
-        print(auto_script, file=auto_vpn)
+        auto_script = """#!/bin/bash
+        if [[ "$1" =~ """ + interface_string + """ ]] && [[ "$2" =~ up|connectivity-change ]]; then
+            nmcli con up id '""" + connection + """'
+        fi"""
 
-    utils.make_executable(AUTO_CONNECT_PATH)
+        with open(AUTO_CONNECT_PATH, "w") as auto_vpn:
+            print(auto_script, file=auto_vpn)
+
+        utils.make_executable(AUTO_CONNECT_PATH)
 
 
 def remove_autoconnect():
@@ -228,11 +232,10 @@ def disconnect_active_vpn(active_servers):
 
         for line in lines[1:]:
             if line:
-                elements = line.split()
+                elements = re.split(r'\s{2,}', line.strip()) # TODO: Find a better solution for splitting the line. Can't rely of connection names not having 2 or more spaces
                 connection = {}
                 for i, element in enumerate(elements):
                     connection[labels[i]] = element
-
                 if connection['TYPE'] == "vpn":  # Only deactivate VPNs managed by this tool. Preserve any not in the active list
                     for server in active_servers.values():
                         if connection['NAME'] == server['name']:

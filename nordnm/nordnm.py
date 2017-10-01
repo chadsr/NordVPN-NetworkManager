@@ -103,8 +103,10 @@ class NordNM(object):
 
         configs = nordapi.get_configs()
         if configs:
-            utils.extract_zip(configs, paths.DIR_OVPN)
-            self.logger.info("Configuration files downloaded and extracted successfully. (%s)" % paths.DIR_OVPN)
+            if utils.extract_zip(configs, paths.DIR_OVPN):
+                self.logger.info("Configuration files downloaded and extracted successfully. (%s)" % paths.DIR_OVPN)
+            else:
+                self.logger.error("Failed to extract configuration files")
         else:
             self.logger.error("Failed to retrieve configuration files from NordVPN")
 
