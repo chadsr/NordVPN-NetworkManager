@@ -1,3 +1,4 @@
+from nordnm import nordnm
 from nordnm import utils
 from nordnm import nordapi
 
@@ -8,20 +9,6 @@ import os
 import subprocess
 from decimal import Decimal
 import resource
-
-
-def generate_connection_name(server, protocol):
-    short_name = server['domain'].split('.')[0]
-    connection_name = short_name + '.' + protocol + '['
-
-    for i, category in enumerate(server['categories']):
-        category_name = nordapi.VPN_CATEGORIES[category['name']]
-        if i > 0:  # prepend a separator if there is more than one category
-            category_name = '|' + category_name
-
-        connection_name = connection_name + category_name
-
-    return connection_name + ']'
 
 
 def get_server_score(server, ping_attempts):
@@ -59,7 +46,7 @@ def compare_server(server, best_servers, ping_attempts, valid_protocols):
                 best_score = best_servers[country_code, category_name, protocol]['score']
 
             if score > best_score:
-                name = generate_connection_name(server, protocol)
+                name = nordnm.generate_connection_name(server, protocol)
                 best_servers[country_code, category_name, protocol] = {'name': name, 'domain': domain, 'score': score}
 
 
@@ -71,7 +58,7 @@ def get_num_processes(num_servers):
 
     # Find how many file descriptors are already in use by the parent process
     ppid = os.getppid()
-    used_file_descriptors = int(subprocess.run('ls -l /proc/'+str(ppid)+'/fd | wc -l', shell=True, stdout=subprocess.PIPE).stdout.decode('utf-8'))
+    used_file_descriptors = int(subprocess.run('ls -l /proc/' + str(ppid) + '/fd | wc -l', shell=True, stdout=subprocess.PIPE).stdout.decode('utf-8'))
 
     # Max processes is the number of file descriptors left, before the sof limit (configuration maximum) is reached
     max_processes = int((soft_limit - used_file_descriptors) / 2)
