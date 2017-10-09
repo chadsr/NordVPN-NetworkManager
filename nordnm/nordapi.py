@@ -5,12 +5,6 @@ import logging
 API_ADDR = 'https://api.nordvpn.com'
 TIMEOUT = 5
 
-HEADERS = {
-    'User-Agent': 'NordVPN_Client_5.56.780.0',
-    'Host': 'api.nordvpn.com',
-    'Connection': 'Close'
-}
-
 # Mapping of NordVPN category names to their short internal names
 VPN_CATEGORIES = {
     'Standard VPN servers': 'normal',
@@ -27,7 +21,7 @@ logging.getLogger("requests").setLevel(logging.CRITICAL)  # Small hack to hide i
 
 def get_server_list(sort_by_load=False):
     try:
-        resp = requests.get(API_ADDR + '/server', headers=HEADERS, timeout=TIMEOUT)
+        resp = requests.get(API_ADDR + '/server', timeout=TIMEOUT)
         server_list = resp.json()
 
         if sort_by_load:
@@ -56,7 +50,7 @@ def get_nameservers():
 
 def get_configs():
     try:
-        resp = requests.get(API_ADDR + '/files/zipv2', headers=HEADERS, timeout=TIMEOUT)
+        resp = requests.get(API_ADDR + '/files/zipv2', timeout=TIMEOUT)
         return resp.content
     except Exception as ex:
         logger.error(ex)
