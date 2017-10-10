@@ -18,6 +18,7 @@ More documentation will be available when this tool is out of Alpha releases.
 - Uses the NordVPN DNS servers to prevent DNS request leaks.
 - Disables IPv6 by default, to avoid IPv6 leaks.
 - Sets the auto connect server of your choice for all NetworkManager connections, instead of per connection. (optional)
+- Sets a network kill-switch, to disable the network interface being used, if the active VPN disconnects. (optional)
 
 ## 1. Requirements
 
