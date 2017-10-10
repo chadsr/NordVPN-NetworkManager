@@ -5,6 +5,7 @@ from nordnm import networkmanager
 from nordnm import utils
 from nordnm import benchmarking
 from nordnm import paths
+from nordnm.__init__ import __version__
 
 import argparse
 import os
@@ -50,6 +51,12 @@ class NordNM(object):
             print("Error: The purge argument can not be used with sync, auto-connect or kill-switch")
             sys.exit(1)
         elif args.credentials or args.settings or args.update or args.sync or args.purge or args.auto_connect or args.kill_switch:
+            print(""" _   _               _ _   _ ___  ___
+| \ | |             | | \ | ||  \/  |
+|  \| | ___  _ __ __| |  \| || .  . |
+| . ` |/ _ \| '__/ _` | . ` || |\/| |
+| |\  | (_) | | | (_| | |\  || |  | |
+\_| \_/\___/|_|  \__,_\_| \_/\_|  |_/   v%s\n""" % __version__)
             self.run(args.credentials, args.settings, args.update, args.sync, args.purge, args.auto_connect, args.kill_switch)
         else:
             parser.print_help()
