@@ -270,7 +270,17 @@ class NordNM(object):
 
                 # If there's a kill-switch in place, we need to temporarily remove it, otherwise it will kill out network when disabling an active VPN below
                 # Disconnect active Nord VPNs, so we get a more reliable benchmark
-                if networkmanager.remove_killswitch(paths.KILLSWITCH) or networkmanager.disconnect_active_vpn(self.active_servers):
+                if networkmanager.remove_killswitch(paths.KILLSWITCH):
+                    show_warning = True
+                    message_string = "kill-switch"
+                if networkmanager.disconnect_active_vpn(self.active_servers):
+                    if show_warning:
+                        message_string = "Active VPNs and " + message_string
+                    else:
+                        show_warning = True
+                        message_string = "Active VPNs"
+
+                if show_warning:
                     self.logger.warning("Active VPNs and/or kill-switch disabled for accurate benchmarking. Your connection is not secure until these are re-enabled.")
 
                 self.logger.info("Benchmarking servers...")
