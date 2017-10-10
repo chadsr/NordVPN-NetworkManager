@@ -14,7 +14,6 @@ logger = logging.getLogger(__name__)
 
 
 def restart():
-    logger.info("Attempting to restart NetworkManager.")
     try:
         output = subprocess.run(['systemctl', 'restart', 'NetworkManager.service'])
         output.check_returncode()
@@ -250,7 +249,7 @@ def remove_connection(connection_name):
 
 
 def disconnect_active_vpn(active_servers):
-    logger.info('Attempting to disconnect any active VPN connections.')
+    disabled = False  # Flag for checking if a VPN was disconnected
 
     try:
         output = subprocess.run(['nmcli', '-g', 'TYPE,NAME,UUID', 'connection', 'show', '--active'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -266,8 +265,9 @@ def disconnect_active_vpn(active_servers):
                         if elements[1] == server['name']:
                             output = subprocess.run(['nmcli', 'connection', 'down', elements[2]], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                             output.check_returncode()
+                            disabled = True
 
-        return True
+        return disabled
 
     except subprocess.CalledProcessError:
         error = utils.format_std_string(output.stderr)

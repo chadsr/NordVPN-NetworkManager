@@ -104,13 +104,11 @@ class NordNM(object):
             utils.chown_path_to_user(paths.DIR_OVPN)
 
     def get_configs(self):
-        self.logger.info("Attempting to download and extract the latest NordVPN OpenVPN configuration files.")
+        self.logger.info("Downloading latest NordVPN OpenVPN configuration files to '%s'." % paths.DIR_OVPN)
 
         configs = nordapi.get_configs()
         if configs:
-            if utils.extract_zip(configs, paths.DIR_OVPN):
-                self.logger.info("Configuration files downloaded and extracted successfully. (%s)" % paths.DIR_OVPN)
-            else:
+            if not utils.extract_zip(configs, paths.DIR_OVPN):
                 self.logger.error("Failed to extract configuration files")
         else:
             self.logger.error("Failed to retrieve configuration files from NordVPN")
@@ -166,8 +164,6 @@ class NordNM(object):
                 self.save_active_servers(active_servers, paths.ACTIVE_SERVERS)  # Save after every successful removal, in case importer is killed abruptly
 
             self.active_servers = active_servers
-
-            self.logger.info("All active connections removed!")
 
             return True
         else:
@@ -258,59 +254,57 @@ class NordNM(object):
         self.logger.info("Checking for new connections to import...")
 
         if self.configs_exist():
+
             valid_server_list = self.get_valid_servers()
             if valid_server_list:
-                self.logger.info("Attempting to remove Network kill-switch, if found.")
 
-                if networkmanager.remove_killswitch(paths.KILLSWITCH):  # If there's a kill-switch in place, we need to temporarily remove it, otherwise it will kill out network when disabling an active VPN below
-                    self.logger.warning("If you have an active NordVPN connection, it's about to be disabled until the synchronising is complete!")
-                    networkmanager.disconnect_active_vpn(self.active_servers)  # Disconnect active Nord VPNs, so we get a more reliable benchmark
+                # If there's a kill-switch in place, we need to temporarily remove it, otherwise it will kill out network when disabling an active VPN below
+                # Disconnect active Nord VPNs, so we get a more reliable benchmark
+                if networkmanager.remove_killswitch(paths.KILLSWITCH) or networkmanager.disconnect_active_vpn(self.active_servers):
+                    self.logger.warning("Active VPNs and/or kill-switch disabled for accurate benchmarking. Your connection is not secure until benchmarking is complete.")
 
-                    self.logger.info("Finding best servers to synchronise...")
+                self.logger.info("Benchmarking servers...")
 
-                    start = timer()
-                    ping_attempts = self.settings.get_ping_attempts()  # We are going to be multiprocessing within a class instance, so this needs getting outside of the multiprocessing
-                    valid_protocols = self.settings.get_protocols()
-                    best_servers = benchmarking.get_best_servers(valid_server_list, ping_attempts, valid_protocols)
+                start = timer()
+                ping_attempts = self.settings.get_ping_attempts()  # We are going to be multiprocessing within a class instance, so this needs getting outside of the multiprocessing
+                valid_protocols = self.settings.get_protocols()
+                best_servers = benchmarking.get_best_servers(valid_server_list, ping_attempts, valid_protocols)
 
-                    end = timer()
-                    self.logger.info("Done benchmarking. Took %0.2f seconds.", end - start)
+                end = timer()
+                self.logger.info("Benchmarking complete. Took %0.2f seconds.", end - start)
 
-                    updated = self.purge_active_connections(remove_killswitch=False)  # Purge all old connections until a better sync routine is added
+                updated = self.purge_active_connections(remove_killswitch=False)  # Purge all old connections until a better sync routine is added
 
-                    new_connections = 0
-                    for key in best_servers.keys():
-                        imported = True
-                        name = best_servers[key]['name']
+                new_connections = 0
+                for key in best_servers.keys():
+                    imported = True
+                    name = best_servers[key]['name']
 
-                        if not self.connection_exists(name):
-                            domain = best_servers[key]['domain']
-                            protocol = key[2]
+                    if not self.connection_exists(name):
+                        domain = best_servers[key]['domain']
+                        protocol = key[2]
 
-                            file_path = self.get_ovpn_path(domain, protocol)
-                            if file_path:
-                                if networkmanager.import_connection(file_path, name, username, password, dns_list):
-                                    updated = True
-                                    new_connections += 1
-                                else:
-                                    imported = False
+                        file_path = self.get_ovpn_path(domain, protocol)
+                        if file_path:
+                            if networkmanager.import_connection(file_path, name, username, password, dns_list):
+                                updated = True
+                                new_connections += 1
                             else:
-                                self.logger.warning("Could not find a configuration file for %s. Skipping.", name)
+                                imported = False
+                        else:
+                            self.logger.warning("Could not find a configuration file for %s. Skipping.", name)
 
-                        # If the connection already existed, or the import was successful, add the server combination to the active servers
-                        if imported:
-                            self.active_servers[key] = best_servers[key]
-                            self.save_active_servers(self.active_servers, paths.ACTIVE_SERVERS)
+                    # If the connection already existed, or the import was successful, add the server combination to the active servers
+                    if imported:
+                        self.active_servers[key] = best_servers[key]
+                        self.save_active_servers(self.active_servers, paths.ACTIVE_SERVERS)
 
-                    if new_connections > 0:
-                        self.logger.info("%i new connections added.", new_connections)
-                    else:
-                        self.logger.info("No new connections added.")
-
-                    return updated
+                if new_connections > 0:
+                    self.logger.info("%i new connections added.", new_connections)
                 else:
-                    self.logger.error("Kill-switch could not be removed. Exiting.")
-                    sys.exit(1)
+                    self.logger.info("No new connections added.")
+
+                return updated
             else:
                 self.logger.error("Could not fetch the server list from NordVPN. Check your Internet connectivity.")
                 sys.exit(1)
