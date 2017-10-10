@@ -231,7 +231,6 @@ class NordNM(object):
 
             return valid_server_list
         else:
-            self.logger.error("Could not fetch the server list from NordVPN. Check your Internet connectivity.")
             return None
 
     def connection_exists(self, connection_name):
@@ -262,7 +261,9 @@ class NordNM(object):
             valid_server_list = self.get_valid_servers()
             if valid_server_list:
                 self.logger.info("Attempting to remove Network kill-switch, if found.")
+
                 if networkmanager.remove_killswitch(paths.KILLSWITCH):  # If there's a kill-switch in place, we need to temporarily remove it, otherwise it will kill out network when disabling an active VPN below
+                    self.logger.info("WARNING: If you have an active NordVPN connection, it's about to be disabled until the synchronising is complete!")
                     networkmanager.disconnect_active_vpn(self.active_servers)  # Disconnect active Nord VPNs, so we get a more reliable benchmark
 
                     self.logger.info("Finding best servers to synchronise...")
@@ -310,7 +311,7 @@ class NordNM(object):
                 else:
                     self.logger.error("Kill-switch could not be removed. Exiting.")
             else:
-                self.logger.error("No servers found to sync. Exiting.")
+                self.logger.error("Could not fetch the server list from NordVPN. Check your Internet connectivity.")
                 sys.exit(1)
         else:
             self.logger.error("Can't find any OpenVPN configuration files. Please run --update before syncing.")

@@ -32,27 +32,20 @@ def restart():
         return False
 
 
-# This currently performs unexpectedly with names containing spaces
-# TODO: Fix for connection names containing spaces
 def get_vpn_connections():
     try:
-        output = subprocess.run(['nmcli', 'connection', 'show'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output = subprocess.run(['nmcli', '-g', 'TYPE,NAME', 'connection', 'show'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output.check_returncode()
 
         lines = output.stdout.decode('utf-8').split('\n')
-        labels = list(reversed(lines[0].split()))
 
         vpn_connections = []
         for line in lines[1:]:
             if line:
-                elements = line.split()
-                connection = {}
-                for i, element in enumerate(reversed(elements)):
-                    if i < len(labels):
-                        connection[labels[i]] = element
+                elements = line.strip().split(':')
 
-                if (connection['TYPE'] == 'vpn'):
-                    vpn_connections.append(connection['NAME'])
+                if (elements[0] == 'vpn'):
+                    vpn_connections.append(elements[1])
 
         return vpn_connections
 
@@ -64,22 +57,18 @@ def get_vpn_connections():
 
 def get_interfaces(wifi=True, ethernet=True):
     try:
-        output = subprocess.run(['nmcli', 'dev', 'status'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output = subprocess.run(['nmcli', '-g', 'TYPE,DEVICE', 'device', 'status'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output.check_returncode()
 
         lines = output.stdout.decode('utf-8').split('\n')
-        labels = lines[0].split()
 
         interfaces = []
         for line in lines[1:]:
             if line:
-                elements = re.split(r'\s{2,}', line.strip())  # TODO: Find a better solution for splitting the line. Can't rely of connection names not having 2 or more spaces
-                interface = {}
-                for i, element in enumerate(elements):
-                    interface[labels[i]] = element
+                elements = line.strip().split(':')
 
-                if (wifi and interface['TYPE'] == 'wifi') or (ethernet and interface['TYPE'] == 'ethernet'):
-                    interfaces.append(interface['DEVICE'])
+                if (wifi and elements[0] == 'wifi') or (ethernet and elements[0] == 'ethernet'):
+                    interfaces.append(elements[1])
 
         return interfaces
 
@@ -261,21 +250,18 @@ def disconnect_active_vpn(active_servers):
     logger.info('Attempting to disconnect any active VPN connections.')
 
     try:
-        output = subprocess.run(['nmcli', 'connection', 'show', '--active'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output = subprocess.run(['nmcli', '-g', 'TYPE,NAME,UUID', 'connection', 'show', '--active'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output.check_returncode()
         lines = output.stdout.decode('utf-8').split('\n')
-        labels = lines[0].split()
 
         for line in lines[1:]:
             if line:
-                elements = re.split(r'\s{2,}', line.strip())  # TODO: Find a better solution for splitting the line. Can't rely of connection names not having 2 or more spaces
-                connection = {}
-                for i, element in enumerate(elements):
-                    connection[labels[i]] = element
-                if connection['TYPE'] == "vpn":  # Only deactivate VPNs managed by this tool. Preserve any not in the active list
+                elements = re.strip().split(':')
+
+                if elements[0] == "vpn":  # Only deactivate VPNs managed by this tool. Preserve any not in the active list
                     for server in active_servers.values():
-                        if connection['NAME'] == server['name']:
-                            output = subprocess.run(['nmcli', 'connection', 'down', connection['UUID']], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                        if elements[1] == server['name']:
+                            output = subprocess.run(['nmcli', 'connection', 'down', elements[2]], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                             output.check_returncode()
 
         return True
