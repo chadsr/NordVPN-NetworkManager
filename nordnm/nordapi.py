@@ -1,6 +1,5 @@
 import requests
 from operator import itemgetter
-import logging
 
 API_ADDR = 'https://api.nordvpn.com'
 TIMEOUT = 5
@@ -15,9 +14,6 @@ VPN_CATEGORIES = {
     'Anti DDoS': 'ddos',
 }
 
-logger = logging.getLogger(__name__)
-logging.getLogger("requests").setLevel(logging.CRITICAL)  # Small hack to hide info logs from requests
-
 
 def get_server_list(sort_by_load=False):
     try:
@@ -29,7 +25,6 @@ def get_server_list(sort_by_load=False):
         else:
             return server_list
     except Exception as ex:
-        logger.error(ex)
         return None
 
 
@@ -43,7 +38,6 @@ def get_nameservers():
         resp = requests.get(API_ADDR + '/dns/smart', headers=HEADERS, timeout=TIMEOUT)
         return resp.json()
     except Exception as ex:
-        logger.error(ex)
         return None
     """
 
@@ -53,5 +47,4 @@ def get_configs():
         resp = requests.get(API_ADDR + '/files/zipv2', timeout=TIMEOUT)
         return resp.content
     except Exception as ex:
-        logger.error(ex)
         return None

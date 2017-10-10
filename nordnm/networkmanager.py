@@ -8,6 +8,8 @@ import logging
 import re
 
 AUTO_CONNECT_PATH = "/etc/NetworkManager/dispatcher.d/auto_vpn"
+KILLSWITCH_PATH = "/etc/NetworkManager/dispatcher.d/killswitch_vpn"
+
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +73,7 @@ def get_interfaces(wifi=True, ethernet=True):
         interfaces = []
         for line in lines[1:]:
             if line:
-                elements = re.split(r'\s{2,}', line.strip()) # TODO: Find a better solution for splitting the line. Can't rely of connection names not having 2 or more spaces
+                elements = re.split(r'\s{2,}', line.strip())  # TODO: Find a better solution for splitting the line. Can't rely of connection names not having 2 or more spaces
                 interface = {}
                 for i, element in enumerate(elements):
                     interface[labels[i]] = element
@@ -91,13 +93,45 @@ def get_interfaces(wifi=True, ethernet=True):
         return False
 
 
+def remove_killswitch(persistence_path):
+    try:
+        os.remove(KILLSWITCH_PATH)
+        os.remove(persistence_path)
+        return True
+    except OSError:
+        return False
+
+
+def set_killswitch(persistence_path):
+    killswitch_script = """#!/bin/sh
+
+PERSISTENCE_FILE=""" + persistence_path + """
+
+case $2 in
+    vpn-up)
+        nmcli -f type,device connection | awk '$1~/^vpn$/ && $2~/[^\-][^\-]/ { print $2; }' > "${PERSISTENCE_FILE}"
+    ;;
+    vpn-down)
+        echo "${PERSISTENCE_FILE}"
+        xargs -n 1 -a "${PERSISTENCE_FILE}" nmcli device disconnect
+    ;;
+esac"""
+
+    with open(KILLSWITCH_PATH, "w") as killswitch_vpn:
+        print(killswitch_script, file=killswitch_vpn)
+
+    utils.make_executable(KILLSWITCH_PATH)
+
+    return True
+
+
 def set_auto_connect(connection):
     interfaces = get_interfaces()
 
     if interfaces:
         interface_string = '|'.join(interfaces)
 
-        auto_script = """#!/bin/bash
+        auto_script = """#!/bin/sh
         if [[ "$1" =~ """ + interface_string + """ ]] && [[ "$2" =~ up|connectivity-change ]]; then
             nmcli con up id '""" + connection + """'
         fi"""
@@ -106,6 +140,8 @@ def set_auto_connect(connection):
             print(auto_script, file=auto_vpn)
 
         utils.make_executable(AUTO_CONNECT_PATH)
+
+        return True
 
 
 def remove_autoconnect():
@@ -232,7 +268,7 @@ def disconnect_active_vpn(active_servers):
 
         for line in lines[1:]:
             if line:
-                elements = re.split(r'\s{2,}', line.strip()) # TODO: Find a better solution for splitting the line. Can't rely of connection names not having 2 or more spaces
+                elements = re.split(r'\s{2,}', line.strip())  # TODO: Find a better solution for splitting the line. Can't rely of connection names not having 2 or more spaces
                 connection = {}
                 for i, element in enumerate(elements):
                     connection[labels[i]] = element
