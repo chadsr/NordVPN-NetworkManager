@@ -5,7 +5,6 @@ import shutil
 import os
 import configparser
 import logging
-import re
 
 AUTO_CONNECT_PATH = "/etc/NetworkManager/dispatcher.d/auto_vpn"
 KILLSWITCH_PATH = "/etc/NetworkManager/dispatcher.d/killswitch_vpn"
@@ -40,7 +39,7 @@ def get_vpn_connections():
         lines = output.stdout.decode('utf-8').split('\n')
 
         vpn_connections = []
-        for line in lines[1:]:
+        for line in lines:
             if line:
                 elements = line.strip().split(':')
 
@@ -63,7 +62,7 @@ def get_interfaces(wifi=True, ethernet=True):
         lines = output.stdout.decode('utf-8').split('\n')
 
         interfaces = []
-        for line in lines[1:]:
+        for line in lines:
             if line:
                 elements = line.strip().split(':')
 
@@ -87,7 +86,9 @@ def remove_killswitch(persistence_path):
         os.remove(KILLSWITCH_PATH)
         os.remove(persistence_path)
         return True
-    except OSError:
+    except FileNotFoundError:
+        return True  # Return true if the file was not found, since it's removed
+    except Exception:
         return False
 
 
@@ -137,7 +138,9 @@ def remove_autoconnect():
     try:
         os.remove(AUTO_CONNECT_PATH)
         return True
-    except OSError:
+    except FileNotFoundError:
+        return True  # Return true if the file was not found, since it's removed
+    except Exception:
         return False
 
 
@@ -254,9 +257,9 @@ def disconnect_active_vpn(active_servers):
         output.check_returncode()
         lines = output.stdout.decode('utf-8').split('\n')
 
-        for line in lines[1:]:
+        for line in lines:
             if line:
-                elements = re.strip().split(':')
+                elements = line.strip().split(':')
 
                 if elements[0] == "vpn":  # Only deactivate VPNs managed by this tool. Preserve any not in the active list
                     for server in active_servers.values():
@@ -265,6 +268,7 @@ def disconnect_active_vpn(active_servers):
                             output.check_returncode()
 
         return True
+
     except subprocess.CalledProcessError:
         error = utils.format_std_string(output.stderr)
         logger.error(error)
