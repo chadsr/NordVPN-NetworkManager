@@ -136,8 +136,8 @@ class NordNM(object):
 
         if selected_parameters in self.active_servers:
             connection_name = self.active_servers[selected_parameters]['name']
-            self.logger.info("Setting '%s' as auto-connect server.", connection_name)
             networkmanager.set_auto_connect(connection_name)
+            self.logger.info("'%s' set as auto-connect server.", connection_name)
             return True
         else:
             self.logger.warning("No active server found matching (%s, %s, %s). Check your input and try again.", country_code, category, protocol)
@@ -263,7 +263,7 @@ class NordNM(object):
                 self.logger.info("Attempting to remove Network kill-switch, if found.")
 
                 if networkmanager.remove_killswitch(paths.KILLSWITCH):  # If there's a kill-switch in place, we need to temporarily remove it, otherwise it will kill out network when disabling an active VPN below
-                    self.logger.info("WARNING: If you have an active NordVPN connection, it's about to be disabled until the synchronising is complete!")
+                    self.logger.warning("If you have an active NordVPN connection, it's about to be disabled until the synchronising is complete!")
                     networkmanager.disconnect_active_vpn(self.active_servers)  # Disconnect active Nord VPNs, so we get a more reliable benchmark
 
                     self.logger.info("Finding best servers to synchronise...")
@@ -310,6 +310,7 @@ class NordNM(object):
                     return updated
                 else:
                     self.logger.error("Kill-switch could not be removed. Exiting.")
+                    sys.exit(1)
             else:
                 self.logger.error("Could not fetch the server list from NordVPN. Check your Internet connectivity.")
                 sys.exit(1)
