@@ -33,11 +33,11 @@ def generate_connection_name(server, protocol):
 class NordNM(object):
     def __init__(self):
         parser = argparse.ArgumentParser()
-        parser.add_argument('-u', '--update', help='Get the latest OpenVPN configuration files from NordVPN', action='store_true')
-        parser.add_argument('-s', '--sync', help="Synchronise best servers (based on load and latency) to NetworkManager", action="store_true")
-        parser.add_argument('-p', '--purge', help='Remove all active connections and auto-connect (if configured)', action='store_true')
-        parser.add_argument('-a', '--auto-connect', nargs=3, metavar=('[COUNTRY_CODE]', '[VPN_TYPE]', '[PROTOCOL]'), help='Configure NetworkManager to auto-connect to chosen server type. Takes country code, category and protocol')
-        parser.add_argument('-k', '--kill-switch', help='Activate a killswitch to disable the network interface when the vpn goes down', action='store_true')
+        parser.add_argument('-u', '--update', help='Download the latest OpenVPN configurations from NordVPN', action='store_true')
+        parser.add_argument('-s', '--sync', help="Synchronise the optimal servers (based on load and latency) to NetworkManager", action="store_true")
+        parser.add_argument('-a', '--auto-connect', nargs=3, metavar=('[COUNTRY_CODE]', '[VPN_TYPE]', '[PROTOCOL]'), help='Configure NetworkManager to auto-connect to the chosen server type. Takes country code, category and protocol')
+        parser.add_argument('-k', '--kill-switch', help='Sets a network kill-switch, to disable the active network interface when an active VPN connection disconnects', action='store_true')
+        parser.add_argument('-p', '--purge', help='Remove all active connections, auto-connect and kill-switch (if configured)', action='store_true')
         parser.add_argument('--credentials', help='Change the existing saved credentials', action='store_true')
         parser.add_argument('--settings', help='Change the existing saved settings', action='store_true')
 
@@ -46,7 +46,10 @@ class NordNM(object):
         except:
             sys.exit(1)
 
-        if args.credentials or args.settings or args.update or args.sync or args.purge or args.auto_connect or args.kill_switch:
+        if (args.sync or args.auto_connect or args.kill_switch) and args.purge:
+            print("Error: The purge argument can not be used with sync, auto-connect or kill-switch")
+            sys.exit(1)
+        elif args.credentials or args.settings or args.update or args.sync or args.purge or args.auto_connect or args.kill_switch:
             self.run(args.credentials, args.settings, args.update, args.sync, args.purge, args.auto_connect, args.kill_switch)
         else:
             parser.print_help()
@@ -261,7 +264,7 @@ class NordNM(object):
                 # If there's a kill-switch in place, we need to temporarily remove it, otherwise it will kill out network when disabling an active VPN below
                 # Disconnect active Nord VPNs, so we get a more reliable benchmark
                 if networkmanager.remove_killswitch(paths.KILLSWITCH) or networkmanager.disconnect_active_vpn(self.active_servers):
-                    self.logger.warning("Active VPNs and/or kill-switch disabled for accurate benchmarking. Your connection is not secure until benchmarking is complete.")
+                    self.logger.warning("Active VPNs and/or kill-switch disabled for accurate benchmarking. Your connection is not secure until these are re-enabled.")
 
                 self.logger.info("Benchmarking servers...")
 
