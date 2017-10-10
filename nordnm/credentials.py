@@ -13,10 +13,9 @@ class CredentialsHandler(object):
         self.path = path
         self.config = configparser.ConfigParser(allow_no_value=True)
 
-        if self.load():
-            self.logger.info("Existing credentials loaded.")
-        else:
-            self.save_new_credentials()
+        if not self.load():
+            self.logger.warning("No credentials found!")
+            self.save_new_credentials()  # Prompt for credentials
 
     def save(self):
         try:

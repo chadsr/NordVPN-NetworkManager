@@ -31,6 +31,8 @@ Features:
 -  Disables IPv6 by default, to avoid IPv6 leaks.
 -  Sets the auto connect server of your choice for all NetworkManager
    connections, instead of per connection. (optional)
+-  Sets a network kill-switch, to disable the network interface being
+   used, if the active VPN disconnects. (optional)
 
 1. Requirements
 ---------------
@@ -62,79 +64,37 @@ the future)
 3. Usage
 --------
 
-Setup/Update Configuration
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+**Note:** Many of the commands below can be chained into one line. A
+recommended example of this is to update, synchronise and set any
+auto-connect/kill-switch at the same time.
+
+For example:
 
 ::
 
-    sudo nordnm --update
-
-Downloads the latest openvpn configuration files from the NordVPN
-website and stores them locally. *If you experience connections failing
-suddenly, try running the update parameter again, since the
-configuration files may have been updated.*
-
-Synchronising
-~~~~~~~~~~~~~
+    sudo nordnm -u -s -k -a nl normal tcp
 
 ::
 
-    sudo nordnm --sync
+    usage: nordnm [-h] [-u] [-s] [-a [COUNTRY_CODE] [VPN_TYPE] [PROTOCOL]] [-k]
+                  [-p] [--credentials] [--settings]
 
-This option will use your current settings to find the best server for
-each country, category and protocol combination that you have enabled.
-The configurations will then be added to NetworkManager automatically,
-ready to use.
-
-Auto-Connect to a Server
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-::
-
-    sudo nordnm --auto-connect [COUNTRY_CODE] [VPN_TYPE] [PROTOCOL]
-
-Auto-connect allows you to choose a server from your already
-synchronised configurations to automatically connect to whenever an
-Internet enabled network interface (e.g. wifi/ethernet) connects to a
-network.
-
-Remove All Connections
-~~~~~~~~~~~~~~~~~~~~~~
-
-::
-
-    sudo nordnm --purge
-
-Removes all of the synchronised VPN configurations from NetworkManager
-and any enabled auto-connection setup.
-
-Update Credentials
-~~~~~~~~~~~~~~~~~~
-
-::
-
-    sudo nordnm --credentials
-
-Allows you to re-enter your account credentials via the terminal,
-instead of editing files manually.
-
-Update Settings
-~~~~~~~~~~~~~~~
-
-::
-
-    sudo nordnm --settings
-
-Allows you to re-enter synchronisation settings.
-
-Help
-~~~~
-
-::
-
-    sudo nordnm --help
-
-Simply display all the options above with a short description.
+    optional arguments:
+      -h, --help            show this help message and exit
+      -u, --update          Download the latest OpenVPN configurations from
+                            NordVPN
+      -s, --sync            Synchronise the optimal servers (based on load and
+                            latency) to NetworkManager
+      -a [COUNTRY_CODE] [VPN_TYPE] [PROTOCOL], --auto-connect [COUNTRY_CODE] [VPN_TYPE] [PROTOCOL]
+                            Configure NetworkManager to auto-connect to the chosen
+                            server type. Takes country code, category and protocol
+      -k, --kill-switch     Sets a network kill-switch, to disable the active
+                            network interface when an active VPN connection
+                            disconnects
+      -p, --purge           Remove all active connections, auto-connect and kill-
+                            switch (if configured)
+      --credentials         Change the existing saved credentials
+      --settings            Change the existing saved settings
 
 Suggestions/Bugs
 ----------------

@@ -5,6 +5,7 @@ from nordnm import networkmanager
 from nordnm import utils
 from nordnm import benchmarking
 from nordnm import paths
+from nordnm.__init__ import __version__
 
 import argparse
 import os
@@ -33,10 +34,11 @@ def generate_connection_name(server, protocol):
 class NordNM(object):
     def __init__(self):
         parser = argparse.ArgumentParser()
-        parser.add_argument('-u', '--update', help='Get the latest OpenVPN configuration files from NordVPN', action='store_true')
-        parser.add_argument('-s', '--sync', help="Synchronise best servers (based on load and latency) to NetworkManager", action="store_true")
-        parser.add_argument('-p', '--purge', help='Remove all active connections and auto-connect (if configured)', action='store_true')
-        parser.add_argument('-a', '--auto-connect', nargs=3, metavar=('[COUNTRY_CODE]', '[VPN_TYPE]', '[PROTOCOL]'), help='Configure NetworkManager to auto-connect to chosen server type. Takes country code, category and protocol')
+        parser.add_argument('-u', '--update', help='Download the latest OpenVPN configurations from NordVPN', action='store_true')
+        parser.add_argument('-s', '--sync', help="Synchronise the optimal servers (based on load and latency) to NetworkManager", action="store_true")
+        parser.add_argument('-a', '--auto-connect', nargs=3, metavar=('[COUNTRY_CODE]', '[VPN_TYPE]', '[PROTOCOL]'), help='Configure NetworkManager to auto-connect to the chosen server type. Takes country code, category and protocol')
+        parser.add_argument('-k', '--kill-switch', help='Sets a network kill-switch, to disable the active network interface when an active VPN connection disconnects', action='store_true')
+        parser.add_argument('-p', '--purge', help='Remove all active connections, auto-connect and kill-switch (if configured)', action='store_true')
         parser.add_argument('--credentials', help='Change the existing saved credentials', action='store_true')
         parser.add_argument('--settings', help='Change the existing saved settings', action='store_true')
 
@@ -45,8 +47,17 @@ class NordNM(object):
         except:
             sys.exit(1)
 
-        if args.credentials or args.settings or args.update or args.sync or args.purge or args.auto_connect:
-            self.run(args.credentials, args.settings, args.update, args.sync, args.purge, args.auto_connect)
+        if (args.sync or args.auto_connect or args.kill_switch) and args.purge:
+            print("Error: The purge argument can not be used with sync, auto-connect or kill-switch")
+            sys.exit(1)
+        elif args.credentials or args.settings or args.update or args.sync or args.purge or args.auto_connect or args.kill_switch:
+            print(""" _   _               _ _   _ ___  ___
+| \ | |             | | \ | ||  \/  |
+|  \| | ___  _ __ __| |  \| || .  . |
+| . ` |/ _ \| '__/ _` | . ` || |\/| |
+| |\  | (_) | | | (_| | |\  || |  | |
+\_| \_/\___/|_|  \__,_\_| \_/\_|  |_/   v%s\n""" % __version__)
+            self.run(args.credentials, args.settings, args.update, args.sync, args.purge, args.auto_connect, args.kill_switch)
         else:
             parser.print_help()
 
@@ -65,7 +76,7 @@ class NordNM(object):
         if os.path.isfile(paths.ACTIVE_SERVERS):
             self.active_servers = self.load_active_servers(paths.ACTIVE_SERVERS)
 
-    def run(self, credentials, settings, update, sync, purge, auto_connect):
+    def run(self, credentials, settings, update, sync, purge, auto_connect, kill_switch):
         updated = False
 
         self.setup()
@@ -86,6 +97,10 @@ class NordNM(object):
         if auto_connect:
             updated = self.select_auto_connect(auto_connect[0], auto_connect[1], auto_connect[2])
 
+        if kill_switch:
+            if networkmanager.set_killswitch(paths.KILLSWITCH):
+                self.logger.info("Network kill-switch set successfully!")
+
         if updated:
             networkmanager.restart()
 
@@ -99,13 +114,11 @@ class NordNM(object):
             utils.chown_path_to_user(paths.DIR_OVPN)
 
     def get_configs(self):
-        self.logger.info("Attempting to download and extract the latest NordVPN OpenVPN configuration files.")
+        self.logger.info("Downloading latest NordVPN OpenVPN configuration files to '%s'." % paths.DIR_OVPN)
 
         configs = nordapi.get_configs()
         if configs:
-            if utils.extract_zip(configs, paths.DIR_OVPN):
-                self.logger.info("Configuration files downloaded and extracted successfully. (%s)" % paths.DIR_OVPN)
-            else:
+            if not utils.extract_zip(configs, paths.DIR_OVPN):
                 self.logger.error("Failed to extract configuration files")
         else:
             self.logger.error("Failed to retrieve configuration files from NordVPN")
@@ -131,18 +144,23 @@ class NordNM(object):
 
         if selected_parameters in self.active_servers:
             connection_name = self.active_servers[selected_parameters]['name']
-            self.logger.info("Setting '%s' as auto-connect server.", connection_name)
             networkmanager.set_auto_connect(connection_name)
+            self.logger.info("'%s' set as auto-connect server.", connection_name)
             return True
         else:
             self.logger.warning("No active server found matching (%s, %s, %s). Check your input and try again.", country_code, category, protocol)
             return False
 
-    def purge_active_connections(self, remove_autoconnect=True):
+    def purge_active_connections(self, remove_autoconnect=True, remove_killswitch=True):
         if remove_autoconnect:
             removed = networkmanager.remove_autoconnect()
             if removed:
                 self.logger.info("Auto-Connect file removed.")
+
+        if remove_killswitch:
+            removed = networkmanager.remove_killswitch(paths.KILLSWITCH)
+            if removed:
+                self.logger.info("Kill-Switch file removed.")
 
         if self.active_servers:
             self.logger.info("Removing all active connections...")
@@ -156,8 +174,6 @@ class NordNM(object):
                 self.save_active_servers(active_servers, paths.ACTIVE_SERVERS)  # Save after every successful removal, in case importer is killed abruptly
 
             self.active_servers = active_servers
-
-            self.logger.info("All active connections removed!")
 
             return True
         else:
@@ -221,7 +237,6 @@ class NordNM(object):
 
             return valid_server_list
         else:
-            self.logger.error("Could not fetch the server list from NordVPN. Check your Internet connectivity.")
             return None
 
     def connection_exists(self, connection_name):
@@ -249,11 +264,16 @@ class NordNM(object):
         self.logger.info("Checking for new connections to import...")
 
         if self.configs_exist():
+
             valid_server_list = self.get_valid_servers()
             if valid_server_list:
-                networkmanager.disconnect_active_vpn(self.active_servers)  # Disconnect active Nord VPNs, so we get a more reliable benchmark
 
-                self.logger.info("Finding best servers to synchronise...")
+                # If there's a kill-switch in place, we need to temporarily remove it, otherwise it will kill out network when disabling an active VPN below
+                # Disconnect active Nord VPNs, so we get a more reliable benchmark
+                if networkmanager.remove_killswitch(paths.KILLSWITCH) or networkmanager.disconnect_active_vpn(self.active_servers):
+                    self.logger.warning("Active VPNs and/or kill-switch disabled for accurate benchmarking. Your connection is not secure until these are re-enabled.")
+
+                self.logger.info("Benchmarking servers...")
 
                 start = timer()
                 ping_attempts = self.settings.get_ping_attempts()  # We are going to be multiprocessing within a class instance, so this needs getting outside of the multiprocessing
@@ -261,9 +281,9 @@ class NordNM(object):
                 best_servers = benchmarking.get_best_servers(valid_server_list, ping_attempts, valid_protocols)
 
                 end = timer()
-                self.logger.info("Done benchmarking. Took %0.2f seconds.", end - start)
+                self.logger.info("Benchmarking complete. Took %0.2f seconds.", end - start)
 
-                updated = self.purge_active_connections()  # Purge all old connections until a better sync routine is added
+                updated = self.purge_active_connections(remove_killswitch=False)  # Purge all old connections until a better sync routine is added
 
                 new_connections = 0
                 for key in best_servers.keys():
@@ -296,7 +316,7 @@ class NordNM(object):
 
                 return updated
             else:
-                self.logger.error("No servers found to sync. Exiting.")
+                self.logger.error("Could not fetch the server list from NordVPN. Check your Internet connectivity.")
                 sys.exit(1)
         else:
             self.logger.error("Can't find any OpenVPN configuration files. Please run --update before syncing.")

@@ -5,15 +5,15 @@ import shutil
 import os
 import configparser
 import logging
-import re
 
 AUTO_CONNECT_PATH = "/etc/NetworkManager/dispatcher.d/auto_vpn"
+KILLSWITCH_PATH = "/etc/NetworkManager/dispatcher.d/killswitch_vpn"
+
 
 logger = logging.getLogger(__name__)
 
 
 def restart():
-    logger.info("Attempting to restart NetworkManager.")
     try:
         output = subprocess.run(['systemctl', 'restart', 'NetworkManager.service'])
         output.check_returncode()
@@ -30,27 +30,20 @@ def restart():
         return False
 
 
-# This currently performs unexpectedly with names containing spaces
-# TODO: Fix for connection names containing spaces
 def get_vpn_connections():
     try:
-        output = subprocess.run(['nmcli', 'connection', 'show'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output = subprocess.run(['nmcli', '-g', 'TYPE,NAME', 'connection', 'show'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output.check_returncode()
 
         lines = output.stdout.decode('utf-8').split('\n')
-        labels = list(reversed(lines[0].split()))
 
         vpn_connections = []
-        for line in lines[1:]:
+        for line in lines:
             if line:
-                elements = line.split()
-                connection = {}
-                for i, element in enumerate(reversed(elements)):
-                    if i < len(labels):
-                        connection[labels[i]] = element
+                elements = line.strip().split(':')
 
-                if (connection['TYPE'] == 'vpn'):
-                    vpn_connections.append(connection['NAME'])
+                if (elements[0] == 'vpn'):
+                    vpn_connections.append(elements[1])
 
         return vpn_connections
 
@@ -62,22 +55,18 @@ def get_vpn_connections():
 
 def get_interfaces(wifi=True, ethernet=True):
     try:
-        output = subprocess.run(['nmcli', 'dev', 'status'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output = subprocess.run(['nmcli', '-g', 'TYPE,DEVICE', 'device', 'status'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output.check_returncode()
 
         lines = output.stdout.decode('utf-8').split('\n')
-        labels = lines[0].split()
 
         interfaces = []
-        for line in lines[1:]:
+        for line in lines:
             if line:
-                elements = re.split(r'\s{2,}', line.strip()) # TODO: Find a better solution for splitting the line. Can't rely of connection names not having 2 or more spaces
-                interface = {}
-                for i, element in enumerate(elements):
-                    interface[labels[i]] = element
+                elements = line.strip().split(':')
 
-                if (wifi and interface['TYPE'] == 'wifi') or (ethernet and interface['TYPE'] == 'ethernet'):
-                    interfaces.append(interface['DEVICE'])
+                if (wifi and elements[0] == 'wifi') or (ethernet and elements[0] == 'ethernet'):
+                    interfaces.append(elements[1])
 
         return interfaces
 
@@ -91,13 +80,47 @@ def get_interfaces(wifi=True, ethernet=True):
         return False
 
 
+def remove_killswitch(persistence_path):
+    try:
+        os.remove(KILLSWITCH_PATH)
+        os.remove(persistence_path)
+        return True
+    except FileNotFoundError:
+        return True  # Return true if the file was not found, since it's removed
+    except Exception:
+        return False
+
+
+def set_killswitch(persistence_path):
+    killswitch_script = """#!/bin/sh
+
+PERSISTENCE_FILE=""" + persistence_path + """
+
+case $2 in
+    vpn-up)
+        nmcli -f type,device connection | awk '$1~/^vpn$/ && $2~/[^\-][^\-]/ { print $2; }' > "${PERSISTENCE_FILE}"
+    ;;
+    vpn-down)
+        echo "${PERSISTENCE_FILE}"
+        xargs -n 1 -a "${PERSISTENCE_FILE}" nmcli device disconnect
+    ;;
+esac"""
+
+    with open(KILLSWITCH_PATH, "w") as killswitch_vpn:
+        print(killswitch_script, file=killswitch_vpn)
+
+    utils.make_executable(KILLSWITCH_PATH)
+
+    return True
+
+
 def set_auto_connect(connection):
     interfaces = get_interfaces()
 
     if interfaces:
         interface_string = '|'.join(interfaces)
 
-        auto_script = """#!/bin/bash
+        auto_script = """#!/bin/sh
         if [[ "$1" =~ """ + interface_string + """ ]] && [[ "$2" =~ up|connectivity-change ]]; then
             nmcli con up id '""" + connection + """'
         fi"""
@@ -107,12 +130,16 @@ def set_auto_connect(connection):
 
         utils.make_executable(AUTO_CONNECT_PATH)
 
+        return True
+
 
 def remove_autoconnect():
     try:
         os.remove(AUTO_CONNECT_PATH)
         return True
-    except OSError:
+    except FileNotFoundError:
+        return True  # Return true if the file was not found, since it's removed
+    except Exception:
         return False
 
 
@@ -222,27 +249,26 @@ def remove_connection(connection_name):
 
 
 def disconnect_active_vpn(active_servers):
-    logger.info('Attempting to disconnect any active VPN connections.')
+    disabled = False  # Flag for checking if a VPN was disconnected
 
     try:
-        output = subprocess.run(['nmcli', 'connection', 'show', '--active'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output = subprocess.run(['nmcli', '-g', 'TYPE,NAME,UUID', 'connection', 'show', '--active'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output.check_returncode()
         lines = output.stdout.decode('utf-8').split('\n')
-        labels = lines[0].split()
 
-        for line in lines[1:]:
+        for line in lines:
             if line:
-                elements = re.split(r'\s{2,}', line.strip()) # TODO: Find a better solution for splitting the line. Can't rely of connection names not having 2 or more spaces
-                connection = {}
-                for i, element in enumerate(elements):
-                    connection[labels[i]] = element
-                if connection['TYPE'] == "vpn":  # Only deactivate VPNs managed by this tool. Preserve any not in the active list
-                    for server in active_servers.values():
-                        if connection['NAME'] == server['name']:
-                            output = subprocess.run(['nmcli', 'connection', 'down', connection['UUID']], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                            output.check_returncode()
+                elements = line.strip().split(':')
 
-        return True
+                if elements[0] == "vpn":  # Only deactivate VPNs managed by this tool. Preserve any not in the active list
+                    for server in active_servers.values():
+                        if elements[1] == server['name']:
+                            output = subprocess.run(['nmcli', 'connection', 'down', elements[2]], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                            output.check_returncode()
+                            disabled = True
+
+        return disabled
+
     except subprocess.CalledProcessError:
         error = utils.format_std_string(output.stderr)
         logger.error(error)

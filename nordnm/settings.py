@@ -14,11 +14,8 @@ class SettingsHandler(object):
 
         self.path = path
 
-        if self.load():  # If we successfully load existing settings
-            self.logger.info("Existing settings loaded. (%s)", self.path)
-        else:
+        if not self.load():
             self.logger.warning("No existing settingss found!")
-
             # Prompt for new settings
             self.save_new_settings()
 
