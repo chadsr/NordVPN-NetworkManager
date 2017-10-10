@@ -32,7 +32,7 @@ def restart():
 
 def get_vpn_connections():
     try:
-        output = subprocess.run(['nmcli', '-g', 'TYPE,NAME', 'connection', 'show'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output = subprocess.run(['nmcli', '--mode', 'tabular', '--terse', '--fields', 'TYPE,NAME', 'connection', 'show'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output.check_returncode()
 
         lines = output.stdout.decode('utf-8').split('\n')
@@ -55,7 +55,7 @@ def get_vpn_connections():
 
 def get_interfaces(wifi=True, ethernet=True):
     try:
-        output = subprocess.run(['nmcli', '-g', 'TYPE,DEVICE', 'device', 'status'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output = subprocess.run(['nmcli', '--mode', 'tabular', '--terse', '--fields', 'TYPE,DEVICE', 'device', 'status'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output.check_returncode()
 
         lines = output.stdout.decode('utf-8').split('\n')
@@ -252,7 +252,7 @@ def disconnect_active_vpn(active_servers):
     disabled = False  # Flag for checking if a VPN was disconnected
 
     try:
-        output = subprocess.run(['nmcli', '-g', 'TYPE,NAME,UUID', 'connection', 'show', '--active'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output = subprocess.run(['nmcli', '--mode', 'tabular', '--terse', '--fields', 'TYPE,NAME,UUID', 'connection', 'show', '--active'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output.check_returncode()
         lines = output.stdout.decode('utf-8').split('\n')
 
