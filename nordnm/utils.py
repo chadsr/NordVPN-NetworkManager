@@ -5,8 +5,23 @@ from zipfile import ZipFile
 import subprocess
 import logging
 import getpass
+import requests
+import json
 
 logger = logging.getLogger(__name__)
+
+
+def get__pypi_package_version(package_name):
+    req = requests.get("https://pypi.python.org/pypi/" + package_name + "/json")
+
+    if req.status_code == requests.codes.ok:
+        package = json.loads(req.text.encode(req.encoding))
+
+        if 'version' in package['info']:
+            return package['info']['version']
+
+    logger.error("Could not get version information from PyPi")
+    return False
 
 
 # A simple input for yes/no questions

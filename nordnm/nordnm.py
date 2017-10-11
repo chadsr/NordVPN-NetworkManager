@@ -51,15 +51,27 @@ class NordNM(object):
             print("Error: The purge argument can not be used with sync, auto-connect or kill-switch")
             sys.exit(1)
         elif args.credentials or args.settings or args.update or args.sync or args.purge or args.auto_connect or args.kill_switch:
-            print(""" _   _               _ _   _ ___  ___
-| \ | |             | | \ | ||  \/  |
-|  \| | ___  _ __ __| |  \| || .  . |
-| . ` |/ _ \| '__/ _` | . ` || |\/| |
-| |\  | (_) | | | (_| | |\  || |  | |
-\_| \_/\___/|_|  \__,_\_| \_/\_|  |_/   v%s\n""" % __version__)
+            self.print_splash()
+
             self.run(args.credentials, args.settings, args.update, args.sync, args.purge, args.auto_connect, args.kill_switch)
         else:
             parser.print_help()
+
+    def print_splash(self):
+        version_string = __version__
+
+        latest_version = utils.get__pypi_package_version(__package__)
+        if latest_version and latest_version != version_string:  # There's a new version on PyPi
+            version_string = version_string + " (v" + latest_version + " available!)"
+        else:
+            version_string = version_string + " (Latest)"
+
+        print("""     _   _               _ _   _ ___  ___
+    | \ | |             | | \ | ||  \/  |
+    |  \| | ___  _ __ __| |  \| || .  . |
+    | . ` |/ _ \| '__/ _` | . ` || |\/| |
+    | |\  | (_) | | | (_| | |\  || |  | |
+    \_| \_/\___/|_|  \__,_\_| \_/\_|  |_/   v%s\n""" % version_string)
 
     def setup(self):
         self.logger = logging.getLogger(__name__)
