@@ -22,7 +22,7 @@ class SettingsHandler(object):
     def save_new_settings(self):
         self.logger.info("Prompting for new settings.\n")
 
-        self.settings = configparser.ConfigParser(allow_no_value=True)
+        self.settings = configparser.ConfigParser(allow_no_value=True, interpolation=None)
 
         # Prompt for which countries to synchronise
         # First offer the whitelist, if the user chooses to skip the whitelist, offer the blacklist
