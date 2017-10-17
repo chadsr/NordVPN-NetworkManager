@@ -11,7 +11,7 @@ class CredentialsHandler(object):
         self.logger = logging.getLogger(__name__)
 
         self.path = path
-        self.config = configparser.ConfigParser(allow_no_value=True)
+        self.config = configparser.ConfigParser(allow_no_value=True, interpolation=None)
 
         if not self.load():
             self.logger.warning("No credentials found!")
