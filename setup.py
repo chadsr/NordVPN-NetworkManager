@@ -41,7 +41,7 @@ setup(
     entry_points={
         'console_scripts': [
             'nordnm = nordnm.__main__:main'
-            ]},
+        ]},
     classifiers=[
         'Environment :: Console',
         'Intended Audience :: End Users/Desktop',
@@ -58,5 +58,5 @@ setup(
         'Programming Language :: Python :: 3 :: Only',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
-        ]
+    ]
 )
