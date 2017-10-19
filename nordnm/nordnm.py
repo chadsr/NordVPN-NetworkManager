@@ -19,7 +19,7 @@ from timeit import default_timer as timer
 
 def generate_connection_name(server, protocol):
     short_name = server['domain'].split('.')[0]
-    connection_name = short_name + '.' + protocol + '['
+    connection_name = short_name + ' ['
 
     for i, category in enumerate(server['categories']):
         category_name = nordapi.VPN_CATEGORIES[category['name']]
@@ -28,7 +28,7 @@ def generate_connection_name(server, protocol):
 
         connection_name = connection_name + category_name
 
-    return connection_name + ']'
+    return connection_name + '] [' + protocol + ']'
 
 
 class NordNM(object):

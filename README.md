@@ -7,7 +7,7 @@ This tool removes the need for manually handling OpenVPN configurations from Nor
 More documentation will be available when this tool is out of Alpha releases.
 
 **Warning:**
-*This tool is still highly under development and is not yet robust enough to use reliably. I take no responsibility for any unforseen problems it may cause.*
+*This tool is still highly under development. I take no responsibility for any unforseen problems it may cause.*
 
 ## Features:
 - Uses the latest NordVPN OpenVPN configuration files.
@@ -31,14 +31,22 @@ sudo apt update && sudo apt install openvpn network-manager network-manager-gnom
 ### Arch
 
 ```
-sudo pacman -S networkmanager openvpn networkmanager-openvpn
+sudo pacman -S --needed networkmanager openvpn networkmanager-openvpn
 ```
 
 ## 2. Installation
 **Please note:** This tool requires Python 3.5 or later. (May change in the future)
 
+*If your default Python version is 2.x, you will need to use pip3 below*
+
+### System Install
 ```
-sudo -H pip3 install nordnm
+sudo -H pip install nordnm
+```
+
+### User Install
+```
+pip install --user nordnm
 ```
 
 ## 3. Usage
@@ -46,7 +54,7 @@ sudo -H pip3 install nordnm
 
 For example:
 ```
-sudo nordnm -u -s -k -a nl normal tcp
+sudo nordnm -uska nl normal tcp
 ```
 
 

@@ -12,9 +12,8 @@ up.
 More documentation will be available when this tool is out of Alpha
 releases.
 
-**Warning:** *This tool is still highly under development and is not yet
-robust enough to use reliably. I take no responsibility for any
-unforseen problems it may cause.*
+**Warning:** *This tool is still highly under development. I take no
+responsibility for any unforseen problems it may cause.*
 
 Features:
 ---------
@@ -49,7 +48,7 @@ Arch
 
 ::
 
-    sudo pacman -S networkmanager openvpn networkmanager-openvpn
+    sudo pacman -S --needed networkmanager openvpn networkmanager-openvpn
 
 2. Installation
 ---------------
@@ -57,9 +56,21 @@ Arch
 **Please note:** This tool requires Python 3.5 or later. (May change in
 the future)
 
+*If your default Python version is 2.x, you will need to use pip3 below*
+
+System Install
+~~~~~~~~~~~~~~
+
 ::
 
-    sudo -H pip3 install nordnm
+    sudo -H pip install nordnm
+
+User Install
+~~~~~~~~~~~~
+
+::
+
+    pip install --user nordnm
 
 3. Usage
 --------
@@ -72,7 +83,7 @@ For example:
 
 ::
 
-    sudo nordnm -u -s -k -a nl normal tcp
+    sudo nordnm -uska nl normal tcp
 
 ::
 
