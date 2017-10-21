@@ -87,8 +87,8 @@ For example:
 
 ::
 
-    usage: nordnm [-h] [-u] [-s] [-a [COUNTRY_CODE] [VPN_TYPE] [PROTOCOL]] [-k]
-                  [-p] [--credentials] [--settings]
+    usage: nordnm [-h] [-u] [-s] [-a [COUNTRY_CODE] [VPN_CATEGORY] [PROTOCOL]]
+                  [-k] [-p] [--categories] [--credentials] [--settings]
 
     optional arguments:
       -h, --help            show this help message and exit
@@ -96,7 +96,7 @@ For example:
                             NordVPN
       -s, --sync            Synchronise the optimal servers (based on load and
                             latency) to NetworkManager
-      -a [COUNTRY_CODE] [VPN_TYPE] [PROTOCOL], --auto-connect [COUNTRY_CODE] [VPN_TYPE] [PROTOCOL]
+      -a [COUNTRY_CODE] [VPN_CATEGORY] [PROTOCOL], --auto-connect [COUNTRY_CODE] [VPN_CATEGORY] [PROTOCOL]
                             Configure NetworkManager to auto-connect to the chosen
                             server type. Takes country code, category and protocol
       -k, --kill-switch     Sets a network kill-switch, to disable the active
@@ -104,6 +104,7 @@ For example:
                             disconnects
       -p, --purge           Remove all active connections, auto-connect and kill-
                             switch (if configured)
+      --categories          Display a list of the available VPN categories
       --credentials         Change the existing saved credentials
       --settings            Change the existing saved settings
 

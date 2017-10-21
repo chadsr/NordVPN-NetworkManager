@@ -36,9 +36,10 @@ class NordNM(object):
         parser = argparse.ArgumentParser()
         parser.add_argument('-u', '--update', help='Download the latest OpenVPN configurations from NordVPN', action='store_true')
         parser.add_argument('-s', '--sync', help="Synchronise the optimal servers (based on load and latency) to NetworkManager", action="store_true")
-        parser.add_argument('-a', '--auto-connect', nargs=3, metavar=('[COUNTRY_CODE]', '[VPN_TYPE]', '[PROTOCOL]'), help='Configure NetworkManager to auto-connect to the chosen server type. Takes country code, category and protocol')
+        parser.add_argument('-a', '--auto-connect', nargs=3, metavar=('[COUNTRY_CODE]', '[VPN_CATEGORY]', '[PROTOCOL]'), help='Configure NetworkManager to auto-connect to the chosen server type. Takes country code, category and protocol')
         parser.add_argument('-k', '--kill-switch', help='Sets a network kill-switch, to disable the active network interface when an active VPN connection disconnects', action='store_true')
         parser.add_argument('-p', '--purge', help='Remove all active connections, auto-connect and kill-switch (if configured)', action='store_true')
+        parser.add_argument('--categories', help='Display a list of the available VPN categories', action='store_true')
         parser.add_argument('--credentials', help='Change the existing saved credentials', action='store_true')
         parser.add_argument('--settings', help='Change the existing saved settings', action='store_true')
 
@@ -54,6 +55,8 @@ class NordNM(object):
             self.print_splash()
 
             self.run(args.credentials, args.settings, args.update, args.sync, args.purge, args.auto_connect, args.kill_switch)
+        elif args.categories:
+            self.print_categories()
         else:
             parser.print_help()
 
@@ -72,6 +75,10 @@ class NordNM(object):
     | . ` |/ _ \| '__/ _` | . ` || |\/| |
     | |\  | (_) | | | (_| | |\  || |  | |
     \_| \_/\___/|_|  \__,_\_| \_/\_|  |_/   v%s\n""" % version_string)
+
+    def print_categories(self):
+        for long_name, short_name in nordapi.VPN_CATEGORIES.items():
+            print("%-9s (%s)" % (short_name, long_name))
 
     def setup(self):
         self.logger = logging.getLogger(__name__)
