@@ -63,7 +63,7 @@ class NordNM(object):
     def print_splash(self):
         version_string = __version__
 
-        latest_version = utils.get__pypi_package_version(__package__)
+        latest_version = utils.get_pypi_package_version(__package__)
         if latest_version and latest_version != version_string:  # There's a new version on PyPi
             version_string = version_string + " (v" + latest_version + " available!)"
         else:

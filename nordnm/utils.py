@@ -6,16 +6,15 @@ import subprocess
 import logging
 import getpass
 import requests
-import json
 
 logger = logging.getLogger(__name__)
 
 
-def get__pypi_package_version(package_name):
-    req = requests.get("https://pypi.python.org/pypi/" + package_name + "/json")
+def get_pypi_package_version(package_name):
+    resp = requests.get("https://pypi.python.org/pypi/" + package_name + "/json")
 
-    if req.status_code == requests.codes.ok:
-        package = json.loads(req.text.encode(req.encoding))
+    if resp.status_code == requests.codes.ok:
+        package = resp.json()
 
         if 'version' in package['info']:
             return package['info']['version']
