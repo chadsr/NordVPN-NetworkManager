@@ -18,12 +18,15 @@ VPN_CATEGORIES = {
 def get_server_list(sort_by_load=False):
     try:
         resp = requests.get(API_ADDR + '/server', timeout=TIMEOUT)
-        server_list = resp.json()
+        if resp.status_code == requests.codes.ok:
+            server_list = resp.json()
 
-        if sort_by_load:
-            return sorted(server_list, key=itemgetter('load'))
+            if sort_by_load:
+                return sorted(server_list, key=itemgetter('load'))
+            else:
+                return server_list
         else:
-            return server_list
+            return None
     except Exception as ex:
         return None
 
@@ -45,6 +48,9 @@ def get_nameservers():
 def get_configs():
     try:
         resp = requests.get(API_ADDR + '/files/zipv2', timeout=TIMEOUT)
-        return resp.content
+        if resp.status_code == requests.codes.ok:
+            return resp.content
+        else:
+            return None
     except Exception as ex:
         return None
