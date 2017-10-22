@@ -25,7 +25,7 @@ More documentation will be available when this tool is out of Alpha releases.
 ### Debian/Ubuntu
 
 ```
-sudo apt update && sudo apt install network-manager openvpn network-manager-openvpn
+sudo apt update && sudo apt install network-manager openvpn network-manager-openvpn-gnome
 ```
 
 ### Arch
