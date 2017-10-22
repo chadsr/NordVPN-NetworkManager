@@ -41,7 +41,7 @@ Debian/Ubuntu
 
 ::
 
-    sudo apt update && sudo apt install openvpn network-manager network-manager-gnome network-manager-openvpn-gnome
+    sudo apt update && sudo apt install network-manager openvpn network-manager-openvpn
 
 Arch
 ~~~~
