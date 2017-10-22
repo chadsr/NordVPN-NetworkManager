@@ -60,7 +60,8 @@ sudo nordnm -uska nl normal tcp
 
 ```
 usage: nordnm [-h] [-u] [-s] [-a [COUNTRY_CODE] [VPN_CATEGORY] [PROTOCOL]]
-              [-k] [-p] [--categories] [--credentials] [--settings]
+              [-k] [-p] [--countries] [--categories] [--credentials]
+              [--settings]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -76,6 +77,7 @@ optional arguments:
                         disconnects
   -p, --purge           Remove all active connections, auto-connect and kill-
                         switch (if configured)
+  --countries           Display a list of the available countries
   --categories          Display a list of the available VPN categories
   --credentials         Change the existing saved credentials
   --settings            Change the existing saved settings
