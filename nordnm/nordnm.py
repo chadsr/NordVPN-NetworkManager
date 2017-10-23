@@ -39,6 +39,7 @@ class NordNM(object):
         parser.add_argument('-a', '--auto-connect', nargs=3, metavar=('[COUNTRY_CODE]', '[VPN_CATEGORY]', '[PROTOCOL]'), help='Configure NetworkManager to auto-connect to the chosen server type. Takes country code, category and protocol')
         parser.add_argument('-k', '--kill-switch', help='Sets a network kill-switch, to disable the active network interface when an active VPN connection disconnects', action='store_true')
         parser.add_argument('-p', '--purge', help='Remove all active connections, auto-connect and kill-switch (if configured)', action='store_true')
+        parser.add_argument('--countries', help='Display a list of the available countries', action='store_true')
         parser.add_argument('--categories', help='Display a list of the available VPN categories', action='store_true')
         parser.add_argument('--credentials', help='Change the existing saved credentials', action='store_true')
         parser.add_argument('--settings', help='Change the existing saved settings', action='store_true')
@@ -48,15 +49,21 @@ class NordNM(object):
         except:
             sys.exit(1)
 
-        if (args.sync or args.auto_connect or args.kill_switch) and args.purge:
-            print("Error: The purge argument can not be used with sync, auto-connect or kill-switch")
+        self.logger = logging.getLogger(__name__)
+
+        arg_count = len(sys.argv)
+
+        if args.purge and arg_count > 2:
+            print("Error: --purge should be used on its own.")
             sys.exit(1)
+        elif args.categories and arg_count == 2:
+            self.print_categories()
+        elif args.countries and arg_count == 2:
+            self.print_countries()
         elif args.credentials or args.settings or args.update or args.sync or args.purge or args.auto_connect or args.kill_switch:
             self.print_splash()
 
             self.run(args.credentials, args.settings, args.update, args.sync, args.purge, args.auto_connect, args.kill_switch)
-        elif args.categories:
-            self.print_categories()
         else:
             parser.print_help()
 
@@ -80,9 +87,26 @@ class NordNM(object):
         for long_name, short_name in nordapi.VPN_CATEGORIES.items():
             print("%-9s (%s)" % (short_name, long_name))
 
-    def setup(self):
-        self.logger = logging.getLogger(__name__)
+    def print_countries(self):
+        servers = nordapi.get_server_list(sort_by_country=True)
+        if servers:
+            format_string = "| %-14s | %-4s |"
+            countries = []
 
+            print("\n Note: You must use the country code, NOT the country name in this tool.\n")
+            print(format_string % ("NAME", "CODE"))
+            print("|----------------+------|")
+
+            for server in servers:
+                country_code = server['flag']
+                if country_code not in countries:
+                    countries.append(country_code)
+                    country_name = server['country']
+                    print(format_string % (country_name, country_code))
+        else:
+            self.logger.error("Could not get available countries from the NordVPN API.")
+
+    def setup(self):
         self.create_directories()
 
         self.settings = SettingsHandler(paths.SETTINGS)
