@@ -72,7 +72,7 @@ class SettingsHandler(object):
     def load(self):
         if os.path.isfile(self.path):
             try:
-                self.settings = configparser.ConfigParser(allow_no_value=True)
+                self.settings = configparser.ConfigParser(allow_no_value=True, interpolation=None)
                 self.settings.read(self.path)
                 return True
             except Exception as ex:
