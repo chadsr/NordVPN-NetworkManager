@@ -145,7 +145,7 @@ def remove_autoconnect():
 
 def get_connection_config(connection_name):
     try:
-        config = configparser.ConfigParser()
+        config = configparser.ConfigParser(interpolation=None)
         path = "/etc/NetworkManager/system-connections/" + connection_name
 
         if os.path.isfile(path):
