@@ -241,12 +241,12 @@ class NordNM(object):
     def has_valid_categories(self, server):
         valid_categories = self.settings.get_categories()
 
+        # If the server has a category that is valid, return true
         for category in server['categories']:
-            # If the server has a category that we don't want, ignore it completely
-            if category['name'] not in valid_categories:
-                return False
+            if category['name'] in valid_categories:
+                return True
 
-        return True
+        return False
 
     def has_valid_protocol(self, server):
         valid_protocols = self.settings.get_protocols()
