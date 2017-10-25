@@ -13,11 +13,11 @@ KILLSWITCH_PATH = "/etc/NetworkManager/dispatcher.d/killswitch_vpn"
 logger = logging.getLogger(__name__)
 
 
-def restart():
+def reload_connections():
     try:
-        output = subprocess.run(['systemctl', 'restart', 'NetworkManager.service'])
+        output = subprocess.run(['nmcli', 'connection', 'reload'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output.check_returncode()
-        logger.info("NetworkManager restarted successfully!")
+
         return True
 
     except subprocess.CalledProcessError:
@@ -224,6 +224,23 @@ def import_connection(file_path, connection_name, username=None, password=None, 
             save_connection_config(connection_name, config)
         else:
             return False
+
+        return True
+
+    except subprocess.CalledProcessError:
+        error = utils.format_std_string(output.stderr)
+        logger.error(error)
+        return False
+
+    except Exception as ex:
+        logger.error(ex)
+        return False
+
+
+def enable_connection(connection_name):
+    try:
+        output = subprocess.run(['nmcli', 'connection', 'up', connection_name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output.check_returncode()
 
         return True
 

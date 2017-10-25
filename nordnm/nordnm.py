@@ -51,14 +51,18 @@ class NordNM(object):
 
         self.logger = logging.getLogger(__name__)
 
-        arg_count = len(sys.argv)
+        # Count the number of arguments provided
+        arg_count = 0
+        for arg in vars(args):
+            if getattr(args, arg):
+                arg_count += 1
 
-        if args.purge and arg_count > 2:
+        if args.purge and arg_count > 1:
             print("Error: --purge should be used on its own.")
             sys.exit(1)
-        elif args.categories and arg_count == 2:
+        elif args.categories and arg_count == 1:
             self.print_categories()
-        elif args.countries and arg_count == 2:
+        elif args.countries and arg_count == 1:
             self.print_countries()
         elif args.credentials or args.settings or args.update or args.sync or args.purge or args.auto_connect or args.kill_switch:
             self.print_splash()
@@ -120,8 +124,6 @@ class NordNM(object):
             self.active_servers = self.load_active_servers(paths.ACTIVE_SERVERS)
 
     def run(self, credentials, settings, update, sync, purge, auto_connect, kill_switch):
-        restart_networkmanager = False
-
         self.setup()
 
         if credentials:
@@ -133,23 +135,18 @@ class NordNM(object):
 
         if sync:
             if self.sync_servers():
-                restart_networkmanager = True
+                networkmanager.reload_connections()
         elif purge:
             networkmanager.remove_autoconnect()
             networkmanager.remove_killswitch(paths.KILLSWITCH)
 
-            if self.purge_active_connections():
-                restart_networkmanager = True
+            self.purge_active_connections()
 
         if auto_connect:
-            if self.select_auto_connect(auto_connect[0], auto_connect[1], auto_connect[2]):
-                restart_networkmanager = True
+            self.enable_auto_connect(auto_connect[0], auto_connect[1], auto_connect[2])
 
         if kill_switch:
             networkmanager.set_killswitch(paths.KILLSWITCH)
-
-        if restart_networkmanager:
-            networkmanager.restart()
 
     def create_directories(self):
         if not os.path.exists(paths.DIR_ROOT):
@@ -186,16 +183,21 @@ class NordNM(object):
 
         return ovpn_path
 
-    def select_auto_connect(self, country_code, category='normal', protocol='tcp'):
+    def enable_auto_connect(self, country_code, category='normal', protocol='tcp'):
+        enabled = False
         selected_parameters = (country_code.upper(), category, protocol)
 
         if selected_parameters in self.active_servers:
             connection_name = self.active_servers[selected_parameters]['name']
-            networkmanager.set_auto_connect(connection_name)
-            return True
+
+            if networkmanager.set_auto_connect(connection_name):
+                networkmanager.disconnect_active_vpn(self.active_servers)
+                if networkmanager.enable_connection(connection_name):
+                    enabled = True
         else:
             self.logger.error("Auto-connect not activated: No active server found matching [%s, %s, %s].", country_code, category, protocol)
-            return False
+
+        return enabled
 
     def purge_active_connections(self):
         if self.active_servers:
@@ -333,6 +335,8 @@ class NordNM(object):
                         updated = True
                     if networkmanager.remove_autoconnect():
                         updated = True
+
+                    self.logger.info("Adding new connections...")
 
                     new_connections = 0
                     for key in best_servers.keys():
