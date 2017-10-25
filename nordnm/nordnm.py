@@ -120,31 +120,35 @@ class NordNM(object):
             self.active_servers = self.load_active_servers(paths.ACTIVE_SERVERS)
 
     def run(self, credentials, settings, update, sync, purge, auto_connect, kill_switch):
-        updated = False
+        restart_networkmanager = False
 
         self.setup()
 
         if credentials:
             self.credentials.save_new_credentials()
-
         if settings:
             self.settings.save_new_settings()
-
         if update:
             self.get_configs()
+
         if sync:
-            updated = self.sync_servers()
+            if self.sync_servers():
+                restart_networkmanager = True
         elif purge:
-            updated = self.purge_active_connections()
+            networkmanager.remove_autoconnect()
+            networkmanager.remove_killswitch(paths.KILLSWITCH)
+
+            if self.purge_active_connections():
+                restart_networkmanager = True
 
         if auto_connect:
-            updated = self.select_auto_connect(auto_connect[0], auto_connect[1], auto_connect[2])
+            if self.select_auto_connect(auto_connect[0], auto_connect[1], auto_connect[2]):
+                restart_networkmanager = True
 
         if kill_switch:
-            if networkmanager.set_killswitch(paths.KILLSWITCH):
-                self.logger.info("Network kill-switch set successfully!")
+            networkmanager.set_killswitch(paths.KILLSWITCH)
 
-        if updated:
+        if restart_networkmanager:
             networkmanager.restart()
 
     def create_directories(self):
@@ -188,23 +192,12 @@ class NordNM(object):
         if selected_parameters in self.active_servers:
             connection_name = self.active_servers[selected_parameters]['name']
             networkmanager.set_auto_connect(connection_name)
-            self.logger.info("'%s' set as auto-connect server.", connection_name)
             return True
         else:
             self.logger.error("Auto-connect not activated: No active server found matching [%s, %s, %s].", country_code, category, protocol)
             return False
 
-    def purge_active_connections(self, remove_autoconnect=True, remove_killswitch=True):
-        if remove_autoconnect:
-            removed = networkmanager.remove_autoconnect()
-            if removed:
-                self.logger.info("Auto-Connect file removed.")
-
-        if remove_killswitch:
-            removed = networkmanager.remove_killswitch(paths.KILLSWITCH)
-            if removed:
-                self.logger.info("Kill-Switch file removed.")
-
+    def purge_active_connections(self):
         if self.active_servers:
             self.logger.info("Removing all active connections...")
             active_servers = copy.deepcopy(self.active_servers)
@@ -306,23 +299,24 @@ class NordNM(object):
             server_list = nordapi.get_server_list(sort_by_load=True)
             if server_list:
 
-                valid_server_list = self.get_valid_servers()
+                valid_server_list = self.get_valid_servers(server_list)
                 if valid_server_list:
 
                     # If there's a kill-switch in place, we need to temporarily remove it, otherwise it will kill out network when disabling an active VPN below
                     # Disconnect active Nord VPNs, so we get a more reliable benchmark
+                    show_warning = False
                     if networkmanager.remove_killswitch(paths.KILLSWITCH):
                         show_warning = True
-                        message_string = "kill-switch"
+                        warning_string = "Kill-switch"
                     if networkmanager.disconnect_active_vpn(self.active_servers):
                         if show_warning:
-                            message_string = "Active VPNs and " + message_string
+                            warning_string = "Active VPN(s) and " + warning_string
                         else:
                             show_warning = True
-                            message_string = "Active VPNs"
+                            warning_string = "Active VPN(s)"
 
                     if show_warning:
-                        self.logger.warning("Active VPNs and/or kill-switch disabled for accurate benchmarking. Your connection is not secure until these are re-enabled.")
+                        self.logger.warning("%s disabled for accurate benchmarking. Your connection is not secure until these are re-enabled.", warning_string)
 
                     self.logger.info("Benchmarking servers...")
 
@@ -334,7 +328,11 @@ class NordNM(object):
                     end = timer()
                     self.logger.info("Benchmarking complete. Took %0.2f seconds.", end - start)
 
-                    updated = self.purge_active_connections(remove_killswitch=False)  # Purge all old connections until a better sync routine is added
+                    # Purge all old connections and any auto-connect, until a better sync routine is added
+                    if self.purge_active_connections():
+                        updated = True
+                    if networkmanager.remove_autoconnect():
+                        updated = True
 
                     new_connections = 0
                     for key in best_servers.keys():

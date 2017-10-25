@@ -84,9 +84,10 @@ def remove_killswitch(persistence_path):
     try:
         os.remove(KILLSWITCH_PATH)
         os.remove(persistence_path)
+        logger.info("Network kill-switch disabled.")
         return True
     except FileNotFoundError:
-        return True  # Return true if the file was not found, since it's removed
+        return False
     except Exception:
         return False
 
@@ -111,10 +112,12 @@ esac"""
 
     utils.make_executable(KILLSWITCH_PATH)
 
+    logger.info("Network kill-switch enabled.")
+
     return True
 
 
-def set_auto_connect(connection):
+def set_auto_connect(connection_name):
     interfaces = get_interfaces()
 
     if interfaces:
@@ -122,7 +125,7 @@ def set_auto_connect(connection):
 
         auto_script = """#!/bin/sh
         if [[ "$1" =~ """ + interface_string + """ ]] && [[ "$2" =~ up|connectivity-change ]]; then
-            nmcli con up id '""" + connection + """'
+            nmcli con up id '""" + connection_name + """'
         fi"""
 
         with open(AUTO_CONNECT_PATH, "w") as auto_vpn:
@@ -130,12 +133,15 @@ def set_auto_connect(connection):
 
         utils.make_executable(AUTO_CONNECT_PATH)
 
+        logger.info("Auto-connect enabled for '%s'.", connection_name)
+
         return True
 
 
 def remove_autoconnect():
     try:
         os.remove(AUTO_CONNECT_PATH)
+        logger.info("Auto-connect disabled.")
         return True
     except FileNotFoundError:
         return True  # Return true if the file was not found, since it's removed
