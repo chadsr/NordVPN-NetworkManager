@@ -13,12 +13,14 @@ import resource
 
 def get_server_score(server, ping_attempts):
     load = server['load']
-    domain = server['domain']
+    ip_addr = server['ip_address']
+
     score = 0  # Lowest starting score
 
     # If a server is at 100% load, we don't need to waste time pinging. Just keep starting score.
     if load < 100:
-        rtt, loss = utils.get_rtt_loss(domain, ping_attempts)
+        rtt, loss = utils.get_rtt_loss(ip_addr, ping_attempts)
+
         if loss < 5:  # Similarly, if packet loss is >= 5%, the connection is not reliable. Keep the starting score.
             score = round(Decimal(1 / numpy.log(load + rtt)), 4)  # Maximise the score for smaller values of ln(load + rtt)
 

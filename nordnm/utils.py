@@ -115,8 +115,8 @@ def get_rtt_loss(host, ping_attempts):
         err = format_std_string(output.stderr)
         if err:
             logger.error("Ping failed with error: %s", err)
-        else:
-            out = format_std_string(output.stdout)
-            logger.warning("Ping failed with output: %s", out)
+        # else:
+        #    out = format_std_string(output.stdout)
+        #    logger.warning("Ping failed with output: %s", out)
 
     return (None, 100)  # If anything failed, return rtt as None and 100% loss
