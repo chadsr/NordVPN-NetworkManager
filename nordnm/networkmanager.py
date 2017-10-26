@@ -9,7 +9,6 @@ import logging
 AUTO_CONNECT_PATH = "/etc/NetworkManager/dispatcher.d/auto_vpn"
 KILLSWITCH_PATH = "/etc/NetworkManager/dispatcher.d/killswitch_vpn"
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -254,6 +253,23 @@ def enable_connection(connection_name):
         return False
 
 
+def disable_connection(connection_name):
+        try:
+            output = subprocess.run(['nmcli', 'connection', 'down', connection_name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            output.check_returncode()
+
+            return True
+
+        except subprocess.CalledProcessError:
+            error = utils.format_std_string(output.stderr)
+            logger.error(error)
+            return False
+
+        except Exception as ex:
+            logger.error(ex)
+            return False
+
+
 def remove_connection(connection_name):
     try:
         output = subprocess.run(['nmcli', 'connection', 'delete', connection_name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -286,9 +302,8 @@ def disconnect_active_vpn(active_servers):
                 if elements[0] == "vpn":  # Only deactivate VPNs managed by this tool. Preserve any not in the active list
                     for server in active_servers.values():
                         if elements[1] == server['name']:
-                            output = subprocess.run(['nmcli', 'connection', 'down', elements[2]], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                            output.check_returncode()
-                            disabled = True
+                            if disable_connection(elements[2]):
+                                disabled = True
 
         return disabled
 
