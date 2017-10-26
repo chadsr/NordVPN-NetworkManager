@@ -230,6 +230,7 @@ class NordNM(object):
         try:
             with open(paths.ACTIVE_SERVERS, 'wb') as fp:
                 pickle.dump(active_servers, fp)
+            utils.chown_path_to_user(paths.ACTIVE_SERVERS)
         except Exception as ex:
             self.logger.error(ex)
 

@@ -1,3 +1,5 @@
+from nordnm import utils
+
 import configparser
 import logging
 import getpass
@@ -21,6 +23,8 @@ class CredentialsHandler(object):
         try:
             with open(self.path, 'w') as config_file:
                 self.config.write(config_file)
+            utils.chown_path_to_user(self.path)
+
             return True
         except Exception as ex:
             self.logger.error(ex)
