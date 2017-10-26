@@ -22,13 +22,13 @@ def get_pypi_package_version(package_name):
 
     except Exception as ex:
         logger.error("Could not check PyPi for latest version.")
-        
+
     return False
 
 
-# A simple input for yes/no questions
+# Yes/No question, defaults to yes
 def input_yes_no(question):
-    yes = set(['yes', 'y'])
+    yes = set(['yes', 'y', ''])
     no = set(['no', 'n'])
 
     while True:
@@ -37,8 +37,6 @@ def input_yes_no(question):
             return True
         elif choice in no:
             return False
-        else:
-            print("Please respond with y or n\n")
 
 
 # Since we're running with root priveledges, this will return the current username
