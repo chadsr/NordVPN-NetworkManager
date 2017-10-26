@@ -75,9 +75,9 @@ class NordNM(object):
         version_string = __version__
 
         latest_version = utils.get_pypi_package_version(__package__)
-        if latest_version and latest_version != version_string:  # There's a new version on PyPi
+        if latest_version and version_string != latest_version:  # There's a new version on PyPi
             version_string = version_string + " (v" + latest_version + " available!)"
-        else:
+        elif latest_version and version_string == latest_version:
             version_string = version_string + " (Latest)"
 
         print("""     _   _               _ _   _ ___  ___
