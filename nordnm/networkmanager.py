@@ -190,6 +190,12 @@ def set_dns_nameservers(config, dns_list):
     return config
 
 
+def set_connection_user(config, user):
+    config['connection']['permissions'] = "user:" + user + ":;"
+
+    return config
+
+
 def add_connection_credentials(config, username, password):
     config['vpn']['password-flags'] = "0"
     config['vpn']['username'] = username
@@ -219,6 +225,9 @@ def import_connection(file_path, connection_name, username=None, password=None, 
 
             if not ipv6:
                 config = disable_ipv6(config)
+
+            user = utils.get_current_user()
+            set_connection_user(config, user)
 
             save_connection_config(connection_name, config)
         else:
