@@ -288,7 +288,7 @@ def remove_connection(connection_name):
 
 
 def disconnect_active_vpn(active_servers):
-    disabled = False  # Flag for checking if a VPN was disconnected
+    disconnected_vpns = set([])
 
     try:
         output = subprocess.run(['nmcli', '--mode', 'tabular', '--terse', '--fields', 'TYPE,NAME,UUID', 'connection', 'show', '--active'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -301,11 +301,11 @@ def disconnect_active_vpn(active_servers):
 
                 if elements[0] == "vpn":  # Only deactivate VPNs managed by this tool. Preserve any not in the active list
                     for server in active_servers.values():
-                        if elements[1] == server['name']:
+                        if elements[1] == server['name'] and elements[2] not in disconnected_vpns:
                             if disable_connection(elements[2]):
-                                disabled = True
+                                disconnected_vpns.add(elements[2])  # Add the UUID to our set
 
-        return disabled
+        return bool(disconnected_vpns)
 
     except subprocess.CalledProcessError:
         error = utils.format_std_string(output.stderr)
