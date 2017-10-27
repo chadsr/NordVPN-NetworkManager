@@ -12,6 +12,56 @@ KILLSWITCH_PATH = "/etc/NetworkManager/dispatcher.d/killswitch_vpn"
 logger = logging.getLogger(__name__)
 
 
+class ConnectionConfig(object):
+    def __init__(self, connection_name):
+        self.config = configparser.ConfigParser(interpolation=None)
+        self.path = os.path.join("/etc/NetworkManager/system-connections/", connection_name)
+
+        try:
+            if os.path.isfile(self.path):
+                self.config.read(self.path)
+            else:
+                logger.error("VPN config file not found! (%s)", self.path)
+                self.path = None
+
+        except Exception as ex:
+            logger.error(ex)
+            self.path = None
+
+    def save(self):
+        try:
+            if self.path:
+                with open(self.path, 'w') as config_file:
+                    self.config.write(config_file)
+
+                return True
+            else:
+                logger.error("Could not save VPN Config. Invalid path.")
+                return False
+
+        except Exception as ex:
+            logger.error(ex)
+            return False
+
+    def disable_ipv6(self):
+        self.config['ipv6']['method'] = 'ignore'
+
+    def set_dns_nameservers(self, dns_list):
+        dns_string = ';'.join(map(str, dns_list))
+
+        self.config['ipv4']['dns'] = dns_string
+        self.config['ipv4']['ignore-auto-dns'] = 'true'
+
+    def set_user(self, user):
+        self.config['connection']['permissions'] = "user:" + user + ":;"
+
+    def set_credentials(self, username, password):
+        self.config['vpn']['password-flags'] = "0"
+        self.config['vpn']['username'] = username
+        self.config['vpn-secrets'] = {}
+        self.config['vpn-secrets']['password'] = password
+
+
 def reload_connections():
     try:
         output = subprocess.run(['nmcli', 'connection', 'reload'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -148,63 +198,6 @@ def remove_autoconnect():
         return False
 
 
-def get_connection_config(connection_name):
-    try:
-        config = configparser.ConfigParser(interpolation=None)
-        path = "/etc/NetworkManager/system-connections/" + connection_name
-
-        if os.path.isfile(path):
-            config.read(path)
-            return config
-        else:
-            logger.info("VPN config file not found! %s", path)
-            return False
-    except Exception as ex:
-        logger.error(ex)
-        return False
-
-
-def save_connection_config(connection_name, config):
-    try:
-        path = "/etc/NetworkManager/system-connections/" + connection_name
-
-        with open(path, 'w') as config_file:
-            config.write(config_file)
-        return True
-    except Exception as ex:
-        logger.error(ex)
-        return False
-
-
-def disable_ipv6(config):
-    config['ipv6']['method'] = 'ignore'
-    return config
-
-
-def set_dns_nameservers(config, dns_list):
-    dns_string = ';'.join(map(str, dns_list))
-
-    config['ipv4']['dns'] = dns_string
-    config['ipv4']['ignore-auto-dns'] = 'true'
-
-    return config
-
-
-def set_connection_user(config, user):
-    config['connection']['permissions'] = "user:" + user + ":;"
-
-    return config
-
-
-def add_connection_credentials(config, username, password):
-    config['vpn']['password-flags'] = "0"
-    config['vpn']['username'] = username
-    config['vpn-secrets'] = {}
-    config['vpn-secrets']['password'] = password
-
-    return config
-
-
 def import_connection(file_path, connection_name, username=None, password=None, dns_list=None, ipv6=False):
     try:
         # Create a temporary config with the new name, for importing (and delete afterwards)
@@ -215,21 +208,21 @@ def import_connection(file_path, connection_name, username=None, password=None, 
         os.remove(temp_path)
         output.check_returncode()
 
-        config = get_connection_config(connection_name)
-        if config:
+        config = ConnectionConfig(connection_name)
+        if config.path:  # If the config has a path, then it was loaded correctly
             if username and password:
-                config = add_connection_credentials(config, username, password)
+                config.set_credentials(username, password)
 
             if dns_list:
-                config = set_dns_nameservers(config, dns_list)
+                config.set_dns_nameservers(dns_list)
 
             if not ipv6:
-                config = disable_ipv6(config)
+                config.disable_ipv6()
 
             user = utils.get_current_user()
-            set_connection_user(config, user)
+            config.set_user(user)
 
-            save_connection_config(connection_name, config)
+            config.save()
         else:
             return False
 
