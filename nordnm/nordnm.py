@@ -46,7 +46,7 @@ class NordNM(object):
 
         try:
             args = parser.parse_args()
-        except:
+        except Exception:
             sys.exit(1)
 
         self.logger = logging.getLogger(__name__)
