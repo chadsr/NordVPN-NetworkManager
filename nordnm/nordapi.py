@@ -24,7 +24,7 @@ def get_server_list(sort_by_load=False, sort_by_country=False):
             if sort_by_load:
                 return sorted(server_list, key=itemgetter('load'))
             elif sort_by_country:
-                return sorted(server_list, key=itemgetter('flag'))
+                return sorted(server_list, key=itemgetter('country'))
             else:
                 return server_list
         else:

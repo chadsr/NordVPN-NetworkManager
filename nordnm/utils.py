@@ -11,21 +11,24 @@ logger = logging.getLogger(__name__)
 
 
 def get_pypi_package_version(package_name):
-    resp = requests.get("https://pypi.python.org/pypi/" + package_name + "/json")
+    try:
+        resp = requests.get("https://pypi.python.org/pypi/" + package_name + "/json", timeout=1)
 
-    if resp.status_code == requests.codes.ok:
-        package = resp.json()
+        if resp.status_code == requests.codes.ok:
+            package = resp.json()
 
-        if 'version' in package['info']:
-            return package['info']['version']
+            if 'version' in package['info']:
+                return package['info']['version']
 
-    logger.error("Could not get version information from PyPi")
+    except Exception as ex:
+        logger.error("Could not check PyPi for latest version.")
+
     return False
 
 
-# A simple input for yes/no questions
+# Yes/No question, defaults to yes
 def input_yes_no(question):
-    yes = set(['yes', 'y'])
+    yes = set(['yes', 'y', ''])
     no = set(['no', 'n'])
 
     while True:
@@ -34,8 +37,6 @@ def input_yes_no(question):
             return True
         elif choice in no:
             return False
-        else:
-            print("Please respond with y or n\n")
 
 
 # Since we're running with root priveledges, this will return the current username
@@ -115,8 +116,8 @@ def get_rtt_loss(host, ping_attempts):
         err = format_std_string(output.stderr)
         if err:
             logger.error("Ping failed with error: %s", err)
-        else:
-            out = format_std_string(output.stdout)
-            logger.warning("Ping failed with output: %s", out)
+        # else:
+        #    out = format_std_string(output.stdout)
+        #    logger.warning("Ping failed with output: %s", out)
 
     return (None, 100)  # If anything failed, return rtt as None and 100% loss

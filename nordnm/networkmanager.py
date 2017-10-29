@@ -9,15 +9,64 @@ import logging
 AUTO_CONNECT_PATH = "/etc/NetworkManager/dispatcher.d/auto_vpn"
 KILLSWITCH_PATH = "/etc/NetworkManager/dispatcher.d/killswitch_vpn"
 
-
 logger = logging.getLogger(__name__)
 
 
-def restart():
+class ConnectionConfig(object):
+    def __init__(self, connection_name):
+        self.config = configparser.ConfigParser(interpolation=None)
+        self.path = os.path.join("/etc/NetworkManager/system-connections/", connection_name)
+
+        try:
+            if os.path.isfile(self.path):
+                self.config.read(self.path)
+            else:
+                logger.error("VPN config file not found! (%s)", self.path)
+                self.path = None
+
+        except Exception as ex:
+            logger.error(ex)
+            self.path = None
+
+    def save(self):
+        try:
+            if self.path:
+                with open(self.path, 'w') as config_file:
+                    self.config.write(config_file)
+
+                return True
+            else:
+                logger.error("Could not save VPN Config. Invalid path.")
+                return False
+
+        except Exception as ex:
+            logger.error(ex)
+            return False
+
+    def disable_ipv6(self):
+        self.config['ipv6']['method'] = 'ignore'
+
+    def set_dns_nameservers(self, dns_list):
+        dns_string = ';'.join(map(str, dns_list))
+
+        self.config['ipv4']['dns'] = dns_string
+        self.config['ipv4']['ignore-auto-dns'] = 'true'
+
+    def set_user(self, user):
+        self.config['connection']['permissions'] = "user:" + user + ":;"
+
+    def set_credentials(self, username, password):
+        self.config['vpn']['password-flags'] = "0"
+        self.config['vpn']['username'] = username
+        self.config['vpn-secrets'] = {}
+        self.config['vpn-secrets']['password'] = password
+
+
+def reload_connections():
     try:
-        output = subprocess.run(['systemctl', 'restart', 'NetworkManager.service'])
+        output = subprocess.run(['nmcli', 'connection', 'reload'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output.check_returncode()
-        logger.info("NetworkManager restarted successfully!")
+
         return True
 
     except subprocess.CalledProcessError:
@@ -84,9 +133,10 @@ def remove_killswitch(persistence_path):
     try:
         os.remove(KILLSWITCH_PATH)
         os.remove(persistence_path)
+        logger.info("Network kill-switch disabled.")
         return True
     except FileNotFoundError:
-        return True  # Return true if the file was not found, since it's removed
+        return False
     except Exception:
         return False
 
@@ -111,10 +161,12 @@ esac"""
 
     utils.make_executable(KILLSWITCH_PATH)
 
+    logger.info("Network kill-switch enabled.")
+
     return True
 
 
-def set_auto_connect(connection):
+def set_auto_connect(connection_name):
     interfaces = get_interfaces()
 
     if interfaces:
@@ -122,7 +174,7 @@ def set_auto_connect(connection):
 
         auto_script = """#!/bin/sh
         if [[ "$1" =~ """ + interface_string + """ ]] && [[ "$2" =~ up|connectivity-change ]]; then
-            nmcli con up id '""" + connection + """'
+            nmcli con up id '""" + connection_name + """'
         fi"""
 
         with open(AUTO_CONNECT_PATH, "w") as auto_vpn:
@@ -130,68 +182,20 @@ def set_auto_connect(connection):
 
         utils.make_executable(AUTO_CONNECT_PATH)
 
+        logger.info("Auto-connect enabled for '%s'.", connection_name)
+
         return True
 
 
 def remove_autoconnect():
     try:
         os.remove(AUTO_CONNECT_PATH)
+        logger.info("Auto-connect disabled.")
         return True
     except FileNotFoundError:
         return True  # Return true if the file was not found, since it's removed
     except Exception:
         return False
-
-
-def get_connection_config(connection_name):
-    try:
-        config = configparser.ConfigParser(interpolation=None)
-        path = "/etc/NetworkManager/system-connections/" + connection_name
-
-        if os.path.isfile(path):
-            config.read(path)
-            return config
-        else:
-            logger.info("VPN config file not found! %s", path)
-            return False
-    except Exception as ex:
-        logger.error(ex)
-        return False
-
-
-def save_connection_config(connection_name, config):
-    try:
-        path = "/etc/NetworkManager/system-connections/" + connection_name
-
-        with open(path, 'w') as config_file:
-            config.write(config_file)
-        return True
-    except Exception as ex:
-        logger.error(ex)
-        return False
-
-
-def disable_ipv6(config):
-    config['ipv6']['method'] = 'ignore'
-    return config
-
-
-def set_dns_nameservers(config, dns_list):
-    dns_string = ';'.join(map(str, dns_list))
-
-    config['ipv4']['dns'] = dns_string
-    config['ipv4']['ignore-auto-dns'] = 'true'
-
-    return config
-
-
-def add_connection_credentials(config, username, password):
-    config['vpn']['password-flags'] = "0"
-    config['vpn']['username'] = username
-    config['vpn-secrets'] = {}
-    config['vpn-secrets']['password'] = password
-
-    return config
 
 
 def import_connection(file_path, connection_name, username=None, password=None, dns_list=None, ipv6=False):
@@ -204,18 +208,21 @@ def import_connection(file_path, connection_name, username=None, password=None, 
         os.remove(temp_path)
         output.check_returncode()
 
-        config = get_connection_config(connection_name)
-        if config:
+        config = ConnectionConfig(connection_name)
+        if config.path:  # If the config has a path, then it was loaded correctly
             if username and password:
-                config = add_connection_credentials(config, username, password)
+                config.set_credentials(username, password)
 
             if dns_list:
-                config = set_dns_nameservers(config, dns_list)
+                config.set_dns_nameservers(dns_list)
 
             if not ipv6:
-                config = disable_ipv6(config)
+                config.disable_ipv6()
 
-            save_connection_config(connection_name, config)
+            user = utils.get_current_user()
+            config.set_user(user)
+
+            config.save()
         else:
             return False
 
@@ -229,6 +236,40 @@ def import_connection(file_path, connection_name, username=None, password=None, 
     except Exception as ex:
         logger.error(ex)
         return False
+
+
+def enable_connection(connection_name):
+    try:
+        output = subprocess.run(['nmcli', 'connection', 'up', connection_name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output.check_returncode()
+
+        return True
+
+    except subprocess.CalledProcessError:
+        error = utils.format_std_string(output.stderr)
+        logger.error(error)
+        return False
+
+    except Exception as ex:
+        logger.error(ex)
+        return False
+
+
+def disable_connection(connection_name):
+        try:
+            output = subprocess.run(['nmcli', 'connection', 'down', connection_name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            output.check_returncode()
+
+            return True
+
+        except subprocess.CalledProcessError:
+            error = utils.format_std_string(output.stderr)
+            logger.error(error)
+            return False
+
+        except Exception as ex:
+            logger.error(ex)
+            return False
 
 
 def remove_connection(connection_name):
@@ -249,7 +290,7 @@ def remove_connection(connection_name):
 
 
 def disconnect_active_vpn(active_servers):
-    disabled = False  # Flag for checking if a VPN was disconnected
+    disconnected_vpns = set([])
 
     try:
         output = subprocess.run(['nmcli', '--mode', 'tabular', '--terse', '--fields', 'TYPE,NAME,UUID', 'connection', 'show', '--active'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -262,12 +303,11 @@ def disconnect_active_vpn(active_servers):
 
                 if elements[0] == "vpn":  # Only deactivate VPNs managed by this tool. Preserve any not in the active list
                     for server in active_servers.values():
-                        if elements[1] == server['name']:
-                            output = subprocess.run(['nmcli', 'connection', 'down', elements[2]], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                            output.check_returncode()
-                            disabled = True
+                        if elements[1] == server['name'] and elements[2] not in disconnected_vpns:
+                            if disable_connection(elements[2]):
+                                disconnected_vpns.add(elements[2])  # Add the UUID to our set
 
-        return disabled
+        return bool(disconnected_vpns)
 
     except subprocess.CalledProcessError:
         error = utils.format_std_string(output.stderr)
