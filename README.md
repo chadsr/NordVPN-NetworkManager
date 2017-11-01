@@ -29,25 +29,29 @@ sudo apt update && sudo apt install network-manager openvpn network-manager-open
 ```
 
 ### Arch
-
+**Note:** nordnm is now available through AUR. If you want to install via AUR, then skip to [2.2 AUR](#22-aur).
 ```
 sudo pacman -S --needed networkmanager openvpn networkmanager-openvpn
 ```
 
 ## 2. Installation
-**Please note:** This tool requires Python 3.5 or later. (May change in the future)
+### 2.1 PIP
+**Mote:** This tool requires Python 3.5 or later. (May change in the future)
 
 *If your default Python version is 2.x, you will need to use pip3 below*
 
-### System Install
+#### System Install
 ```
 sudo -H pip install nordnm
 ```
 
-### User Install
+#### User Install
 ```
 pip install --user nordnm
 ```
+
+### 2.2 AUR
+[https://aur.archlinux.org/packages/nordnm/](https://aur.archlinux.org/packages/nordnm/)
 
 ## 3. Usage
 **Note:** Many of the commands below can be chained into one line. A recommended example of this is to update, synchronise and set any auto-connect/kill-switch at the same time.

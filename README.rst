@@ -46,6 +46,9 @@ Debian/Ubuntu
 Arch
 ~~~~
 
+**Note:** nordnm is now available through AUR. If you want to install
+via AUR, then skip to `2.2 AUR <#22-aur>`__.
+
 ::
 
     sudo pacman -S --needed networkmanager openvpn networkmanager-openvpn
@@ -53,24 +56,32 @@ Arch
 2. Installation
 ---------------
 
-**Please note:** This tool requires Python 3.5 or later. (May change in
-the future)
+2.1 PIP
+~~~~~~~
+
+**Mote:** This tool requires Python 3.5 or later. (May change in the
+future)
 
 *If your default Python version is 2.x, you will need to use pip3 below*
 
 System Install
-~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^
 
 ::
 
     sudo -H pip install nordnm
 
 User Install
-~~~~~~~~~~~~
+^^^^^^^^^^^^
 
 ::
 
     pip install --user nordnm
+
+2.2 AUR
+~~~~~~~
+
+https://aur.archlinux.org/packages/nordnm/
 
 3. Usage
 --------
