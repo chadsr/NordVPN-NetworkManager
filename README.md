@@ -15,7 +15,7 @@ More documentation will be available when this tool is out of Alpha releases.
 - Provides humanly readable connection names, so you can easily tell what each option offers.
 - Provides settings for whitelisting or blacklisting certain countries from being synchronised.
 - Automatically adds user credentials to the imported configurations.
-- Uses the NordVPN DNS servers to prevent DNS request leaks.
+- Tunnels DNS requests through the VPN, to prevent DNS leaks.
 - Disables IPv6 by default, to avoid IPv6 leaks.
 - Sets the auto connect server of your choice for all NetworkManager connections, instead of per connection. (optional)
 - Sets a network kill-switch, to disable the network interface being used, if the active VPN disconnects. (optional)

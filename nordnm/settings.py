@@ -119,7 +119,7 @@ class SettingsHandler(object):
             ping_attempts = int(self.settings.get('Benchmarking', 'ping-attempts'))
             if ping_attempts > 0:  # If ping-attempts is zero or smaller, revert to default
                 return ping_attempts
-        except:
+        except Exception:
             pass
 
         self.logger.warning("Invalid ping-attempts value. Using default value of %d.", self.DEFAULT_PING_ATTEMPTS)

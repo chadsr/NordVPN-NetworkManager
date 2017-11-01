@@ -26,7 +26,7 @@ Features:
 -  Provides settings for whitelisting or blacklisting certain countries
    from being synchronised.
 -  Automatically adds user credentials to the imported configurations.
--  Uses the NordVPN DNS servers to prevent DNS request leaks.
+-  Tunnels DNS requests through the VPN, to prevent DNS leaks.
 -  Disables IPv6 by default, to avoid IPv6 leaks.
 -  Sets the auto connect server of your choice for all NetworkManager
    connections, instead of per connection. (optional)
