@@ -32,7 +32,7 @@ setup(
     packages=[__package__],
     url='https://github.com/Chadsr/NordVPN-NetworkManager',
     license=__license__,
-    description='A Python 3 CLI tool for automating the management of NordVPN OpenVPN servers through NetworkManager.',
+    description='A CLI tool for automating the importing, securing and usage of NordVPN OpenVPN servers through NetworkManager.',
     long_description=get_readme(),
     install_requires=get_requirements(),
     platforms=['GNU/Linux', 'Ubuntu', 'Debian', 'Kali', 'CentOS', 'Arch', 'Fedora'],
