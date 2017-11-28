@@ -142,7 +142,7 @@ def remove_killswitch(persistence_path):
 
 
 def set_killswitch(persistence_path):
-    killswitch_script = """#!/bin/sh
+    killswitch_script = """#!/bin/bash
 
 PERSISTENCE_FILE=""" + persistence_path + """
 
@@ -172,7 +172,7 @@ def set_auto_connect(connection_name):
     if interfaces:
         interface_string = '|'.join(interfaces)
 
-        auto_script = """#!/bin/sh
+        auto_script = """#!/bin/bash
         if [[ "$1" =~ """ + interface_string + """ ]] && [[ "$2" =~ up|connectivity-change ]]; then
             nmcli con up id '""" + connection_name + """'
         fi"""
