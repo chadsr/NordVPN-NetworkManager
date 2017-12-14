@@ -34,22 +34,36 @@ def generate_connection_name(server, protocol):
 class NordNM(object):
     def __init__(self):
         parser = argparse.ArgumentParser()
-        parser.add_argument('-u', '--update', help='Download the latest OpenVPN configurations from NordVPN', action='store_true')
-        parser.add_argument('-s', '--sync', help="Synchronise the optimal servers (based on load and latency) to NetworkManager", action="store_true")
-        parser.add_argument('-a', '--auto-connect', nargs=3, metavar=('[COUNTRY_CODE]', '[VPN_CATEGORY]', '[PROTOCOL]'), help='Configure NetworkManager to auto-connect to the chosen server type. Takes country code, category and protocol')
-        parser.add_argument('-k', '--kill-switch', help='Sets a network kill-switch, to disable the active network interface when an active VPN connection disconnects', action='store_true')
-        parser.add_argument('-p', '--purge', help='Remove all active connections, auto-connect and kill-switch (if configured)', action='store_true')
-        parser.add_argument('--countries', help='Display a list of the available countries', action='store_true')
-        parser.add_argument('--categories', help='Display a list of the available VPN categories', action='store_true')
-        parser.add_argument('--credentials', help='Change the existing saved credentials', action='store_true')
-        parser.add_argument('--settings', help='Change the existing saved settings', action='store_true')
+
+        features = parser.add_argument_group("Added Features")
+        features.add_argument('-k', '--kill-switch', help='Sets a network kill-switch, to disable the active network interface when an active VPN connection disconnects.', action='store_true')
+        features.add_argument('-a', '--auto-connect', nargs=3, metavar=('[COUNTRY_CODE]', '[VPN_CATEGORY]', '[PROTOCOL]'), help='Configure NetworkManager to auto-connect to the chosen server type. Takes country code, category and protocol.')
+
+        removal = parser.add_argument_group("Remove")
+        removal.add_argument('-r', '--remove', nargs='?', choices=['all', 'kill-switch', 'auto-connect'], const='all', help='(Default=all) Remove all active connections, auto-connect and kill-switch, or a specific choice.')
+
+        update = parser.add_argument_group("Change Stored Data")
+        update.add_argument('--credentials', help='Change your existing saved credentials.', action='store_true')
+        update.add_argument('--settings', help='Change the existing saved settings.', action='store_true')
+
+        info = parser.add_argument_group("Display Information")
+        info.add_argument('--countries', help='Display a list of the available countries.', action='store_true')
+        info.add_argument('--categories', help='Display a list of the available VPN categories..', action='store_true')
+
+        subparser = parser.add_subparsers(title="Synchronise", dest='sync', metavar='')
+        sync_parser = subparser.add_parser('sync', help="Synchronise the optimal servers (based on load and latency) to NetworkManager.")
+        sync_parser.add_argument('-p', '--preserve-vpn',  help="When provided, synchronising will preserve any active VPN instead of disabling it for more accurate benchmarking.", action='store_true')
+        sync_parser.add_argument('-u', '--update-configs', help='Download the latest OpenVPN configurations from NordVPN.', action='store_true', default=False)
+        sync_parser.set_defaults(sync=True)
+
+        self.logger = logging.getLogger(__name__)
 
         try:
             args = parser.parse_args()
+            print(args)
         except Exception:
+            parser.print_help()
             sys.exit(1)
-
-        self.logger = logging.getLogger(__name__)
 
         # Count the number of arguments provided
         arg_count = 0
@@ -57,19 +71,55 @@ class NordNM(object):
             if getattr(args, arg):
                 arg_count += 1
 
-        if args.purge and arg_count > 1:
-            print("Error: --purge should be used on its own.")
-            sys.exit(1)
-        elif args.categories and arg_count == 1:
-            self.print_categories()
-        elif args.countries and arg_count == 1:
-            self.print_countries()
-        elif args.credentials or args.settings or args.update or args.sync or args.purge or args.auto_connect or args.kill_switch:
-            self.print_splash()
-
-            self.run(args.credentials, args.settings, args.update, args.sync, args.purge, args.auto_connect, args.kill_switch)
-        else:
+        if arg_count == 0:
             parser.print_help()
+            sys.exit(0)
+
+        self.setup()
+
+        # Check for commands that should be run on their own
+
+        if args.remove:
+            # Remove the auto-connect for all options other than "kill-switch"
+            if args.remove != "kill-switch":
+                networkmanager.remove_autoconnect()
+
+            # Remove the kill-switch for all options other than "auto-connect"
+            if args.remove != "auto-connect":
+                networkmanager.remove_killswitch(paths.KILLSWITCH)
+
+            if args.remove == "all":
+                self.remove_active_connections()
+
+            sys.exit(0)
+        elif args.categories:
+            self.print_categories()
+            sys.exit(0)
+        elif args.countries:
+            self.print_countries()
+            sys.exit(0)
+
+        # Now check for commands that can be chained...
+
+        if args.credentials:
+            self.credentials.save_new_credentials()
+
+        if args.settings:
+            self.settings.save_new_settings()
+
+        if args.sync:
+            self.sync(args.update_configs, args.preserve_vpn)
+
+        if args.auto_connect:
+            country_code = args.auto_connect[0]
+            category = args.auto_connect[1]
+            protocol = args.auto_connect[2]
+            self.enable_auto_connect(country_code, category, protocol)
+
+        if args.kill_switch:
+            networkmanager.set_killswitch(paths.KILLSWITCH)
+
+        sys.exit(0)
 
     def print_splash(self):
         version_string = __version__
@@ -80,12 +130,7 @@ class NordNM(object):
         elif latest_version and version_string == latest_version:
             version_string = version_string + " (Latest)"
 
-        print("""     _   _               _ _   _ ___  ___
-    | \ | |             | | \ | ||  \/  |
-    |  \| | ___  _ __ __| |  \| || .  . |
-    | . ` |/ _ \| '__/ _` | . ` || |\/| |
-    | |\  | (_) | | | (_| | |\  || |  | |
-    \_| \_/\___/|_|  \__,_\_| \_/\_|  |_/   v%s\n""" % version_string)
+        print("     _   _               _ _   _ ___  ___\n    | \ | |             | | \ | ||  \/  |\n    |  \| | ___  _ __ __| |  \| || .  . |\n    | . ` |/ _ \| '__/ _` | . ` || |\/| |\n    | |\  | (_) | | | (_| | |\  || |  | |\n    \_| \_/\___/|_|  \__,_\_| \_/\_|  |_/   v%s\n" % version_string)
 
     def print_categories(self):
         for long_name, short_name in nordapi.VPN_CATEGORIES.items():
@@ -123,30 +168,14 @@ class NordNM(object):
         if os.path.isfile(paths.ACTIVE_SERVERS):
             self.active_servers = self.load_active_servers(paths.ACTIVE_SERVERS)
 
-    def run(self, credentials, settings, update, sync, purge, auto_connect, kill_switch):
-        self.setup()
+        self.print_splash()
 
-        if credentials:
-            self.credentials.save_new_credentials()
-        if settings:
-            self.settings.save_new_settings()
-        if update:
+    def sync(self, update_config=True, preserve_vpn=False):
+        if update_config:
             self.get_configs()
 
-        if sync:
-            if self.sync_servers():
-                networkmanager.reload_connections()
-        elif purge:
-            networkmanager.remove_autoconnect()
-            networkmanager.remove_killswitch(paths.KILLSWITCH)
-
-            self.purge_active_connections()
-
-        if auto_connect:
-            self.enable_auto_connect(auto_connect[0], auto_connect[1], auto_connect[2])
-
-        if kill_switch:
-            networkmanager.set_killswitch(paths.KILLSWITCH)
+        if self.sync_servers(preserve_vpn):
+            networkmanager.reload_connections()
 
     def create_directories(self):
         if not os.path.exists(paths.DIR_ROOT):
@@ -199,7 +228,7 @@ class NordNM(object):
 
         return enabled
 
-    def purge_active_connections(self):
+    def remove_active_connections(self):
         if self.active_servers:
             self.logger.info("Removing all active connections...")
             active_servers = copy.deepcopy(self.active_servers)
@@ -288,7 +317,7 @@ class NordNM(object):
         else:
             return False
 
-    def sync_servers(self):
+    def sync_servers(self, preserve_vpn):
         updated = False
 
         username = self.credentials.get_username()
@@ -305,21 +334,24 @@ class NordNM(object):
                 valid_server_list = self.get_valid_servers(server_list)
                 if valid_server_list:
 
-                    # If there's a kill-switch in place, we need to temporarily remove it, otherwise it will kill out network when disabling an active VPN below
-                    # Disconnect active Nord VPNs, so we get a more reliable benchmark
-                    show_warning = False
-                    if networkmanager.remove_killswitch(paths.KILLSWITCH):
-                        show_warning = True
-                        warning_string = "Kill-switch"
-                    if networkmanager.disconnect_active_vpn(self.active_servers):
-                        if show_warning:
-                            warning_string = "Active VPN(s) and " + warning_string
-                        else:
+                    if not preserve_vpn:
+                        # If there's a kill-switch in place, we need to temporarily remove it, otherwise it will kill out network when disabling an active VPN below
+                        # Disconnect active Nord VPNs, so we get a more reliable benchmark
+                        show_warning = False
+                        if networkmanager.remove_killswitch(paths.KILLSWITCH):
                             show_warning = True
-                            warning_string = "Active VPN(s)"
+                            warning_string = "Kill-switch"
+                        if networkmanager.disconnect_active_vpn(self.active_servers):
+                            if show_warning:
+                                warning_string = "Active VPN(s) and " + warning_string
+                            else:
+                                show_warning = True
+                                warning_string = "Active VPN(s)"
 
-                    if show_warning:
-                        self.logger.warning("%s disabled for accurate benchmarking. Your connection is not secure until these are re-enabled.", warning_string)
+                        if show_warning:
+                            self.logger.warning("%s disabled for accurate benchmarking. Your connection is not secure until these are re-enabled.", warning_string)
+                    else:
+                        self.logger.warning("Active VPN preserved. This may give unreliable results!")
 
                     self.logger.info("Benchmarking servers...")
 
@@ -331,8 +363,8 @@ class NordNM(object):
                     end = timer()
                     self.logger.info("Benchmarking complete. Took %0.2f seconds.", end - start)
 
-                    # Purge all old connections and any auto-connect, until a better sync routine is added
-                    if self.purge_active_connections():
+                    # remove all old connections and any auto-connect, until a better sync routine is added
+                    if self.remove_active_connections():
                         updated = True
                     if networkmanager.remove_autoconnect():
                         updated = True
