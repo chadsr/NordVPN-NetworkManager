@@ -4,7 +4,7 @@
 
 This tool removes the need for manually handling OpenVPN configurations from NordVPN. It will synchronise the best servers from chosen countries into the NetworkManager VPN list. A synchronised VPN can then be chosen to auto-connect to, whenever NetworkManager brings an network connection up.
 
-More documentation will be available when this tool is out of Alpha releases.
+More documentation will be available when nordnm gets to stable releases.
 
 **Warning:**
 *This tool is still highly under development. I take no responsibility for any unforseen problems it may cause.*

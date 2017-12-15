@@ -9,7 +9,7 @@ into the NetworkManager VPN list. A synchronised VPN can then be chosen
 to auto-connect to, whenever NetworkManager brings an network connection
 up.
 
-More documentation will be available when this tool is out of Alpha
+More documentation will be available when nordnm gets to stable
 releases.
 
 **Warning:** *This tool is still highly under development. I take no
