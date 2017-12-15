@@ -19,7 +19,7 @@ Features:
 ---------
 
 -  Uses the latest NordVPN OpenVPN configuration files.
--  Imports the 'best' server of each available type (country, category,
+-  Imports the ‘best’ server of each available type (country, category,
    protocol), based on latency and server load.
 -  Provides humanly readable connection names, so you can easily tell
    what each option offers.
@@ -87,39 +87,38 @@ https://aur.archlinux.org/packages/nordnm/
 --------
 
 **Note:** Many of the commands below can be chained into one line. A
-recommended example of this is to update, synchronise and set any
-auto-connect/kill-switch at the same time.
+recommended example of this is to synchronise, update configuration
+files and set any auto-connect/kill-switch at the same time.
 
 For example:
 
 ::
 
-    sudo nordnm -uska nl normal tcp
+    sudo nordnm s -uka nl normal tcp
 
 ::
 
-    usage: nordnm [-h] [-u] [-s] [-a [COUNTRY_CODE] [VPN_CATEGORY] [PROTOCOL]]
-                  [-k] [-p] [--countries] [--categories] [--credentials]
-                  [--settings]
+    usage: nordnm [-h] [-k] [-a [COUNTRY_CODE] [VPN_CATEGORY] [PROTOCOL]]  ...
 
     optional arguments:
       -h, --help            show this help message and exit
-      -u, --update          Download the latest OpenVPN configurations from
-                            NordVPN
-      -s, --sync            Synchronise the optimal servers (based on load and
-                            latency) to NetworkManager
-      -a [COUNTRY_CODE] [VPN_CATEGORY] [PROTOCOL], --auto-connect [COUNTRY_CODE] [VPN_CATEGORY] [PROTOCOL]
-                            Configure NetworkManager to auto-connect to the chosen
-                            server type. Takes country code, category and protocol
       -k, --kill-switch     Sets a network kill-switch, to disable the active
                             network interface when an active VPN connection
-                            disconnects
-      -p, --purge           Remove all active connections, auto-connect and kill-
-                            switch (if configured)
-      --countries           Display a list of the available countries
-      --categories          Display a list of the available VPN categories
-      --credentials         Change the existing saved credentials
-      --settings            Change the existing saved settings
+                            disconnects.
+      -a [COUNTRY_CODE] [VPN_CATEGORY] [PROTOCOL], --auto-connect [COUNTRY_CODE] [VPN_CATEGORY] [PROTOCOL]
+                            Configure NetworkManager to auto-connect to the chosen
+                            server type. Takes country code, category and
+                            protocol.
+
+    commands:
+                            Each command has its own help page, which can be
+                            accessed via nordnm <COMMAND> --help
+        remove (r)          Remove either active connections, auto-connect, kill-
+                            switch, data or all.
+        update (u)          Update a specified setting.
+        list (l)            List the specified information.
+        sync (s)            Synchronise the optimal servers (based on load and
+                            latency) to NetworkManager.
 
 Suggestions/Bugs
 ----------------
