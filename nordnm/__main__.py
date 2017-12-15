@@ -11,7 +11,7 @@ def main():
         print("%s must be run as root! Exiting." % __package__)
         sys.exit(1)
 
-    logging.basicConfig(format='[%(levelname)s] [%(name)s:%(lineno)s]: %(message)s', level=logging.INFO, stream=sys.stdout)
+    logging.basicConfig(format='[%(levelname)s] [%(name)s]: %(message)s', level=logging.INFO, stream=sys.stdout)
 
     nordnm.NordNM()
 

@@ -137,7 +137,8 @@ def remove_killswitch(persistence_path):
         return True
     except FileNotFoundError:
         return False
-    except Exception:
+    except Exception as e:
+        logger.error("Error attempting to remove kill-switch: %s" % e)
         return False
 
 
@@ -156,14 +157,16 @@ case $2 in
     ;;
 esac"""
 
-    with open(KILLSWITCH_PATH, "w") as killswitch_vpn:
-        print(killswitch_script, file=killswitch_vpn)
+    try:
+        with open(KILLSWITCH_PATH, "w") as killswitch_vpn:
+            print(killswitch_script, file=killswitch_vpn)
 
-    utils.make_executable(KILLSWITCH_PATH)
-
-    logger.info("Network kill-switch enabled.")
-
-    return True
+        utils.make_executable(KILLSWITCH_PATH)
+        logger.info("Network kill-switch enabled.")
+        return True
+    except Exception as e:
+        logger.error("Error attempting to set kill-switch: %s" % e)
+        return False
 
 
 def set_auto_connect(connection_name):
@@ -177,14 +180,16 @@ def set_auto_connect(connection_name):
             nmcli con up id '""" + connection_name + """'
         fi"""
 
-        with open(AUTO_CONNECT_PATH, "w") as auto_vpn:
-            print(auto_script, file=auto_vpn)
+        try:
+            with open(AUTO_CONNECT_PATH, "w") as auto_vpn:
+                print(auto_script, file=auto_vpn)
 
-        utils.make_executable(AUTO_CONNECT_PATH)
-
-        logger.info("Auto-connect enabled for '%s'.", connection_name)
-
-        return True
+            utils.make_executable(AUTO_CONNECT_PATH)
+            logger.info("Auto-connect enabled for '%s'.", connection_name)
+            return True
+        except Exception as e:
+            logger.error("Error attempting to set auto-conect: %s" % e)
+            return False
 
 
 def remove_autoconnect():
@@ -193,8 +198,9 @@ def remove_autoconnect():
         logger.info("Auto-connect disabled.")
         return True
     except FileNotFoundError:
-        return True  # Return true if the file was not found, since it's removed
-    except Exception:
+        return False  # Return true if the file was not found, since it's removed
+    except Exception as e:
+        logger.error("Error attempting to remove auto-connect: %s" % e)
         return False
 
 
