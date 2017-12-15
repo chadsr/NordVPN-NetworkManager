@@ -78,18 +78,6 @@ class NordNM(object):
             parser.print_help()
             sys.exit(1)
 
-        print(args)
-
-        # Count the number of arguments provided
-        arg_count = 0
-        for arg in vars(args):
-            if getattr(args, arg):
-                arg_count += 1
-
-        if arg_count == 0:
-            parser.print_help()
-            sys.exit(0)
-
         self.print_splash()
 
         # Check for commands that should be run on their own
