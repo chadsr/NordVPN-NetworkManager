@@ -44,7 +44,7 @@ class NordNM(object):
         parser.add_argument("-k", "--kill-switch", help="Sets a network kill-switch, to disable the active network interface when an active VPN connection disconnects.", action="store_true")
         parser.add_argument("-a", "--auto-connect", nargs=3, metavar=("[COUNTRY_CODE]", "[VPN_CATEGORY]", "[PROTOCOL]"), help="Configure NetworkManager to auto-connect to the chosen server type. Takes country code, category and protocol.")
 
-        remove_parser = subparsers.add_parser("remove", aliases=['r'], help="Remove all active connections, auto-connect and kill-switch, or a specific choice.")
+        remove_parser = subparsers.add_parser("remove", aliases=['r'], help="Remove either active connections, auto-connect, kill-switch, data or all.")
         remove_parser.add_argument("--all", dest="remove_all", help="Remove all connections, enabled features and local data.", action="store_true")
         remove_parser.add_argument("-c", "--connections", dest="remove_c", help="Remove all active connections and auto-connect.", action="store_true")
         remove_parser.add_argument("-a", "--auto-connect", dest="remove_ac", help="Remove the active auto-connect feature.", action="store_true")
@@ -57,7 +57,7 @@ class NordNM(object):
         update_parser.add_argument('-s', '--settings', help='Update your existing saved settings.', action='store_true')
         update_parser.set_defaults(update=True)
 
-        list_parser = subparsers.add_parser('list', aliases=['l'], help="List the requested information.")
+        list_parser = subparsers.add_parser('list', aliases=['l'], help="List the specified information.")
         list_parser.add_argument('--countries', help='Display a list of the available NordVPN countries.', action='store_true', default=False)
         list_parser.add_argument('--categories', help='Display a list of the available NordVPN categories..', action='store_true', default=False)
         list_parser.set_defaults(list=True)
@@ -78,7 +78,17 @@ class NordNM(object):
             parser.print_help()
             sys.exit(1)
 
+        # Count the number of arguments provided
+        arg_count = 0
+        for arg in vars(args):
+            if getattr(args, arg):
+                arg_count += 1
+
         self.print_splash()
+
+        if arg_count == 0:
+            parser.print_help()
+            sys.exit(1)
 
         # Check for commands that should be run on their own
 
