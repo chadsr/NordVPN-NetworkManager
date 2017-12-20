@@ -161,7 +161,7 @@ def set_dns_resolv(dns_list, active_servers):
             print(dns_script, file=dns_resolv)
 
         utils.make_executable(paths.DNS_SCRIPT)
-        logger.info("DNS protection enabled.")
+        logger.info("DNS leak protection enabled.")
         return True
     except Exception as e:
         logger.error("Error attempting to set DNS protection: %s" % e)
