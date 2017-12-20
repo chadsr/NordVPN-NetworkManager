@@ -1,13 +1,11 @@
 from nordnm import utils
+from nordnm import paths
 
 import subprocess
 import shutil
 import os
 import configparser
 import logging
-
-AUTO_CONNECT_PATH = "/etc/NetworkManager/dispatcher.d/auto_vpn"
-KILLSWITCH_PATH = "/etc/NetworkManager/dispatcher.d/killswitch_vpn"
 
 logger = logging.getLogger(__name__)
 
@@ -129,10 +127,63 @@ def get_interfaces(wifi=True, ethernet=True):
         return False
 
 
-def remove_killswitch(persistence_path):
+def set_dns_resolv(dns_list, active_servers):
+    resolv_string = "# nordnm enforced nameservers\n"
+    for address in dns_list:
+        resolv_string += "nameserver " + address + '\n'
+
+    active_server_list = "|".join(map(lambda server: "'" + active_servers[server]['name'] + "'", active_servers))
+
+    dns_script = (
+        '#!/bin/bash\n'
+        'VPN_INTERFACE="tun0"\n'
+        'interface="$1"\n\n'
+        'if [[ "$CONNECTION_ID" =~ ' + active_server_list + ' ]]; then\n'
+        '  case $2 in\n'
+        '    vpn-up)\n'
+        '      if [[ $interface == "$VPN_INTERFACE" ]]; then\n'
+        '        chattr -i /etc/resolv.conf\n'
+        '        echo -e "' + resolv_string + '" > /etc/resolv.conf\n'
+        '        chattr +i /etc/resolv.conf\n'
+        '      fi\n'
+        '      ;;\n'
+        '    vpn-down)\n'
+        '      if [[ $interface == "$VPN_INTERFACE" ]]; then\n'
+        '        chattr -i /etc/resolv.conf\n'
+        '      fi\n'
+        '      ;;\n'
+        '  esac\n'
+        'fi\n'
+        )
+
     try:
-        os.remove(KILLSWITCH_PATH)
-        os.remove(persistence_path)
+        with open(paths.DNS_SCRIPT, "w") as dns_resolv:
+            print(dns_script, file=dns_resolv)
+
+        utils.make_executable(paths.DNS_SCRIPT)
+        logger.info("DNS leak protection enabled.")
+        return True
+    except Exception as e:
+        logger.error("Error attempting to set DNS protection: %s" % e)
+        return False
+
+
+def remove_dns_resolv():
+    try:
+        os.remove(paths.DNS_SCRIPT)
+        logger.info("DNS protection disabled.")
+        return True
+    except FileNotFoundError:
+        return False
+    except Exception as e:
+        logger.error("Error attempting to remove DNS protection: %s" % e)
+        return False
+
+
+def remove_killswitch():
+    try:
+        os.remove(paths.KILLSWITCH_SCRIPT)
+        os.remove(paths.KILLSWITCH_DATA)
         logger.info("Network kill-switch disabled.")
         return True
     except FileNotFoundError:
@@ -142,26 +193,25 @@ def remove_killswitch(persistence_path):
         return False
 
 
-def set_killswitch(persistence_path):
-    killswitch_script = """#!/bin/bash
-
-PERSISTENCE_FILE=""" + persistence_path + """
-
-case $2 in
-    vpn-up)
-        nmcli -f type,device connection | awk '$1~/^vpn$/ && $2~/[^\-][^\-]/ { print $2; }' > "${PERSISTENCE_FILE}"
-    ;;
-    vpn-down)
-        echo "${PERSISTENCE_FILE}"
-        xargs -n 1 -a "${PERSISTENCE_FILE}" nmcli device disconnect
-    ;;
-esac"""
+def set_killswitch():
+    killswitch_script = (
+        '#!/bin/bash\n'
+        'PERSISTENCE_FILE=' + paths.KILLSWITCH_DATA + '\n\n'
+        'case $2 in'
+        '  vpn-up)\n'
+        '    nmcli -f type,device connection | awk \'$1~/^vpn$/ && $2~/[^\-][^\-]/ { print $2; }\' > "${PERSISTENCE_FILE}"\n'
+        '  ;;\n'
+        '  vpn-down)\n'
+        '    xargs -n 1 -a "${PERSISTENCE_FILE}" nmcli device disconnect\n'
+        '  ;;\n'
+        'esac\n'
+        )
 
     try:
-        with open(KILLSWITCH_PATH, "w") as killswitch_vpn:
-            print(killswitch_script, file=killswitch_vpn)
+        with open(paths.KILLSWITCH_SCRIPT, "w") as killswitch:
+            print(killswitch_script, file=killswitch)
 
-        utils.make_executable(KILLSWITCH_PATH)
+        utils.make_executable(paths.KILLSWITCH_SCRIPT)
         logger.info("Network kill-switch enabled.")
         return True
     except Exception as e:
@@ -175,30 +225,35 @@ def set_auto_connect(connection_name):
     if interfaces:
         interface_string = '|'.join(interfaces)
 
-        auto_script = """#!/bin/bash
-        if [[ "$1" =~ """ + interface_string + """ ]] && [[ "$2" =~ up|connectivity-change ]]; then
-            nmcli con up id '""" + connection_name + """'
-        fi"""
+        auto_script = (
+            '#!/bin/bash\n\n'
+            'if [[ "$1" =~ ' + interface_string + ' ]] && [[ "$2" =~ up|connectivity-change ]]; then\n'
+            '  nmcli con up id "' + connection_name + '"\n'
+            'fi\n'
+            )
 
         try:
-            with open(AUTO_CONNECT_PATH, "w") as auto_vpn:
-                print(auto_script, file=auto_vpn)
+            with open(paths.AUTO_CONNECT_SCRIPT, "w") as auto_connect:
+                print(auto_script, file=auto_connect)
 
-            utils.make_executable(AUTO_CONNECT_PATH)
+            utils.make_executable(paths.AUTO_CONNECT_SCRIPT)
             logger.info("Auto-connect enabled for '%s'.", connection_name)
             return True
         except Exception as e:
             logger.error("Error attempting to set auto-conect: %s" % e)
             return False
+    else:
+        logger.error("No interfaces found to use with auto-connect")
+        return False
 
 
 def remove_autoconnect():
     try:
-        os.remove(AUTO_CONNECT_PATH)
+        os.remove(paths.AUTO_CONNECT_SCRIPT)
         logger.info("Auto-connect disabled.")
         return True
     except FileNotFoundError:
-        return False  # Return true if the file was not found, since it's removed
+        return False
     except Exception as e:
         logger.error("Error attempting to remove auto-connect: %s" % e)
         return False

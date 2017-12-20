@@ -7,8 +7,6 @@ from nordnm import benchmarking
 from nordnm import paths
 from nordnm.__init__ import __version__
 
-from typing import Union
-
 import argparse
 import os
 from shutil import rmtree
@@ -18,6 +16,7 @@ from fnmatch import fnmatch
 import logging
 import copy
 from timeit import default_timer as timer
+from typing import Union
 
 
 def generate_connection_name(server, protocol):
@@ -110,7 +109,7 @@ class NordNM(object):
                 args.remove_ac = True
 
             if args.remove_ks:
-                if networkmanager.remove_killswitch(paths.KILLSWITCH):
+                if networkmanager.remove_killswitch():
                     removed = True
 
             if args.remove_ac:
@@ -121,6 +120,8 @@ class NordNM(object):
                 # Get the active servers, since self.setup() hasn't run
                 if os.path.isfile(paths.ACTIVE_SERVERS):
                     self.active_servers = self.load_active_servers(paths.ACTIVE_SERVERS)
+
+                networkmanager.remove_dns_resolv()
 
                 if self.remove_active_connections():
                     removed = True
@@ -165,6 +166,7 @@ class NordNM(object):
         # Now check for commands that can be chained...
         if "sync" in args and args.sync:
             self.sync(args.update_configs, args.preserve_vpn)
+            networkmanager.set_dns_resolv(nordapi.get_nameservers(), self.active_servers)
 
         if args.auto_connect:
             country_code = args.auto_connect[0]
@@ -173,7 +175,7 @@ class NordNM(object):
             self.enable_auto_connect(country_code, category, protocol)
 
         if args.kill_switch:
-            networkmanager.set_killswitch(paths.KILLSWITCH)
+            networkmanager.set_killswitch()
 
         sys.exit(0)
 
@@ -186,7 +188,12 @@ class NordNM(object):
         elif latest_version and version_string == latest_version:
             version_string = version_string + " (Latest)"
 
-        print("     _   _               _ _   _ ___  ___\n    | \ | |             | | \ | ||  \/  |\n    |  \| | ___  _ __ __| |  \| || .  . |\n    | . ` |/ _ \| '__/ _` | . ` || |\/| |\n    | |\  | (_) | | | (_| | |\  || |  | |\n    \_| \_/\___/|_|  \__,_\_| \_/\_|  |_/   v%s\n" % version_string)
+        print("     _   _               _ _   _ ___  ___\n"
+              "    | \ | |             | | \ | ||  \/  |\n"
+              "    |  \| | ___  _ __ __| |  \| || .  . |\n"
+              "    | . ` |/ _ \| '__/ _` | . ` || |\/| |\n"
+              "    | |\  | (_) | | | (_| | |\  || |  | |\n"
+              "    \_| \_/\___/|_|  \__,_\_| \_/\_|  |_/   v%s\n" % version_string)
 
     def print_categories(self):
         for long_name, short_name in nordapi.VPN_CATEGORIES.items():
@@ -223,7 +230,23 @@ class NordNM(object):
         if os.path.isfile(paths.ACTIVE_SERVERS):
             self.active_servers = self.load_active_servers(paths.ACTIVE_SERVERS)
 
+    def remove_legacy_files(self):
+        removed = False
+        for file_path in paths.LEGACY_FILES:
+            try:
+                os.remove(file_path)
+                removed = True
+            except FileNotFoundError:
+                pass
+            except Exception as e:
+                self.logger.error("Error attempting to remove '%s': %s" % (file_path, e))
+
+        return removed
+
     def sync(self, update_config=True, preserve_vpn=False):
+        if self.remove_legacy_files():
+            self.logger.info("Removed legacy files")
+
         if update_config:
             self.get_configs()
 
@@ -404,7 +427,7 @@ class NordNM(object):
                         # If there's a kill-switch in place, we need to temporarily remove it, otherwise it will kill out network when disabling an active VPN below
                         # Disconnect active Nord VPNs, so we get a more reliable benchmark
                         show_warning = False
-                        if networkmanager.remove_killswitch(paths.KILLSWITCH):
+                        if networkmanager.remove_killswitch():
                             show_warning = True
                             warning_string = "Kill-switch"
                         if networkmanager.disconnect_active_vpn(self.active_servers):
