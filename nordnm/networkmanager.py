@@ -134,27 +134,27 @@ def set_dns_resolv(dns_list, active_servers):
 
     active_server_list = "|".join(map(lambda server: "'" + active_servers[server]['name'] + "'", active_servers))
 
-    dns_script = '''#!/bin/bash
-    VPN_INTERFACE="tun0"
-    interface="$1"
-
-    if [[ "$CONNECTION_ID" =~ ''' + active_server_list + ''' ]]; then
-        case $2 in
-          vpn-up)
-            if [[ $interface == "$VPN_INTERFACE" ]]; then
-              chattr -i /etc/resolv.conf
-              echo -e "''' + resolv_string + '''" > /etc/resolv.conf
-              chattr +i /etc/resolv.conf
-            fi
-            ;;
-          vpn-down)
-            if [[ $interface == "$VPN_INTERFACE" ]]; then
-              chattr -i /etc/resolv.conf
-            fi
-            ;;
-        esac
-    fi
-    '''
+    dns_script = (
+        '#!/bin/bash\n'
+        'VPN_INTERFACE="tun0"\n'
+        'interface="$1"\n\n'
+        'if [[ "$CONNECTION_ID" =~ ' + active_server_list + ' ]]; then\n'
+        '  case $2 in\n'
+        '    vpn-up)\n'
+        '      if [[ $interface == "$VPN_INTERFACE" ]]; then\n'
+        '        chattr -i /etc/resolv.conf\n'
+        '        echo -e "' + resolv_string + '" > /etc/resolv.conf\n'
+        '        chattr +i /etc/resolv.conf\n'
+        '      fi\n'
+        '      ;;\n'
+        '    vpn-down)\n'
+        '      if [[ $interface == "$VPN_INTERFACE" ]]; then\n'
+        '        chattr -i /etc/resolv.conf\n'
+        '      fi\n'
+        '      ;;\n'
+        '  esac\n'
+        'fi\n'
+        )
 
     try:
         with open(paths.DNS_SCRIPT, "w") as dns_resolv:
@@ -194,18 +194,18 @@ def remove_killswitch():
 
 
 def set_killswitch():
-    killswitch_script = '''#!/bin/bash
-    PERSISTENCE_FILE=''' + paths.KILLSWITCH_DATA + '''
-
-    case $2 in
-        vpn-up)
-            nmcli -f type,device connection | awk '$1~/^vpn$/ && $2~/[^\-][^\-]/ { print $2; }' > "${PERSISTENCE_FILE}"
-        ;;
-        vpn-down)
-            xargs -n 1 -a "${PERSISTENCE_FILE}" nmcli device disconnect
-        ;;
-    esac
-    '''
+    killswitch_script = (
+        '#!/bin/bash\n'
+        'PERSISTENCE_FILE=' + paths.KILLSWITCH_DATA + '\n\n'
+        'case $2 in'
+        '  vpn-up)\n'
+        '    nmcli -f type,device connection | awk \'$1~/^vpn$/ && $2~/[^\-][^\-]/ { print $2; }\' > "${PERSISTENCE_FILE}"\n'
+        '  ;;\n'
+        '  vpn-down)\n'
+        '    xargs -n 1 -a "${PERSISTENCE_FILE}" nmcli device disconnect\n'
+        '  ;;\n'
+        'esac\n'
+        )
 
     try:
         with open(paths.KILLSWITCH_SCRIPT, "w") as killswitch:
@@ -225,11 +225,12 @@ def set_auto_connect(connection_name):
     if interfaces:
         interface_string = '|'.join(interfaces)
 
-        auto_script = '''#!/bin/bash
-        if [[ "$1" =~ ''' + interface_string + ''' ]] && [[ "$2" =~ up|connectivity-change ]]; then
-            nmcli con up id "''' + connection_name + '''"
-        fi
-        '''
+        auto_script = (
+            '#!/bin/bash\n\n'
+            'if [[ "$1" =~ ' + interface_string + ' ]] && [[ "$2" =~ up|connectivity-change ]]; then\n'
+            '  nmcli con up id "' + connection_name + '"\n'
+            'fi\n'
+            )
 
         try:
             with open(paths.AUTO_CONNECT_SCRIPT, "w") as auto_connect:

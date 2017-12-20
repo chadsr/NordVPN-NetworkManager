@@ -188,7 +188,12 @@ class NordNM(object):
         elif latest_version and version_string == latest_version:
             version_string = version_string + " (Latest)"
 
-        print("     _   _               _ _   _ ___  ___\n    | \ | |             | | \ | ||  \/  |\n    |  \| | ___  _ __ __| |  \| || .  . |\n    | . ` |/ _ \| '__/ _` | . ` || |\/| |\n    | |\  | (_) | | | (_| | |\  || |  | |\n    \_| \_/\___/|_|  \__,_\_| \_/\_|  |_/   v%s\n" % version_string)
+        print("     _   _               _ _   _ ___  ___\n"
+              "    | \ | |             | | \ | ||  \/  |\n"
+              "    |  \| | ___  _ __ __| |  \| || .  . |\n"
+              "    | . ` |/ _ \| '__/ _` | . ` || |\/| |\n"
+              "    | |\  | (_) | | | (_| | |\  || |  | |\n"
+              "    \_| \_/\___/|_|  \__,_\_| \_/\_|  |_/   v%s\n" % version_string)
 
     def print_categories(self):
         for long_name, short_name in nordapi.VPN_CATEGORIES.items():
