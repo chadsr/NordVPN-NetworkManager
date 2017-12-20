@@ -16,15 +16,16 @@ def get_server_score(server, ping_attempts):
     ip_addr = server['ip_address']
 
     score = 0  # Lowest starting score
+    rtt = None
 
-    # If a server is at 100% load, we don't need to waste time pinging. Just keep starting score.
-    if load < 100:
+    # If a server is at 90% load or greater, we don't need to waste time pinging. Just keep starting score.
+    if load < 90:
         rtt, loss = utils.get_rtt_loss(ip_addr, ping_attempts)
 
         if loss < 5:  # Similarly, if packet loss is >= 5%, the connection is not reliable. Keep the starting score.
-            score = round(Decimal(1 / numpy.log(load + rtt)), 4)  # Maximise the score for smaller values of ln(load + rtt)
+            score = round(Decimal(1 / (numpy.exp((load/100) * rtt))), 6)  # Maximise the score for smaller values of ln(load + rtt)
 
-    return score
+    return (score, load, rtt)
 
 
 def compare_server(server, best_servers, ping_attempts, valid_protocols):
@@ -36,7 +37,7 @@ def compare_server(server, best_servers, ping_attempts, valid_protocols):
 
     country_code = server['flag']
     domain = server['domain']
-    score = get_server_score(server, ping_attempts)
+    score, load, latency = get_server_score(server, ping_attempts)
 
     for category in server['categories']:
         category_name = nordapi.VPN_CATEGORIES[category['name']]
@@ -49,7 +50,7 @@ def compare_server(server, best_servers, ping_attempts, valid_protocols):
 
             if score > best_score:
                 name = nordnm.generate_connection_name(server, protocol)
-                best_servers[country_code, category_name, protocol] = {'name': name, 'domain': domain, 'score': score}
+                best_servers[country_code, category_name, protocol] = {'name': name, 'domain': domain, 'score': score, 'load': load, 'latency': latency}
 
 
 def get_num_processes(num_servers):
