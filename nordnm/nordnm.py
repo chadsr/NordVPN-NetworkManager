@@ -202,6 +202,8 @@ class NordNM(object):
         for long_name, short_name in nordapi.VPN_CATEGORIES.items():
             print("%-9s (%s)" % (short_name, long_name))
 
+        print()  # For spacing
+
     def print_countries(self):
         servers = nordapi.get_server_list(sort_by_country=True)
         if servers:
@@ -218,6 +220,8 @@ class NordNM(object):
                     countries.append(country_code)
                     country_name = server['country']
                     print(format_string % (country_name, country_code))
+
+            print()  # For spacing
         else:
             self.logger.error("Could not get available countries from the NordVPN API.")
 
@@ -241,6 +245,7 @@ class NordNM(object):
                     latency = round(self.active_servers[params]['latency'], 2)
                     print(format_string % (name, load, latency, score))
 
+            print()  # For spacing
         else:
             self.logger.warning("No active servers to display.")
 
