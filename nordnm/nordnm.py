@@ -16,7 +16,7 @@ from fnmatch import fnmatch
 import logging
 import copy
 from timeit import default_timer as timer
-from typing import Union
+from distutils.version import StrictVersion
 
 
 def generate_connection_name(server, protocol):
@@ -186,9 +186,9 @@ class NordNM(object):
         version_string = __version__
 
         latest_version = utils.get_pypi_package_version(__package__)
-        if latest_version and version_string != latest_version:  # There's a new version on PyPi
+        if latest_version and StrictVersion(version_string) < StrictVersion(latest_version):  # There's a new version on PyPi
             version_string = version_string + " (v" + latest_version + " available!)"
-        elif latest_version and version_string == latest_version:
+        else:
             version_string = version_string + " (Latest)"
 
         print("     _   _               _ _   _ ___  ___\n"
@@ -337,7 +337,7 @@ class NordNM(object):
 
         return ovpn_path
 
-    def enable_auto_connect(self, country_code: str, category: str='normal', protocol: Union['tcp', 'udp']='tcp'):
+    def enable_auto_connect(self, country_code: str, category: str='normal', protocol: str='tcp'):
         enabled = False
         selected_parameters = (country_code.upper(), category, protocol)
 
