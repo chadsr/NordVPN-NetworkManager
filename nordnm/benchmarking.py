@@ -10,6 +10,8 @@ import subprocess
 from decimal import Decimal
 import resource
 
+EXP_SENSITIVITY = 50  # Controls the gradient of the exponential score function. The higher the number, the smaller the gradient (change)
+
 
 def get_server_score(server, ping_attempts):
     load = server['load']
@@ -23,7 +25,7 @@ def get_server_score(server, ping_attempts):
         rtt, loss = utils.get_rtt_loss(ip_addr, ping_attempts)
 
         if loss < 5:  # Similarly, if packet loss is >= 5%, the connection is not reliable. Keep the starting score.
-            score = round(Decimal(1 / (numpy.exp((load/100) * rtt))), 6)  # Maximise the score for smaller values of ln(load + rtt)
+            score = round(Decimal(1 / (numpy.exp(((load/100) * rtt) / EXP_SENSITIVITY))), 4)  # Maximise the score for smaller values of ln(load + rtt)
 
     return (score, load, rtt)
 
