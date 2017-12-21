@@ -199,8 +199,13 @@ class NordNM(object):
               "    \_| \_/\___/|_|  \__,_\_| \_/\_|  |_/   v%s\n" % version_string)
 
     def print_categories(self):
+        format_string = "| %-10s | %-20s |"
+        print("\n Note: You must use the short name in this tool.\n")
+        print(format_string % ("SHORT NAME", "LONG NAME"))
+        print("|------------+----------------------|")
+
         for long_name, short_name in nordapi.VPN_CATEGORIES.items():
-            print("%-9s (%s)" % (short_name, long_name))
+            print(format_string % (short_name, long_name))
 
         print()  # For spacing
 
