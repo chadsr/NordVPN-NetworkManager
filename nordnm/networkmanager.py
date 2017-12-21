@@ -237,7 +237,6 @@ def set_auto_connect(connection_name):
                 print(auto_script, file=auto_connect)
 
             utils.make_executable(paths.AUTO_CONNECT_SCRIPT)
-            logger.info("Auto-connect enabled for '%s'.", connection_name)
             return True
         except Exception as e:
             logger.error("Error attempting to set auto-conect: %s" % e)

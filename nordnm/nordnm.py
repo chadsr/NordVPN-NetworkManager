@@ -16,7 +16,7 @@ from fnmatch import fnmatch
 import logging
 import copy
 from timeit import default_timer as timer
-from typing import Union
+from distutils.version import StrictVersion
 
 
 def generate_connection_name(server, protocol):
@@ -57,6 +57,7 @@ class NordNM(object):
         update_parser.set_defaults(update=True)
 
         list_parser = subparsers.add_parser('list', aliases=['l'], help="List the specified information.")
+        list_parser.add_argument('--active-servers', help='Display a list of the active servers currently synchronised.', action='store_true', default=False)
         list_parser.add_argument('--countries', help='Display a list of the available NordVPN countries.', action='store_true', default=False)
         list_parser.add_argument('--categories', help='Display a list of the available NordVPN categories..', action='store_true', default=False)
         list_parser.set_defaults(list=True)
@@ -137,7 +138,7 @@ class NordNM(object):
 
             sys.exit(0)
         elif "list" in args and args.list:
-            if not args.countries and not args.categories:
+            if not args.countries and not args.categories and not args.active_servers:
                 list_parser.print_help()
                 sys.exit(1)
 
@@ -145,6 +146,8 @@ class NordNM(object):
                 self.print_categories()
             if args.countries:
                 self.print_countries()
+            if args.active_servers:
+                self.print_active_servers()
 
             sys.exit(0)
 
@@ -183,9 +186,9 @@ class NordNM(object):
         version_string = __version__
 
         latest_version = utils.get_pypi_package_version(__package__)
-        if latest_version and version_string != latest_version:  # There's a new version on PyPi
+        if latest_version and StrictVersion(version_string) < StrictVersion(latest_version):  # There's a new version on PyPi
             version_string = version_string + " (v" + latest_version + " available!)"
-        elif latest_version and version_string == latest_version:
+        else:
             version_string = version_string + " (Latest)"
 
         print("     _   _               _ _   _ ___  ___\n"
@@ -196,8 +199,15 @@ class NordNM(object):
               "    \_| \_/\___/|_|  \__,_\_| \_/\_|  |_/   v%s\n" % version_string)
 
     def print_categories(self):
+        format_string = "| %-10s | %-20s |"
+        print("\n Note: You must use the short name in this tool.\n")
+        print(format_string % ("SHORT NAME", "LONG NAME"))
+        print("|------------+----------------------|")
+
         for long_name, short_name in nordapi.VPN_CATEGORIES.items():
-            print("%-9s (%s)" % (short_name, long_name))
+            print(format_string % (short_name, long_name))
+
+        print()  # For spacing
 
     def print_countries(self):
         servers = nordapi.get_server_list(sort_by_country=True)
@@ -215,8 +225,34 @@ class NordNM(object):
                     countries.append(country_code)
                     country_name = server['country']
                     print(format_string % (country_name, country_code))
+
+            print()  # For spacing
         else:
             self.logger.error("Could not get available countries from the NordVPN API.")
+
+    def print_active_servers(self):
+        if os.path.isfile(paths.ACTIVE_SERVERS):
+            self.active_servers = self.load_active_servers(paths.ACTIVE_SERVERS)
+
+        printed_servers = []
+        if self.active_servers:
+            print("Note: All metrics below are from the last synchronise.\n")
+            format_string = "| %-20s | %-8s | %-11s | %-8s |"
+            print(format_string % ("NAME", "LOAD (%)", "LATENCY (s)", "SCORE"))
+            print("|----------------------+----------+-------------+----------|")
+
+            for params in self.active_servers:
+                name = self.active_servers[params]['domain']
+                if name not in printed_servers:
+                    printed_servers.append(name)
+                    score = self.active_servers[params]['score']
+                    load = self.active_servers[params]['load']
+                    latency = round(self.active_servers[params]['latency'], 2)
+                    print(format_string % (name, load, latency, score))
+
+            print()  # For spacing
+        else:
+            self.logger.warning("No active servers to display.")
 
     def setup(self):
         self.create_directories()
@@ -301,14 +337,17 @@ class NordNM(object):
 
         return ovpn_path
 
-    def enable_auto_connect(self, country_code: str, category: str='normal', protocol: Union['tcp', 'udp']='tcp'):
+    def enable_auto_connect(self, country_code: str, category: str='normal', protocol: str='tcp'):
         enabled = False
         selected_parameters = (country_code.upper(), category, protocol)
 
         if selected_parameters in self.active_servers:
             connection_name = self.active_servers[selected_parameters]['name']
+            connection_load = self.active_servers[selected_parameters]['load']
+            connection_latency = self.active_servers[selected_parameters]['latency']
 
             if networkmanager.set_auto_connect(connection_name):
+                self.logger.info("Auto-connect enabled for '%s' (Load: %i%%, Latency: %0.2fs).", connection_name, connection_load, connection_latency)
                 networkmanager.disconnect_active_vpn(self.active_servers)
                 if networkmanager.enable_connection(connection_name):
                     enabled = True
