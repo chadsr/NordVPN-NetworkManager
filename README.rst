@@ -134,10 +134,10 @@ future.
 .. |Build Status| image:: https://travis-ci.org/Chadsr/NordVPN-NetworkManager.svg?branch=master
    :target: https://travis-ci.org/Chadsr/NordVPN-NetworkManager
 .. |GitHub tag| image:: https://img.shields.io/github/tag/Chadsr/NordVPN-NetworkManager.svg
-   :target: 
+   :target: https://github.com/Chadsr/NordVPN-NetworkManager/releases
 .. |AUR| image:: https://img.shields.io/aur/version/nordnm.svg
-   :target: 
+   :target: https://aur.archlinux.org/packages/nordnm/
 .. |license| image:: https://img.shields.io/github/license/Chadsr/NordVPN-NetworkManager.svg
-   :target: 
+   :target: https://github.com/Chadsr/NordVPN-NetworkManager/blob/master/LICENSE
 .. |GitHub issues| image:: https://img.shields.io/github/issues/Chadsr/NordVPN-NetworkManager.svg
-   :target: 
+   :target: https://github.com/Chadsr/NordVPN-NetworkManager/issues

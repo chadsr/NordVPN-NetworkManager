@@ -1,10 +1,10 @@
 # NordNM
 
 [![Build Status](https://travis-ci.org/Chadsr/NordVPN-NetworkManager.svg?branch=master)](https://travis-ci.org/Chadsr/NordVPN-NetworkManager)
-[![GitHub tag](https://img.shields.io/github/tag/Chadsr/NordVPN-NetworkManager.svg)]()
-[![AUR](https://img.shields.io/aur/version/nordnm.svg)]()
-[![license](https://img.shields.io/github/license/Chadsr/NordVPN-NetworkManager.svg)]()
-[![GitHub issues](https://img.shields.io/github/issues/Chadsr/NordVPN-NetworkManager.svg)]()
+[![GitHub tag](https://img.shields.io/github/tag/Chadsr/NordVPN-NetworkManager.svg)](https://github.com/Chadsr/NordVPN-NetworkManager/releases)
+[![AUR](https://img.shields.io/aur/version/nordnm.svg)](https://aur.archlinux.org/packages/nordnm/)
+[![license](https://img.shields.io/github/license/Chadsr/NordVPN-NetworkManager.svg)](https://github.com/Chadsr/NordVPN-NetworkManager/blob/master/LICENSE)
+[![GitHub issues](https://img.shields.io/github/issues/Chadsr/NordVPN-NetworkManager.svg)](https://github.com/Chadsr/NordVPN-NetworkManager/issues)
 
 This tool removes the need for manually handling OpenVPN configurations from NordVPN. It will synchronise the best servers from chosen countries into the NetworkManager VPN list. A synchronised VPN can then be chosen to auto-connect to, whenever NetworkManager brings an network connection up.
 
