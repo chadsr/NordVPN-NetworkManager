@@ -57,7 +57,7 @@ pip install --user nordnm
 ### 2.2 AUR
 Use your preferred method of installing packages via AUR. Any easy option is to install and use [yaourt](https://archlinux.fr/yaourt-en).
 
-*Package Link:* [https://aur.archlinux.org/packages/nordnm/](https://aur.archlinux.org/packages/nordnm/)
+**Package Link:** [https://aur.archlinux.org/packages/nordnm/](https://aur.archlinux.org/packages/nordnm/)
 
 ## 3. Usage
 **Note:** Many of the commands below can be chained into one line. A recommended example of this is to synchronise, update configuration files and set any auto-connect/kill-switch at the same time.

@@ -85,7 +85,7 @@ Use your preferred method of installing packages via AUR. Any easy
 option is to install and use
 `yaourt <https://archlinux.fr/yaourt-en>`__.
 
-*Package Link:* https://aur.archlinux.org/packages/nordnm/
+**Package Link:** https://aur.archlinux.org/packages/nordnm/
 
 3. Usage
 --------
