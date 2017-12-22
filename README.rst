@@ -1,7 +1,7 @@
 NordNM
 ======
 
-|Build Status|
+|Build Status| |GitHub tag| |AUR| |license| |GitHub issues|
 
 This tool removes the need for manually handling OpenVPN configurations
 from NordVPN. It will synchronise the best servers from chosen countries
@@ -81,7 +81,11 @@ User Install
 2.2 AUR
 ~~~~~~~
 
-https://aur.archlinux.org/packages/nordnm/
+Use your preferred method of installing packages via AUR. Any easy
+option is to install and use
+`yaourt <https://archlinux.fr/yaourt-en>`__.
+
+**Package Link:** https://aur.archlinux.org/packages/nordnm/
 
 3. Usage
 --------
@@ -129,3 +133,11 @@ future.
 
 .. |Build Status| image:: https://travis-ci.org/Chadsr/NordVPN-NetworkManager.svg?branch=master
    :target: https://travis-ci.org/Chadsr/NordVPN-NetworkManager
+.. |GitHub tag| image:: https://img.shields.io/github/tag/Chadsr/NordVPN-NetworkManager.svg
+   :target: https://github.com/Chadsr/NordVPN-NetworkManager/releases
+.. |AUR| image:: https://img.shields.io/aur/version/nordnm.svg
+   :target: https://aur.archlinux.org/packages/nordnm/
+.. |license| image:: https://img.shields.io/github/license/Chadsr/NordVPN-NetworkManager.svg
+   :target: https://github.com/Chadsr/NordVPN-NetworkManager/blob/master/LICENSE
+.. |GitHub issues| image:: https://img.shields.io/github/issues/Chadsr/NordVPN-NetworkManager.svg
+   :target: https://github.com/Chadsr/NordVPN-NetworkManager/issues

@@ -1,6 +1,10 @@
 # NordNM
 
 [![Build Status](https://travis-ci.org/Chadsr/NordVPN-NetworkManager.svg?branch=master)](https://travis-ci.org/Chadsr/NordVPN-NetworkManager)
+[![GitHub tag](https://img.shields.io/github/tag/Chadsr/NordVPN-NetworkManager.svg)](https://github.com/Chadsr/NordVPN-NetworkManager/releases)
+[![AUR](https://img.shields.io/aur/version/nordnm.svg)](https://aur.archlinux.org/packages/nordnm/)
+[![license](https://img.shields.io/github/license/Chadsr/NordVPN-NetworkManager.svg)](https://github.com/Chadsr/NordVPN-NetworkManager/blob/master/LICENSE)
+[![GitHub issues](https://img.shields.io/github/issues/Chadsr/NordVPN-NetworkManager.svg)](https://github.com/Chadsr/NordVPN-NetworkManager/issues)
 
 This tool removes the need for manually handling OpenVPN configurations from NordVPN. It will synchronise the best servers from chosen countries into the NetworkManager VPN list. A synchronised VPN can then be chosen to auto-connect to, whenever NetworkManager brings an network connection up.
 
@@ -51,7 +55,9 @@ pip install --user nordnm
 ```
 
 ### 2.2 AUR
-[https://aur.archlinux.org/packages/nordnm/](https://aur.archlinux.org/packages/nordnm/)
+Use your preferred method of installing packages via AUR. Any easy option is to install and use [yaourt](https://archlinux.fr/yaourt-en).
+
+**Package Link:** [https://aur.archlinux.org/packages/nordnm/](https://aur.archlinux.org/packages/nordnm/)
 
 ## 3. Usage
 **Note:** Many of the commands below can be chained into one line. A recommended example of this is to synchronise, update configuration files and set any auto-connect/kill-switch at the same time.
