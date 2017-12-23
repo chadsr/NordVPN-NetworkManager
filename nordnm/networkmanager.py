@@ -144,7 +144,7 @@ def set_dns_resolv(dns_list, active_servers):
         '    vpn-up)\n'
         '      if [ $interface == "$VPN_INTERFACE" ]; then\n'  # Check that the interface matches tun0, which should be the first OpenVPN tunnel interface opened
         '        if [ -L "$RESOLV_PATH" ]; then\n'  # Check if /etc/resolv.conf is a symlink, if yes, move it to a temporary file
-        '          mv "$RESOLV_PATH" "$RESOLV_PATH".tmp\n'  # Move the symlink to a temp file
+        '          mv -f "$RESOLV_PATH" "$RESOLV_PATH".tmp\n'  # Move the symlink to a temp file
         '        fi\n'
         '        chattr -i "$RESOLV_PATH"\n'
         '        printf "' + resolv_string + '" > "$RESOLV_PATH"\n'
@@ -155,7 +155,7 @@ def set_dns_resolv(dns_list, active_servers):
         '      if [ $interface == "$VPN_INTERFACE" ]; then\n'
         '        chattr -i "$RESOLV_PATH"\n'
         '        if [ -f "$RESOLV_PATH".tmp ]; then\n'  # If a tmp file exists, move it back to the original filename
-        '          mv "$RESOLV_PATH".tmp "$RESOLV_PATH"\n'
+        '          mv -f "$RESOLV_PATH".tmp "$RESOLV_PATH"\n'
         '        fi\n'
         '      fi\n'
         '      ;;\n'
