@@ -128,28 +128,35 @@ def get_interfaces(wifi=True, ethernet=True):
 
 
 def set_dns_resolv(dns_list, active_servers):
-    resolv_string = "# nordnm enforced nameservers\n"
+    resolv_string = "# nordnm enforced nameservers\\n"
     for address in dns_list:
-        resolv_string += "nameserver " + address + '\n'
+        resolv_string += "nameserver " + address + '\\n'
 
     active_server_list = "|".join(map(lambda server: "'" + active_servers[server]['name'] + "'", active_servers))
 
     dns_script = (
         '#!/bin/bash\n'
         'VPN_INTERFACE="tun0"\n'
+        'RESOLV_PATH="/etc/resolv.conf"\n'
         'interface="$1"\n\n'
         'if [[ "$CONNECTION_ID" =~ ' + active_server_list + ' ]]; then\n'
         '  case $2 in\n'
         '    vpn-up)\n'
-        '      if [[ $interface == "$VPN_INTERFACE" ]]; then\n'
-        '        chattr -i /etc/resolv.conf\n'
-        '        echo -e "' + resolv_string + '" > /etc/resolv.conf\n'
-        '        chattr +i /etc/resolv.conf\n'
+        '      if [ $interface == "$VPN_INTERFACE" ]; then\n'  # Check that the interface matches tun0, which should be the first OpenVPN tunnel interface opened
+        '        if [ -L "$RESOLV_PATH" ]; then\n'  # Check if /etc/resolv.conf is a symlink, if yes, move it to a temporary file
+        '          mv -f "$RESOLV_PATH" "$RESOLV_PATH".tmp\n'  # Move the symlink to a temp file
+        '        fi\n'
+        '        chattr -i "$RESOLV_PATH"\n'
+        '        printf "' + resolv_string + '" > "$RESOLV_PATH"\n'
+        '        chattr +i "$RESOLV_PATH"\n'
         '      fi\n'
         '      ;;\n'
         '    vpn-down)\n'
-        '      if [[ $interface == "$VPN_INTERFACE" ]]; then\n'
-        '        chattr -i /etc/resolv.conf\n'
+        '      if [ $interface == "$VPN_INTERFACE" ]; then\n'
+        '        chattr -i "$RESOLV_PATH"\n'
+        '        if [ -f "$RESOLV_PATH".tmp ]; then\n'  # If a tmp file exists, move it back to the original filename
+        '          mv -f "$RESOLV_PATH".tmp "$RESOLV_PATH"\n'
+        '        fi\n'
         '      fi\n'
         '      ;;\n'
         '  esac\n'
