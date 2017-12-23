@@ -128,9 +128,9 @@ def get_interfaces(wifi=True, ethernet=True):
 
 
 def set_dns_resolv(dns_list, active_servers):
-    resolv_string = "# nordnm enforced nameservers\n"
+    resolv_string = "# nordnm enforced nameservers\\n"
     for address in dns_list:
-        resolv_string += "nameserver " + address + '\n'
+        resolv_string += "nameserver " + address + '\\n'
 
     active_server_list = "|".join(map(lambda server: "'" + active_servers[server]['name'] + "'", active_servers))
 
@@ -142,21 +142,21 @@ def set_dns_resolv(dns_list, active_servers):
         'if [[ "$CONNECTION_ID" =~ ' + active_server_list + ' ]]; then\n'
         '  case $2 in\n'
         '    vpn-up)\n'
-        '      if [[ $interface == "$VPN_INTERFACE" ]]; then\n'
-        '        if [ -L "$RESOLV_PATH" ]; then\n'
-        '          mv "$RESOLV_PATH" "$RESOLV_PATH".tmp'
-        '        fi'
+        '      if [ $interface == "$VPN_INTERFACE" ]; then\n'  # Check that the interface matches tun0, which should be the first OpenVPN tunnel interface opened
+        '        if [ -L "$RESOLV_PATH" ]; then\n'  # Check if /etc/resolv.conf is a symlink, if yes, move it to a temporary file
+        '          mv "$RESOLV_PATH" "$RESOLV_PATH".tmp\n'  # Move the symlink to a temp file
+        '        fi\n'
         '        chattr -i "$RESOLV_PATH"\n'
-        '        echo -e "' + resolv_string + '" > "$RESOLV_PATH"\n'
+        '        printf "' + resolv_string + '" > "$RESOLV_PATH"\n'
         '        chattr +i "$RESOLV_PATH"\n'
         '      fi\n'
         '      ;;\n'
         '    vpn-down)\n'
-        '      if [[ $interface == "$VPN_INTERFACE" ]]; then\n'
+        '      if [ $interface == "$VPN_INTERFACE" ]; then\n'
         '        chattr -i "$RESOLV_PATH"\n'
-        '        if [ -L "$RESOLV_PATH" ]; then\n'
-        '          mv "$RESOLV_PATH".tmp "$RESOLV_PATH"'
-        '        fi'
+        '        if [ -f "$RESOLV_PATH".tmp ]; then\n'  # If a tmp file exists, move it back to the original filename
+        '          mv "$RESOLV_PATH".tmp "$RESOLV_PATH"\n'
+        '        fi\n'
         '      fi\n'
         '      ;;\n'
         '  esac\n'
