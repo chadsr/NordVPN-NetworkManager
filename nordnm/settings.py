@@ -40,7 +40,7 @@ class SettingsHandler(object):
 
         # Prompt for which categories to enable
         self.settings.add_section('Categories')
-        for category in nordapi.VPN_CATEGORIES.keys():
+        for category in sorted(nordapi.VPN_CATEGORIES.keys()):
             answer = str(utils.input_yes_no("Enable category '%s'?" % category)).lower()
             self.settings.set('Categories', category.replace(' ', '-'), answer)
 
