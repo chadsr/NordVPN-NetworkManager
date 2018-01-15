@@ -179,8 +179,8 @@ class NordNM(object):
                 value = "permanent"
 
             if value:
-                networkmanager.set_global_mac_address(value)
-                networkmanager.restart()
+                if networkmanager.set_global_mac_address(value):
+                    networkmanager.restart()
             else:
                 mac_parser.print_help()
 
