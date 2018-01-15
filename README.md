@@ -21,8 +21,9 @@ More documentation will be available when nordnm gets to stable releases.
 - Automatically adds user credentials to the imported configurations.
 - Tunnels DNS requests through the VPN, to prevent DNS leaks.
 - Disables IPv6 by default, to avoid IPv6 leaks.
-- Sets the auto connect server of your choice for all NetworkManager connections, instead of per connection. (optional)
-- Sets a network kill-switch, to disable the network interface being used, if the active VPN disconnects. (optional)
+- Set the auto connect server of your choice for all NetworkManager connections, instead of per connection. (optional)
+- Set a network kill-switch, to disable the network interface being used, if the active VPN disconnects. (optional)
+- Set the NetworkManager MAC address configuration, for simple yet powerful control of your MAC address. (optional)
 
 ## 1. Requirements
 
@@ -90,6 +91,9 @@ commands:
     list (l)            List the specified information.
     sync (s)            Synchronise the optimal servers (based on load and
                         latency) to NetworkManager.
+    mac (m)             Global NetworkManager MAC address preferences. This
+                        command will affect ALL NetworkManager connections
+                        permanently.
 ```
 
 
