@@ -60,6 +60,53 @@ class ConnectionConfig(object):
         self.config['vpn-secrets']['password'] = password
 
 
+def set_global_mac_address(value):
+    mac_config = configparser.ConfigParser(interpolation=None)
+
+    mac_config['connection-mac-randomization'] = {}
+    mac_config['connection-mac-randomization']['wifi.cloned-mac-address'] = value
+    mac_config['connection-mac-randomization']['ethernet.cloned-mac-address'] = value
+
+    try:
+        with open(paths.MAC_CONFIG, 'w') as config_file:
+            mac_config.write(config_file)
+
+        logger.info("Global NetworkManager MAC address settings set to '%s'.", value)
+        return True
+    except Exception as e:
+        logger.error("Could not save MAC address configuration to '%s'", paths.MAC_CONFIG)
+        return False
+
+
+def remove_global_mac_address():
+    try:
+        os.remove(paths.MAC_CONFIG)
+        return True
+    except FileNotFoundError:
+        return False
+    except Exception as e:
+        logger.error("Could not remove the MAC address settings file '%s': %s" % (paths.MAC_CONFIG, e))
+        return False
+
+
+def restart():
+    try:
+        output = subprocess.run(['systemctl', 'restart', 'NetworkManager'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output.check_returncode()
+
+        logger.info("NetworkManager restarted successfully!")
+        return True
+
+    except subprocess.CalledProcessError:
+        error = utils.format_std_string(output.stderr)
+        logger.error(error)
+        return False
+
+    except Exception as ex:
+        logger.error(ex)
+        return False
+
+
 def reload_connections():
     try:
         output = subprocess.run(['nmcli', 'connection', 'reload'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -143,9 +190,7 @@ def set_dns_resolv(dns_list, active_servers):
         '  case $2 in\n'
         '    vpn-up)\n'
         '      if [ $interface == "$VPN_INTERFACE" ]; then\n'  # Check that the interface matches tun0, which should be the first OpenVPN tunnel interface opened
-        '        if [ -L "$RESOLV_PATH" ]; then\n'  # Check if /etc/resolv.conf is a symlink, if yes, move it to a temporary file
-        '          mv -f "$RESOLV_PATH" "$RESOLV_PATH".tmp\n'  # Move the symlink to a temp file
-        '        fi\n'
+        '        mv -f "$RESOLV_PATH" "$RESOLV_PATH".tmp\n'  # Move the current resolv to a temp file
         '        chattr -i "$RESOLV_PATH"\n'
         '        printf "' + resolv_string + '" > "$RESOLV_PATH"\n'
         '        chattr +i "$RESOLV_PATH"\n'
@@ -280,8 +325,8 @@ def import_connection(file_path, connection_name, username=None, password=None, 
             if username and password:
                 config.set_credentials(username, password)
 
-            if dns_list:
-                config.set_dns_nameservers(dns_list)
+            #if dns_list:
+            #    config.set_dns_nameservers(dns_list)
 
             if not ipv6:
                 config.disable_ipv6()

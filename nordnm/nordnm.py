@@ -49,6 +49,7 @@ class NordNM(object):
         remove_parser.add_argument("-a", "--auto-connect", dest="remove_ac", help="Remove the active auto-connect feature.", action="store_true")
         remove_parser.add_argument("-k", "--kill-switch", dest="remove_ks", help="Remove the active kill-switch feature.", action="store_true")
         remove_parser.add_argument("-d", "--data", dest="remove_d", help="Remove existing local data (VPN Configs, Credentials & Settings).", action="store_true")
+        remove_parser.add_argument("-m", "--mac-settings", dest="remove_m", help="Remove existing MAC Address settings configured by nordnm.", action="store_true")
         remove_parser.set_defaults(remove=True)
 
         update_parser = subparsers.add_parser('update', aliases=['u'], help='Update a specified setting.')
@@ -68,6 +69,15 @@ class NordNM(object):
         sync_parser.add_argument("-k", "--kill-switch", help="Sets a network kill-switch, to disable the active network interface when an active VPN connection disconnects.", action="store_true")
         sync_parser.add_argument('-a', '--auto-connect', nargs=3, metavar=('[COUNTRY_CODE]', '[VPN_CATEGORY]', '[PROTOCOL]'), help='Configure NetworkManager to auto-connect to the chosen server type. Takes country code, category and protocol.')
         sync_parser.set_defaults(sync=True)
+
+        # For reference: https://blogs.gnome.org/thaller/category/networkmanager/
+        mac_parser = subparsers.add_parser('mac', aliases=['m'], help="Global NetworkManager MAC address preferences. This command will affect ALL NetworkManager connections permanently.")
+        mac_parser.add_argument('-r', '--random', help="A randomised MAC addresss will be generated on each connect.", action='store_true')
+        mac_parser.add_argument('-s', '--stable', help="Use a stable, hashed MAC address on connect.", action='store_true')
+        mac_parser.add_argument('-e', '--explicit', help="Specify a MAC address to use on connect.", nargs=1, metavar='"MAC_ADDRESS"')
+        mac_parser.add_argument('--preserve', help="Don't change the current MAC address upon connection.", action='store_true')
+        mac_parser.add_argument('--permanent', help="Use the permanent MAC address of the device on connect.", action='store_true')
+        mac_parser.set_defaults(mac=True)
 
         self.logger = logging.getLogger(__name__)
         self.active_servers = {}
@@ -95,7 +105,7 @@ class NordNM(object):
         if "remove" in args and args.remove:
             removed = False
 
-            if not args.remove_c and not args.remove_d and not args.remove_ac and not args.remove_ks and not args.remove_all:
+            if not args.remove_c and not args.remove_d and not args.remove_ac and not args.remove_ks and not args.remove_m and not args.remove_all:
                 remove_parser.print_help()
                 sys.exit(1)
 
@@ -105,6 +115,7 @@ class NordNM(object):
                 args.remove_ac = True
                 args.remove_c = True
                 args.remove_d = True
+                args.remove_m = True
             elif args.remove_c:
                 # We need to remove the auto-connect if we are removing all connections
                 args.remove_ac = True
@@ -131,6 +142,10 @@ class NordNM(object):
                 if self.remove_data():
                     removed = True
 
+            if args.remove_m:
+                if networkmanager.remove_global_mac_address():
+                    removed = True
+
             if removed:
                 networkmanager.reload_connections()
             else:
@@ -150,6 +165,24 @@ class NordNM(object):
                 self.print_active_servers()
 
             sys.exit(0)
+        elif "mac" in args and args.mac:
+            value = None
+            if args.random:
+                value = "random"
+            elif args.stable:
+                value = "stable"
+            elif args.explicit:
+                value = args.explicit[0]
+            elif args.preserve:
+                value = "preserve"
+            elif args.permanent:
+                value = "permanent"
+
+            if value:
+                networkmanager.set_global_mac_address(value)
+                networkmanager.restart()
+            else:
+                mac_parser.print_help()
 
         # Now that arguments that don't need to be disturbed by setup() are over, do setup()
         self.setup()
@@ -186,10 +219,11 @@ class NordNM(object):
         version_string = __version__
 
         latest_version = utils.get_pypi_package_version(__package__)
-        if latest_version and StrictVersion(version_string) < StrictVersion(latest_version):  # There's a new version on PyPi
-            version_string = version_string + " (v" + latest_version + " available!)"
-        else:
-            version_string = version_string + " (Latest)"
+        if latest_version:
+            if StrictVersion(version_string) < StrictVersion(latest_version):  # There's a new version on PyPi
+                version_string = version_string + " (v" + latest_version + " available!)"
+            else:
+                version_string = version_string + " (Latest)"
 
         print("     _   _               _ _   _ ___  ___\n"
               "    | \ | |             | | \ | ||  \/  |\n"
