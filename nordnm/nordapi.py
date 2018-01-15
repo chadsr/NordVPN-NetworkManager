@@ -1,5 +1,7 @@
 import requests
+import json
 from operator import itemgetter
+import hashlib
 
 API_ADDR = 'https://api.nordvpn.com'
 TIMEOUT = 5
@@ -56,3 +58,41 @@ def get_configs():
             return None
     except Exception as ex:
         return None
+
+
+def get_user_token(email):
+    """
+    Returns {"token": "some_token", "key": "some_key", "salt": "some_salt"}
+    """
+
+    try:
+        resp = requests.get(API_ADDR + '/token/token/' + email)
+        if resp.status_code == requests.codes.ok:
+            return json.loads(resp.text)
+        else:
+            return None
+    except Exception as ex:
+        return None
+
+
+def validate_user_token(token_json, password):
+    token = token_json['token']
+    salt = token_json['salt']
+    key = token_json['key']
+
+    password_hash = hashlib.sha512(salt.encode() + password.encode())
+    final_hash = hashlib.sha512(password_hash.hexdigest().encode() + key.encode())
+
+    try:
+        resp = requests.get(API_ADDR + '/token/verify/' + token + '/' + final_hash.hexdigest())
+        if resp.status_code == requests.codes.ok:
+            return True
+        else:
+            return False
+    except Exception as ex:
+        return None
+
+
+def verify_user_credentials(email, password):
+    token_json = get_user_token(email)
+    return validate_user_token(token_json, password)
