@@ -325,8 +325,8 @@ def import_connection(file_path, connection_name, username=None, password=None, 
             if username and password:
                 config.set_credentials(username, password)
 
-            #if dns_list:
-            #    config.set_dns_nameservers(dns_list)
+            if dns_list:
+                config.set_dns_nameservers(dns_list)
 
             if not ipv6:
                 config.disable_ipv6()
