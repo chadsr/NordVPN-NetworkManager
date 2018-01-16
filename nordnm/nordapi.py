@@ -2,6 +2,7 @@ import requests
 import json
 from operator import itemgetter
 import hashlib
+import sys
 
 API_ADDR = 'https://api.nordvpn.com'
 TIMEOUT = 5
@@ -49,15 +50,29 @@ def get_nameservers():
     """
 
 
-def get_configs():
+def get_configs(etag=None):
     try:
-        resp = requests.get(API_ADDR + '/files/zipv2', timeout=TIMEOUT)
-        if resp.status_code == requests.codes.ok:
-            return resp.content
+        head = requests.head(API_ADDR + '/files/zipv2', timeout=TIMEOUT)
+
+        # Follow the redirect if there is one
+        if head.status_code == requests.codes.moved:
+            redirect_url = head.headers['Location']
+            head = requests.head(redirect_url, timeout=TIMEOUT)
+
+        if head.status_code == requests.codes.ok:
+            header_etag = head.headers['etag']
+
+            if header_etag != etag:
+                resp = requests.get(API_ADDR + '/files/zipv2', timeout=TIMEOUT)
+                if resp.status_code == requests.codes.ok:
+                    return (resp.content, header_etag)
+            else:
+                return (None, None)
         else:
-            return None
+            return False
     except Exception as ex:
-        return None
+        print(ex)
+        return False
 
 
 def get_user_token(email):
@@ -66,7 +81,7 @@ def get_user_token(email):
     """
 
     try:
-        resp = requests.get(API_ADDR + '/token/token/' + email)
+        resp = requests.get(API_ADDR + '/token/token/' + email, timeout=TIMEOUT)
         if resp.status_code == requests.codes.ok:
             return json.loads(resp.text)
         else:
@@ -84,7 +99,7 @@ def validate_user_token(token_json, password):
     final_hash = hashlib.sha512(password_hash.hexdigest().encode() + key.encode())
 
     try:
-        resp = requests.get(API_ADDR + '/token/verify/' + token + '/' + final_hash.hexdigest())
+        resp = requests.get(API_ADDR + '/token/verify/' + token + '/' + final_hash.hexdigest(), timeout=TIMEOUT)
         if resp.status_code == requests.codes.ok:
             return True
         else:

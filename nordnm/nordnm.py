@@ -317,12 +317,53 @@ class NordNM(object):
 
         return removed
 
+    def set_config_info(self, etag):
+        if os.path.exists(paths.DIR_OVPN):
+            with open(paths.CONFIG_INFO, 'w') as f:
+                f.write(etag)
+
+            return True
+        else:
+            return False
+
+    def get_config_info(self):
+        if os.path.exists(paths.CONFIG_INFO):
+                with open(paths.CONFIG_INFO, 'r') as f:
+                    info = f.read().replace('\n', '')
+
+                return info
+        else:
+            return None
+
+    def get_configs(self):
+        self.logger.info("Downloading latest NordVPN OpenVPN configuration files to '%s'." % paths.DIR_OVPN)
+
+        etag = self.get_config_info()
+        config_data = nordapi.get_configs(etag)
+        if config_data is False:
+            self.logger.error("Failed to retrieve configuration files from NordVPN")
+            return False
+        elif config_data:
+            zip_file, etag = config_data
+            if zip_file and etag:
+                if not utils.extract_zip(zip_file, paths.DIR_OVPN):
+                    self.logger.error("Failed to extract configuration files")
+                    return False
+
+                if not self.set_config_info(etag):
+                    return False
+            else:
+                self.logger.info("Configuration files already up-to-date.")
+
+            return True
+
     def sync(self, update_config=True, preserve_vpn=False):
         if self.remove_legacy_files():
             self.logger.info("Removed legacy files")
 
         if update_config:
-            self.get_configs()
+            if not self.get_configs():
+                self.logger.error("Updating configurations failed.")
 
         if self.sync_servers(preserve_vpn):
             networkmanager.reload_connections()
@@ -348,16 +389,6 @@ class NordNM(object):
         if not os.path.exists(paths.DIR_OVPN):
             os.mkdir(paths.DIR_OVPN)
             utils.chown_path_to_user(paths.DIR_OVPN)
-
-    def get_configs(self):
-        self.logger.info("Downloading latest NordVPN OpenVPN configuration files to '%s'." % paths.DIR_OVPN)
-
-        configs = nordapi.get_configs()
-        if configs:
-            if not utils.extract_zip(configs, paths.DIR_OVPN):
-                self.logger.error("Failed to extract configuration files")
-        else:
-            self.logger.error("Failed to retrieve configuration files from NordVPN")
 
     def get_ovpn_path(self, domain, protocol):
         wildcard = domain + '.' + protocol + '*'

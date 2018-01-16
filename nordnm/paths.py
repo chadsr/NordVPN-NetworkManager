@@ -6,6 +6,7 @@ DIR_USERHOME = os.path.expanduser('~' + __username__)
 DIR_ROOT = os.path.join(DIR_USERHOME, '.nordnm/')
 DIR_OVPN = os.path.join(DIR_ROOT, 'configs/')
 
+CONFIG_INFO = os.path.join(DIR_OVPN, '.info')
 SETTINGS = os.path.join(DIR_ROOT, 'settings.conf')
 ACTIVE_SERVERS = os.path.join(DIR_ROOT, '.active_servers')
 CREDENTIALS = os.path.join(DIR_ROOT, 'credentials.conf')
