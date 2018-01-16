@@ -40,6 +40,7 @@ class NordNM(object):
 
         # Kill-switch and auto-connect are repeated, to allow their use with or without the sync command.
         # TODO: Find out if there's a way to re-use the attributes so they don't need to be manually repeated
+        parser.add_argument("-v", "--version", help="Display the package version.", action="store_true")
         parser.add_argument("-k", "--kill-switch", help="Sets a network kill-switch, to disable the active network interface when an active VPN connection disconnects.", action="store_true")
         parser.add_argument("-a", "--auto-connect", nargs=3, metavar=("[COUNTRY_CODE]", "[VPN_CATEGORY]", "[PROTOCOL]"), help="Configure NetworkManager to auto-connect to the chosen server type. Takes country code, category and protocol.")
 
@@ -94,14 +95,17 @@ class NordNM(object):
             if getattr(args, arg):
                 arg_count += 1
 
-        self.print_splash()
-
         if arg_count == 0:
             parser.print_help()
             sys.exit(1)
 
-        # Check for commands that should be run on their own
+        if "version" in args and args.version:
+            print(__version__)
+            sys.exit(1)
 
+        self.print_splash()
+
+        # Check for commands that should be run on their own
         if "remove" in args and args.remove:
             removed = False
 
