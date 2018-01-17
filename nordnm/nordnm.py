@@ -40,6 +40,7 @@ class NordNM(object):
 
         # Kill-switch and auto-connect are repeated, to allow their use with or without the sync command.
         # TODO: Find out if there's a way to re-use the attributes so they don't need to be manually repeated
+        parser.add_argument("-v", "--version", help="Display the package version.", action="store_true")
         parser.add_argument("-k", "--kill-switch", help="Sets a network kill-switch, to disable the active network interface when an active VPN connection disconnects.", action="store_true")
         parser.add_argument("-a", "--auto-connect", nargs=3, metavar=("[COUNTRY_CODE]", "[VPN_CATEGORY]", "[PROTOCOL]"), help="Configure NetworkManager to auto-connect to the chosen server type. Takes country code, category and protocol.")
 
@@ -49,6 +50,7 @@ class NordNM(object):
         remove_parser.add_argument("-a", "--auto-connect", dest="remove_ac", help="Remove the active auto-connect feature.", action="store_true")
         remove_parser.add_argument("-k", "--kill-switch", dest="remove_ks", help="Remove the active kill-switch feature.", action="store_true")
         remove_parser.add_argument("-d", "--data", dest="remove_d", help="Remove existing local data (VPN Configs, Credentials & Settings).", action="store_true")
+        remove_parser.add_argument("-m", "--mac-settings", dest="remove_m", help="Remove existing MAC Address settings configured by nordnm.", action="store_true")
         remove_parser.set_defaults(remove=True)
 
         update_parser = subparsers.add_parser('update', aliases=['u'], help='Update a specified setting.')
@@ -69,6 +71,15 @@ class NordNM(object):
         sync_parser.add_argument('-a', '--auto-connect', nargs=3, metavar=('[COUNTRY_CODE]', '[VPN_CATEGORY]', '[PROTOCOL]'), help='Configure NetworkManager to auto-connect to the chosen server type. Takes country code, category and protocol.')
         sync_parser.set_defaults(sync=True)
 
+        # For reference: https://blogs.gnome.org/thaller/category/networkmanager/
+        mac_parser = subparsers.add_parser('mac', aliases=['m'], help="Global NetworkManager MAC address preferences. This command will affect ALL NetworkManager connections permanently.")
+        mac_parser.add_argument('-r', '--random', help="A randomised MAC addresss will be generated on each connect.", action='store_true')
+        mac_parser.add_argument('-s', '--stable', help="Use a stable, hashed MAC address on connect.", action='store_true')
+        mac_parser.add_argument('-e', '--explicit', help="Specify a MAC address to use on connect.", nargs=1, metavar='"MAC_ADDRESS"')
+        mac_parser.add_argument('--preserve', help="Don't change the current MAC address upon connection.", action='store_true')
+        mac_parser.add_argument('--permanent', help="Use the permanent MAC address of the device on connect.", action='store_true')
+        mac_parser.set_defaults(mac=True)
+
         self.logger = logging.getLogger(__name__)
         self.active_servers = {}
 
@@ -84,18 +95,21 @@ class NordNM(object):
             if getattr(args, arg):
                 arg_count += 1
 
-        self.print_splash()
-
         if arg_count == 0:
             parser.print_help()
             sys.exit(1)
 
-        # Check for commands that should be run on their own
+        if "version" in args and args.version:
+            print(__version__)
+            sys.exit(1)
 
+        self.print_splash()
+
+        # Check for commands that should be run on their own
         if "remove" in args and args.remove:
             removed = False
 
-            if not args.remove_c and not args.remove_d and not args.remove_ac and not args.remove_ks and not args.remove_all:
+            if not args.remove_c and not args.remove_d and not args.remove_ac and not args.remove_ks and not args.remove_m and not args.remove_all:
                 remove_parser.print_help()
                 sys.exit(1)
 
@@ -105,6 +119,7 @@ class NordNM(object):
                 args.remove_ac = True
                 args.remove_c = True
                 args.remove_d = True
+                args.remove_m = True
             elif args.remove_c:
                 # We need to remove the auto-connect if we are removing all connections
                 args.remove_ac = True
@@ -131,6 +146,10 @@ class NordNM(object):
                 if self.remove_data():
                     removed = True
 
+            if args.remove_m:
+                if networkmanager.remove_global_mac_address():
+                    removed = True
+
             if removed:
                 networkmanager.reload_connections()
             else:
@@ -150,6 +169,24 @@ class NordNM(object):
                 self.print_active_servers()
 
             sys.exit(0)
+        elif "mac" in args and args.mac:
+            value = None
+            if args.random:
+                value = "random"
+            elif args.stable:
+                value = "stable"
+            elif args.explicit:
+                value = args.explicit[0]
+            elif args.preserve:
+                value = "preserve"
+            elif args.permanent:
+                value = "permanent"
+
+            if value:
+                if networkmanager.set_global_mac_address(value):
+                    networkmanager.restart()
+            else:
+                mac_parser.print_help()
 
         # Now that arguments that don't need to be disturbed by setup() are over, do setup()
         self.setup()
@@ -186,10 +223,11 @@ class NordNM(object):
         version_string = __version__
 
         latest_version = utils.get_pypi_package_version(__package__)
-        if latest_version and StrictVersion(version_string) < StrictVersion(latest_version):  # There's a new version on PyPi
-            version_string = version_string + " (v" + latest_version + " available!)"
-        else:
-            version_string = version_string + " (Latest)"
+        if latest_version:
+            if StrictVersion(version_string) < StrictVersion(latest_version):  # There's a new version on PyPi
+                version_string = version_string + " (v" + latest_version + " available!)"
+            else:
+                version_string = version_string + " (Latest)"
 
         print("     _   _               _ _   _ ___  ___\n"
               "    | \ | |             | | \ | ||  \/  |\n"
@@ -212,12 +250,12 @@ class NordNM(object):
     def print_countries(self):
         servers = nordapi.get_server_list(sort_by_country=True)
         if servers:
-            format_string = "| %-14s | %-4s |"
+            format_string = "| %-22s | %-4s |"
             countries = []
 
             print("\n Note: You must use the country code, NOT the country name in this tool.\n")
             print(format_string % ("NAME", "CODE"))
-            print("|----------------+------|")
+            print("|------------------------+------|")
 
             for server in servers:
                 country_code = server['flag']
@@ -279,12 +317,53 @@ class NordNM(object):
 
         return removed
 
+    def set_config_info(self, etag):
+        if os.path.exists(paths.DIR_OVPN):
+            with open(paths.CONFIG_INFO, 'w') as f:
+                f.write(etag)
+
+            return True
+        else:
+            return False
+
+    def get_config_info(self):
+        if os.path.exists(paths.CONFIG_INFO):
+                with open(paths.CONFIG_INFO, 'r') as f:
+                    info = f.read().replace('\n', '')
+
+                return info
+        else:
+            return None
+
+    def get_configs(self):
+        self.logger.info("Downloading latest NordVPN OpenVPN configuration files to '%s'." % paths.DIR_OVPN)
+
+        etag = self.get_config_info()
+        config_data = nordapi.get_configs(etag)
+        if config_data is False:
+            self.logger.error("Failed to retrieve configuration files from NordVPN")
+            return False
+        elif config_data:
+            zip_file, etag = config_data
+            if zip_file and etag:
+                if not utils.extract_zip(zip_file, paths.DIR_OVPN):
+                    self.logger.error("Failed to extract configuration files")
+                    return False
+
+                if not self.set_config_info(etag):
+                    return False
+            else:
+                self.logger.info("Configuration files already up-to-date.")
+
+            return True
+
     def sync(self, update_config=True, preserve_vpn=False):
         if self.remove_legacy_files():
             self.logger.info("Removed legacy files")
 
         if update_config:
-            self.get_configs()
+            if not self.get_configs():
+                self.logger.error("Updating configurations failed.")
 
         if self.sync_servers(preserve_vpn):
             networkmanager.reload_connections()
@@ -310,16 +389,6 @@ class NordNM(object):
         if not os.path.exists(paths.DIR_OVPN):
             os.mkdir(paths.DIR_OVPN)
             utils.chown_path_to_user(paths.DIR_OVPN)
-
-    def get_configs(self):
-        self.logger.info("Downloading latest NordVPN OpenVPN configuration files to '%s'." % paths.DIR_OVPN)
-
-        configs = nordapi.get_configs()
-        if configs:
-            if not utils.extract_zip(configs, paths.DIR_OVPN):
-                self.logger.error("Failed to extract configuration files")
-        else:
-            self.logger.error("Failed to retrieve configuration files from NordVPN")
 
     def get_ovpn_path(self, domain, protocol):
         wildcard = domain + '.' + protocol + '*'

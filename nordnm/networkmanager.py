@@ -6,6 +6,8 @@ import shutil
 import os
 import configparser
 import logging
+from distutils.version import LooseVersion
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +60,43 @@ class ConnectionConfig(object):
         self.config['vpn']['username'] = username
         self.config['vpn-secrets'] = {}
         self.config['vpn-secrets']['password'] = password
+
+
+def restart():
+    try:
+        output = subprocess.run(['systemctl', 'restart', 'NetworkManager'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output.check_returncode()
+
+        logger.info("NetworkManager restarted successfully!")
+        return True
+
+    except subprocess.CalledProcessError:
+        error = utils.format_std_string(output.stderr)
+        logger.error(error)
+        return False
+
+    except Exception as ex:
+        logger.error(ex)
+        return False
+
+
+def get_version():
+    try:
+        output = subprocess.run(['NetworkManager', '--version'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output.check_returncode()
+
+        version_string = re.split(",|-", output.stdout.decode())[0]
+
+        return version_string
+
+    except subprocess.CalledProcessError:
+        error = utils.format_std_string(output.stderr)
+        logger.error(error)
+        return False
+
+    except Exception as ex:
+        logger.error(ex)
+        return False
 
 
 def reload_connections():
@@ -127,6 +166,46 @@ def get_interfaces(wifi=True, ethernet=True):
         return False
 
 
+def set_global_mac_address(value):
+    MIN_VERSION = "1.4.0"
+    nm_version = get_version()
+
+    if nm_version:
+        if LooseVersion(nm_version) >= LooseVersion(MIN_VERSION):
+            mac_config = configparser.ConfigParser(interpolation=None)
+
+            mac_config['connection-mac-randomization'] = {}
+            mac_config['connection-mac-randomization']['wifi.cloned-mac-address'] = value
+            mac_config['connection-mac-randomization']['ethernet.cloned-mac-address'] = value
+
+            try:
+                with open(paths.MAC_CONFIG, 'w') as config_file:
+                    mac_config.write(config_file)
+
+                logger.info("Global NetworkManager MAC address settings set to '%s'.", value)
+                return True
+            except Exception as e:
+                logger.error("Could not save MAC address configuration to '%s'", paths.MAC_CONFIG)
+                return False
+        else:
+            logger.error("NetworkManager v%s or greater required to change MAC address settings. You have v%s.", MIN_VERSION, nm_version)
+            return False
+    else:
+        logger.error("Could not get the version of NetworkManager in use. Aborting.")
+        return False
+
+
+def remove_global_mac_address():
+    try:
+        os.remove(paths.MAC_CONFIG)
+        return True
+    except FileNotFoundError:
+        return False
+    except Exception as e:
+        logger.error("Could not remove the MAC address settings file '%s': %s" % (paths.MAC_CONFIG, e))
+        return False
+
+
 def set_dns_resolv(dns_list, active_servers):
     resolv_string = "# nordnm enforced nameservers\\n"
     for address in dns_list:
@@ -143,9 +222,7 @@ def set_dns_resolv(dns_list, active_servers):
         '  case $2 in\n'
         '    vpn-up)\n'
         '      if [ $interface == "$VPN_INTERFACE" ]; then\n'  # Check that the interface matches tun0, which should be the first OpenVPN tunnel interface opened
-        '        if [ -L "$RESOLV_PATH" ]; then\n'  # Check if /etc/resolv.conf is a symlink, if yes, move it to a temporary file
-        '          mv -f "$RESOLV_PATH" "$RESOLV_PATH".tmp\n'  # Move the symlink to a temp file
-        '        fi\n'
+        '        mv -f "$RESOLV_PATH" "$RESOLV_PATH".tmp\n'  # Move the current resolv to a temp file
         '        chattr -i "$RESOLV_PATH"\n'
         '        printf "' + resolv_string + '" > "$RESOLV_PATH"\n'
         '        chattr +i "$RESOLV_PATH"\n'
