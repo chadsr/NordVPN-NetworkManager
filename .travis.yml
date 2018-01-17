@@ -65,20 +65,14 @@ jobs:
       - curl -fL https://getcli.jfrog.io | sh
 
       script:
-      - fpm -m "${GH_USER}" --description ${DESCRIPTION} --url "https://github.com/${GH_USER}/${NAME}"
-        --provides "${PACKAGE}" -a "all" --no-python-fix-name --python-package-name-prefix
-        "python3" --python-bin python3 --python-pip pip3 -d python3 -d python3-pip
-        -d network-manager -d openvpn -d network-manager-openvpn-gnome -s python -t
-        deb ${PACKAGE}
+      - fpm --version
+      - fpm -m "${GH_USER}" --description ${DESCRIPTION} --url "https://github.com/${GH_USER}/${NAME}" --provides "${PACKAGE}" -a "all" --no-python-fix-name --python-package-name-prefix "python3" --python-bin python3 --python-pip pip3 -d python3 -d python3-pip -d network-manager -d openvpn -d network-manager-openvpn-gnome -s python -t deb ${PACKAGE}
       - docker pull fedora
       - >
-        docker run -v ${PWD}:/mnt/travis fedora /bin/sh -c "cd /mnt/travis && \ dnf
-        install ruby-devel gcc make rpm-build libffi-devel -y --quiet && \ gem install
-        --no-ri --no-rdoc fpm && \ fpm -m "${GH_USER}" --description ${DESCRIPTION} --url
-        "https://github.com/${GH_USER}/${NAME}" --provides "${PACKAGE}" -a "all" --no-python-fix-name
-        --python-package-name-prefix "python3" --python-bin python --python-pip pip
-        -d NetworkManager -d openvpn -d NetworkManager-openvpn-gnome -s python -t
-        rpm ${PACKAGE}
+        docker run -v ${PWD}:/mnt/travis fedora /bin/sh -c 'cd /mnt/travis && \
+        dnf install ruby-devel gcc make rpm-build libffi-devel -y --quiet && \
+        gem install --no-ri --no-rdoc fpm && \
+        fpm -m "${GH_USER}" --description ${DESCRIPTION} --url "https://github.com/${GH_USER}/${NAME}" --provides "${PACKAGE}" -a "all" --no-python-fix-name --python-package-name-prefix "python" --python-bin python --python-pip pip -d NetworkManager -d openvpn -d NetworkManager-openvpn-gnome -s python -t rpm ${PACKAGE}'
 
       before_deploy:
       # Create deb package
