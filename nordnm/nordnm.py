@@ -250,12 +250,12 @@ class NordNM(object):
     def print_countries(self):
         servers = nordapi.get_server_list(sort_by_country=True)
         if servers:
-            format_string = "| %-14s | %-4s |"
+            format_string = "| %-22s | %-4s |"
             countries = []
 
             print("\n Note: You must use the country code, NOT the country name in this tool.\n")
             print(format_string % ("NAME", "CODE"))
-            print("|----------------+------|")
+            print("|------------------------+------|")
 
             for server in servers:
                 country_code = server['flag']
