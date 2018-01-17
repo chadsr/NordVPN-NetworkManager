@@ -1,4 +1,5 @@
 language: python
+sudo: required
 
 jobs:
   include:
@@ -38,7 +39,7 @@ jobs:
           branch: master
           tags: true
     - stage: deploy_builds
-      sudo: required
+      python: '3.5'
       services:
       - docker
       env:
@@ -52,12 +53,18 @@ jobs:
       - JFROG_CLI_OFFER_CONFIG=false
       - secure:    "pPG85EvUVWahXHSVToXJ9yE/ow4U1mC/RX63J3mjSG5Ywp7BYqdNEa9/YD2cwZaDx1FiwHmbSHZWiYbmNkVKfI0CgcrGXCgKLeRusAHqCSAQ7TsDbk8/LW2e/5saSDqyE7dDvZxyktsJgn906cWu2ZcX+GnwC3sEVW2GNqVIxkRcMqjoTCgxewyodnOMurbSTRrIpVlgVsXu1nBhXvocatFNXE1/RhJnE43KBgVIZHDgGysdZl2RHYkMYy4oW3g80f/d2zrwvQhnlTezUWgx6TGjpfD6w+3JnwrlVG/17A76NBu2GT3YB545hrxPw7QikZ2KMYxJ2TEKN92KResclK8wWQx1IT1csikRYwkXIPESJxzAkQfPNBqmjOofekawc7XOzsC+btOOpJz1CEvksaXfaepGJOmJr2N7h7ZeMRI8I2sXicTsvL7/9R5Tbb5wDOtnmt0PiHMyHBGMF9sBwi64qjQGoq0bj6Q0AxIbXthd2v/p5BDHSA+7fDWUuLpmRyqiPuFZckg+Cd9Q1VsldcR8Qy3pkHMwhyKK4QBgqxsEAgCTFoAozkB9E8ICgE28lJwdk7aQ5Y24ynwcbUK8Jz981v5IlkvJs6vXD6jw1tEo3YNYvi0M5FBcwkH0FNSbEVu0U1dM75wNKjJpXPIX3FBF6+IcQE/K7qXgkT3lU4k="
 
-      before_deploy:
+      before_install:
       - git config --local user.name "${GH_USER}"
       - git config --local user.email "${GH_EMAIL}"
       - sudo apt-get update
+
+      install:
       - sudo apt-get install -y ruby ruby-dev rubygems build-essential
       - gem install --no-ri --no-rdoc fpm
+      # Get the jfrog CLI tool
+      - curl -fL https://getcli.jfrog.io | sh
+
+      script:
       - fpm -m "${GH_USER}" --description ${DESCRIPTION} --url "https://github.com/${GH_USER}/${NAME}"
         --provides "${PACKAGE}" -a "all" --no-python-fix-name --python-package-name-prefix
         "python3" --python-bin python3 --python-pip pip3 -d python3 -d python3-pip
@@ -72,8 +79,8 @@ jobs:
         --python-package-name-prefix "python3" --python-bin python --python-pip pip
         -d NetworkManager -d openvpn -d NetworkManager-openvpn-gnome -s python -t
         rpm ${PACKAGE}
-      # Get the jfrog CLI tool
-      - curl -fL https://getcli.jfrog.io | sh
+
+      before_deploy:
       # Create deb package
       - ./jfrog bt pc --key=${BTKEY} --user=${GH_USER} --licenses=GPL3 --vcs-url=https://github.com/${GH_USER}/${NAME} ${GH_USER}/${PACKAGE}-deb/${VERSION} || echo "package already exists"
       # Upload artifact to deb repo
@@ -86,6 +93,7 @@ jobs:
       - ./jfrog bt upload --override=true --key ${BTKEY} --publish=true "${PACKAGE}-${VERSION}-1.noarch.rpm" ${GH_USER}/${PACKAGE}-rpm/${VERSION}
       # Generate metadata
       - curl -X POST -u ${GH_USER}:${BTKEY} https://api.bintray.com/calc_metadata/${GH_USER}/${PACKAGE}-rpm
+
       deploy:
         provider: releases
         api_key:
