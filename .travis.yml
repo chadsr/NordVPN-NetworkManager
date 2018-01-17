@@ -71,7 +71,7 @@ jobs:
         --no-ri --no-rdoc fpm && \ fpm -m "${GH_USER}" --description ${DESCRIPTION} --url
         "https://github.com/${GH_USER}/${NAME}" --provides "${PACKAGE}" -a "all" --no-python-fix-name
         --python-package-name-prefix "python3" --python-bin python --python-pip pip
-        -d NetworkManager -d openvpn -d network-manager-openvpn-gnome -s python -t
+        -d NetworkManager -d openvpn -d NetworkManager-openvpn-gnome -s python -t
         rpm ${PACKAGE}
       # Get the jfrog CLI tool
       - curl -fL https://getcli.jfrog.io | sh
