@@ -1,5 +1,8 @@
 import requests
+import json
 from operator import itemgetter
+import hashlib
+import sys
 
 API_ADDR = 'https://api.nordvpn.com'
 TIMEOUT = 5
@@ -47,12 +50,64 @@ def get_nameservers():
     """
 
 
-def get_configs():
+def get_configs(etag=None):
     try:
-        resp = requests.get(API_ADDR + '/files/zipv2', timeout=TIMEOUT)
+        head = requests.head(API_ADDR + '/files/zipv2', timeout=TIMEOUT)
+
+        # Follow the redirect if there is one
+        if head.status_code == requests.codes.moved:
+            redirect_url = head.headers['Location']
+            head = requests.head(redirect_url, timeout=TIMEOUT)
+
+        if head.status_code == requests.codes.ok:
+            header_etag = head.headers['etag']
+
+            if header_etag != etag:
+                resp = requests.get(API_ADDR + '/files/zipv2', timeout=TIMEOUT)
+                if resp.status_code == requests.codes.ok:
+                    return (resp.content, header_etag)
+            else:
+                return (None, None)
+        else:
+            return False
+    except Exception as ex:
+        print(ex)
+        return False
+
+
+def get_user_token(email):
+    """
+    Returns {"token": "some_token", "key": "some_key", "salt": "some_salt"}
+    """
+
+    try:
+        resp = requests.get(API_ADDR + '/token/token/' + email, timeout=TIMEOUT)
         if resp.status_code == requests.codes.ok:
-            return resp.content
+            return json.loads(resp.text)
         else:
             return None
     except Exception as ex:
         return None
+
+
+def validate_user_token(token_json, password):
+    token = token_json['token']
+    salt = token_json['salt']
+    key = token_json['key']
+
+    password_hash = hashlib.sha512(salt.encode() + password.encode())
+    final_hash = hashlib.sha512(password_hash.hexdigest().encode() + key.encode())
+
+    try:
+        resp = requests.get(API_ADDR + '/token/verify/' + token + '/' + final_hash.hexdigest(), timeout=TIMEOUT)
+        if resp.status_code == requests.codes.ok:
+            return True
+        else:
+            return False
+    except Exception as ex:
+        return None
+
+
+def verify_user_credentials(email, password):
+    token_json = get_user_token(email)
+    return validate_user_token(token_json, password)

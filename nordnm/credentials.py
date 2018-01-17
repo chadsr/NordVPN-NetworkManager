@@ -1,4 +1,5 @@
 from nordnm import utils
+from nordnm import nordapi
 
 import configparser
 import logging
@@ -54,14 +55,20 @@ class CredentialsHandler(object):
             return None
 
     def save_new_credentials(self):
-        username = None
-        password = None
+        valid = False
 
         print("\nPlease input your NordVPN credentials:")
 
-        while not username and not password:
-            username = input("Username/Email: ")
+        while not valid:
+            username = input("Email: ")
             password = getpass.getpass("Password: ")
+
+            if username and password:
+                self.logger.info("Attempting to verify credentials...")
+                if nordapi.verify_user_credentials(username, password):
+                    valid = True
+                else:
+                    self.logger.error("The provided credentials could not be verified. Try enterting them again and checking your Internet connectivity.")
 
         if not self.config.has_section(self.SECTION_TITLE):
             self.config.add_section(self.SECTION_TITLE)
