@@ -43,8 +43,7 @@ jobs:
       services:
       - docker
       env:
-      - DESCRIPTION="A CLI tool for automating the importing, securing and usage of
-        NordVPN OpenVPN servers through NetworkManager."
+      - DESCRIPTION="A CLI tool for automating the importing, securing and usage of NordVPN OpenVPN servers through NetworkManager."
       - VERSION=${TRAVIS_TAG}
       - GH_EMAIL=hello@rchadwick.co.uk
       - GH_USER=${TRAVIS_REPO_SLUG%/*}
@@ -67,13 +66,9 @@ jobs:
       script:
       - echo "Deploying ${PACKAGE} v${VERSION} to ${GH_USER}/${NAME} - ${DESCRIPTION}"
       - fpm --version
-      - fpm --maintainer "${GH_USER}" --description ${DESCRIPTION} --url "https://github.com/${GH_USER}/${NAME}" --provides "${PACKAGE}" -a "all" --no-python-fix-name --python-package-name-prefix "python3" --python-bin python3 --python-pip pip3 -d python3 -d network-manager -d openvpn -d network-manager-openvpn-gnome -s python -t deb ${PACKAGE}
+      - fpm --maintainer "${GH_USER}" --url "https://github.com/${GH_USER}/${NAME}" --provides "${PACKAGE}" -a "all" --no-python-fix-name --python-package-name-prefix "python3" --python-bin python3 --python-pip pip3 -d python3 -d network-manager -d openvpn -d network-manager-openvpn-gnome -s python -t deb ${PACKAGE}
       - docker pull fedora:latest
-      - docker run -v $PWD:/mnt/travis fedora:latest /bin/bash
-      - cd /mnt/travis
-      - dnf install ruby-devel gcc make rpm-build libffi-devel -y --quiet
-      - gem install --no-ri --no-rdoc fpm
-      - fpm --maintainer "${GH_USER}" --description ${DESCRIPTION} --url "https://github.com/${GH_USER}/${NAME}" --provides "${PACKAGE}" -a "all" --no-python-fix-name --python-package-name-prefix "python" --python-bin python --python-pip pip -d python -d NetworkManager -d openvpn -d NetworkManager-openvpn-gnome -s python -t rpm ${PACKAGE}
+      - docker run -v $PWD:/mnt/travis fedora:latest /bin/bash -c 'cd /mnt/travis && dnf install ruby-devel gcc make rpm-build libffi-devel -y --quiet && gem install --no-ri --no-rdoc fpm && fpm --maintainer "${GH_USER}" --url "https://github.com/${GH_USER}/${NAME}" --provides "${PACKAGE}" -a "all" --no-python-fix-name --python-package-name-prefix "python" --python-bin python --python-pip pip -d python -d NetworkManager -d openvpn -d NetworkManager-openvpn-gnome -s python -t rpm ${PACKAGE}'
 
       before_deploy:
       # Create deb package
