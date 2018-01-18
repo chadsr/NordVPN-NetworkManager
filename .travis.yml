@@ -80,13 +80,13 @@ jobs:
       - pwd && cd ../
       - ls -la builds/
       # Create deb package
-      - ./jfrog bt pc --key=${BTKEY} --user=${JFROG_USER} --licenses=GPL-V3 --vcs-url=https://github.com/${GH_USER}/${NAME} ${JFROG_USER}/${PACKAGE}-deb/${PACKAGE}-${VERSION} || echo "package already exists"
+      - ./jfrog bt pc --key=${BTKEY} --user=${JFROG_USER} --licenses=GPL-V3.0 --vcs-url=https://github.com/${GH_USER}/${NAME} ${JFROG_USER}/${PACKAGE}-deb/${PACKAGE}-${VERSION} || echo "package already exists"
       # Upload artifact to deb repo
       - ./jfrog bt upload --override=true --key ${BTKEY} --publish=true "builds/${PACKAGE}_${VERSION}_all.deb" ${GH_USER}/${PACKAGE}-deb/${PACKAGE}-${VERSION}
       # Generate metadata
       - curl -X POST -u ${JFROG_USER}:${BTKEY} https://api.bintray.com/calc_metadata/${JFROG_USER}/${PACKAGE}-deb
       # Create rpm package
-      - ./jfrog bt pc --key=${BTKEY} --user=${JFROG_USER} --licenses=GPL-V3 --vcs-url=https://github.com/${GH_USER}/${NAME} ${JFROG_USER}/${PACKAGE}-rpm/${PACKAGE}-${VERSION} || echo "package already exists"
+      - ./jfrog bt pc --key=${BTKEY} --user=${JFROG_USER} --licenses=GPL-V3.0 --vcs-url=https://github.com/${GH_USER}/${NAME} ${JFROG_USER}/${PACKAGE}-rpm/${PACKAGE}-${VERSION} || echo "package already exists"
       # Upload artifact to rpm repo
       - ./jfrog bt upload --override=true --key ${BTKEY} --publish=true "builds/${PACKAGE}-${VERSION}-1.noarch.rpm" ${JFROG_USER}/${PACKAGE}-rpm/${PACKAGE}-${VERSION}
       # Generate metadata
