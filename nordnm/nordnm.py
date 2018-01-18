@@ -362,8 +362,7 @@ class NordNM(object):
             self.logger.info("Removed legacy files")
 
         if update_config:
-            if not self.get_configs():
-                self.logger.error("Updating configurations failed.")
+            self.get_configs()
 
         if self.sync_servers(preserve_vpn):
             networkmanager.reload_connections()
@@ -605,5 +604,5 @@ class NordNM(object):
                 self.logger.error("Could not fetch the server list from NordVPN. Check your Internet connectivity.")
                 sys.exit(1)
         else:
-            self.logger.error("Can't find any OpenVPN configuration files. Please run --update before syncing.")
+            self.logger.error("Can't find any OpenVPN configuration files. Please run --update (-u) while syncing.")
             sys.exit(1)
