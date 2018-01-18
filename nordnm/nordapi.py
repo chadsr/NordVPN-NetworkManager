@@ -2,7 +2,6 @@ import requests
 import json
 from operator import itemgetter
 import hashlib
-import sys
 
 API_ADDR = 'https://api.nordvpn.com'
 TIMEOUT = 5
