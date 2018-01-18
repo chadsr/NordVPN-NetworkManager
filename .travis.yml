@@ -67,6 +67,7 @@ jobs:
 
       script:
       - cd ${PWD}
+      - ls -la
       - echo "Deploying ${PACKAGE} v${VERSION} to ${GH_USER}/${NAME} - ${DESCRIPTION}"
       - fpm --version
       - fpm --maintainer "${GH_USER}" --url "https://github.com/${GH_USER}/${NAME}" --provides "${PACKAGE}" -a "all" --no-python-fix-name --python-package-name-prefix "${DEB_PYTHON}" --python-bin ${DEB_PYTHON} -d ${DEB_PYTHON} -d network-manager -d openvpn -d network-manager-openvpn-gnome -s python -t deb ${PACKAGE}
