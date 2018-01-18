@@ -84,7 +84,7 @@ jobs:
       # Create rpm package
       - ./jfrog bt pc --key=${BTKEY} --user=${JFROG_USER} --licenses=GPL-3.0 --desc="${DESCRIPTION}" --vcs-url=https://github.com/${GH_USER}/${NAME} ${JFROG_USER}/${PACKAGE}-rpm/${PACKAGE} || echo "package already exists"
       # Upload artifact to deb repo
-      - ./jfrog bt upload --override=true --key=${BTKEY} --user=${JFROG_USER} --publish=true "builds/${PACKAGE}_${VERSION}_all.deb" ${GH_USER}/${PACKAGE}-deb/${PACKAGE}/${VERSION}
+      - ./jfrog bt upload --override=true --key=${BTKEY} --user=${JFROG_USER} --publish=true "builds/${PACKAGE}_${VERSION}_all.deb" ${JFROG_USER}/${PACKAGE}-deb/${PACKAGE}/${VERSION}
       # Upload artifact to rpm repo
       - ./jfrog bt upload --override=true --key=${BTKEY} --user=${JFROG_USER} --publish=true "builds/${PACKAGE}-${VERSION}-1.noarch.rpm" ${JFROG_USER}/${PACKAGE}-rpm/${PACKAGE}/${VERSION}
       # Generate deb metadata
