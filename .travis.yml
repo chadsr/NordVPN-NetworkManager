@@ -86,8 +86,8 @@ jobs:
       # Create rpm package
       - ./jfrog bt pc --key=${BTKEY} --user=${JFROG_USER} --licenses=GPL-3.0 --desc="${DESCRIPTION}" --vcs-url=https://github.com/${GH_USER}/${NAME} ${JFROG_USER}/${PACKAGE}-rpm/${PACKAGE} || echo "package already exists"
       # Create versions
-      - ./jfrig bt vc --key=${BTKEY} --user=${JFROG_USER} --github-tag-rel-notes=true --vcs-tag=${VERSION} ${JFROG_USER}/${PACKAGE}-deb/${PACKAGE}/${VERSION}
-      - ./jfrig bt vc --key=${BTKEY} --user=${JFROG_USER} --github-tag-rel-notes=true --vcs-tag=${VERSION} ${JFROG_USER}/${PACKAGE}-rpm/${PACKAGE}/${VERSION}
+      - ./jfrog bt vc --key=${BTKEY} --user=${JFROG_USER} --github-tag-rel-notes=true --vcs-tag=${VERSION} ${JFROG_USER}/${PACKAGE}-deb/${PACKAGE}/${VERSION}
+      - ./jfrog bt vc --key=${BTKEY} --user=${JFROG_USER} --github-tag-rel-notes=true --vcs-tag=${VERSION} ${JFROG_USER}/${PACKAGE}-rpm/${PACKAGE}/${VERSION}
       # Upload artifact to deb repo
       - ./jfrog bt upload --override=true --key=${BTKEY} --user=${JFROG_USER} --publish=true --deb="trusty,jessie,wheezy,stretch/main/amd64,i386" "builds/${PACKAGE}_${VERSION}_all.deb" ${JFROG_USER}/${PACKAGE}-deb/${PACKAGE}/${VERSION}
       # Upload artifact to rpm repo
