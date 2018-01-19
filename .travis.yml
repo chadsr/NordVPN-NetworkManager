@@ -69,7 +69,10 @@ jobs:
       - curl -fL https://getcli.jfrog.io | sh
 
       script:
+      # Deactivate python virtualenv
+      - deactivate
       - mkdir builds && cd builds/
+      # Start building packages
       - echo "Deploying ${PACKAGE} v${VERSION} from PyPi to ${GH_USER}/${NAME} - ${DESCRIPTION}"
       - fpm --version
       - fpm --maintainer "${GH_USER}" --description "${DESCRIPTION}" --url "https://github.com/${GH_USER}/${NAME}" --provides "${PACKAGE}" -a "all" --no-python-fix-name --python-package-name-prefix "${DEB_PYTHON}" --python-bin ${DEB_PYTHON} --python-pip ${DEB_PIP} -d ${DEB_PYTHON} -d network-manager -d openvpn -d network-manager-openvpn-gnome -s python -t deb ${PACKAGE}
