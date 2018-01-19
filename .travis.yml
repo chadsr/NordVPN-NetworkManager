@@ -49,7 +49,9 @@ jobs:
       - GH_USER=${TRAVIS_REPO_SLUG%/*}
       - NAME=${TRAVIS_REPO_SLUG#*/}
       - PACKAGE=nordnm
+      - PYTHON_MIN_VERSION=3.5.0
       - DEB_PYTHON=python3.5
+      - DEB_PYTHON_PRE=python3
       - DEB_PIP=pip3
       - FED_PYTHON=python3
       - FED_PIP=pip3
@@ -76,9 +78,9 @@ jobs:
       # Start building packages
       - echo "Deploying ${PACKAGE} v${VERSION} from PyPi to ${GH_USER}/${NAME} - ${DESCRIPTION}"
       - fpm --version
-      - fpm --maintainer "${GH_USER}" --description "${DESCRIPTION}" --url "https://github.com/${GH_USER}/${NAME}" --provides "${PACKAGE}" -a "all" --no-python-fix-name --python-package-name-prefix "${DEB_PYTHON}" --python-bin ${DEB_PYTHON} --python-pip ${DEB_PIP} -d ${DEB_PYTHON} -d network-manager -d openvpn -d network-manager-openvpn-gnome -s python -t deb ${PACKAGE}
+      - fpm --maintainer "${GH_USER}" --description "${DESCRIPTION}" --url "https://github.com/${GH_USER}/${NAME}" --provides "${PACKAGE}" -a "all" --no-python-fix-name --python-package-name-prefix "${DEB_PYTHON_PRE}" --python-bin ${DEB_PYTHON} --python-pip ${DEB_PIP} -d "${DEB_PYTHON_PRE} >= ${MIN_PYTHON_VERSION}" -d network-manager -d openvpn -d network-manager-openvpn-gnome -s python -t deb ${PACKAGE}
       - docker pull fedora:latest
-      - docker run -e FED_PYTHON=$FED_PYTHON -e FED_PIP=$FED_PIP -e DESCRIPTION="${DESCRIPTION}" -e PACKAGE=$PACKAGE -e GH_USER=$GH_USER -e NAME=$NAME -v $PWD:/mnt/travis fedora:latest /bin/bash -c 'cd /mnt/travis && dnf install ruby-devel gcc make rpm-build libffi-devel ${FED_PYTHON} -y && gem install --no-ri --no-rdoc fpm && ${FED_PYTHON} --version && fpm --maintainer "${GH_USER}" --description "${DESCRIPTION}" --url "https://github.com/${GH_USER}/${NAME}" --provides "${PACKAGE}" -a "all" --no-python-fix-name --python-package-name-prefix "${FED_PYTHON}" --python-bin ${FED_PYTHON} --python-pip ${FED_PIP} -d ${FED_PYTHON} -d NetworkManager -d openvpn -d NetworkManager-openvpn-gnome -s python -t rpm ${PACKAGE}'
+      - docker run -e FED_PYTHON=$FED_PYTHON -e FED_PIP=$FED_PIP -e DESCRIPTION="${DESCRIPTION}" -e PACKAGE=$PACKAGE -e GH_USER=$GH_USER -e NAME=$NAME -v $PWD:/mnt/travis fedora:latest /bin/bash -c 'cd /mnt/travis && dnf install ruby-devel gcc make rpm-build libffi-devel ${FED_PYTHON} -y && gem install --no-ri --no-rdoc fpm && ${FED_PYTHON} --version && fpm --maintainer "${GH_USER}" --description "${DESCRIPTION}" --url "https://github.com/${GH_USER}/${NAME}" --provides "${PACKAGE}" -a "all" --no-python-fix-name --python-package-name-prefix "${FED_PYTHON}" --python-bin ${FED_PYTHON} --python-pip ${FED_PIP} -d "${FED_PYTHON} >= ${MIN_PYTHON_VERSION}" -d NetworkManager -d openvpn -d NetworkManager-openvpn-gnome -s python -t rpm ${PACKAGE}'
 
       before_deploy:
       - pwd && cd ../
