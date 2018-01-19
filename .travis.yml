@@ -63,7 +63,7 @@ jobs:
       - sudo apt-get update
 
       install:
-      - sudo apt-get install -y ruby ruby-dev rubygems-integration build-essential
+      - sudo apt-get install -y python3 python3-pip ruby ruby-dev rubygems-integration build-essential
       - gem install --no-ri --no-rdoc fpm
       # Get the jfrog CLI tool
       - curl -fL https://getcli.jfrog.io | sh
@@ -71,6 +71,7 @@ jobs:
       script:
       # Deactivate python virtualenv
       - deactivate
+      - $DEB_PYTHON --version
       - mkdir builds && cd builds/
       # Start building packages
       - echo "Deploying ${PACKAGE} v${VERSION} from PyPi to ${GH_USER}/${NAME} - ${DESCRIPTION}"
