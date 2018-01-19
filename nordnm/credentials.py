@@ -68,7 +68,7 @@ class CredentialsHandler(object):
                 if nordapi.verify_user_credentials(username, password):
                     valid = True
                 else:
-                    self.logger.error("The provided credentials could not be verified. Try enterting them again and checking your Internet connectivity.")
+                    self.logger.error("The provided credentials could not be verified. Try entering them again and checking your Internet connectivity.")
 
         if not self.config.has_section(self.SECTION_TITLE):
             self.config.add_section(self.SECTION_TITLE)
