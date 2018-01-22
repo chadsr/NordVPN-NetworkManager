@@ -90,7 +90,7 @@ jobs:
       #- ./jfrog bt vc --key=${BTKEY} --user=${JFROG_USER} --github-tag-rel-notes=true --vcs-tag=${VERSION} ${JFROG_USER}/${PACKAGE}-deb/${PACKAGE}/${VERSION}
       #- ./jfrog bt vc --key=${BTKEY} --user=${JFROG_USER} --github-tag-rel-notes=true --vcs-tag=${VERSION} ${JFROG_USER}/${PACKAGE}-rpm/${PACKAGE}/${VERSION}
       # Upload artifact to deb repo
-      - ./jfrog bt upload --override=true --key=${BTKEY} --user=${JFROG_USER} --publish=true --deb="trusty,jessie,wheezy,stretch/main/amd64,i386" "builds/${PACKAGE}_${VERSION}_all.deb" ${JFROG_USER}/${PACKAGE}-deb/${PACKAGE}/${VERSION}
+      - ./jfrog bt upload --override=true --key=${BTKEY} --user=${JFROG_USER} --publish=true --deb="xenial,artful,bionic,zesty,stretch/main/amd64,i386" "builds/${PACKAGE}_${VERSION}_all.deb" ${JFROG_USER}/${PACKAGE}-deb/${PACKAGE}/${VERSION}
       # Upload artifact to rpm repo
       - ./jfrog bt upload --override=true --key=${BTKEY} --user=${JFROG_USER} --publish=true "builds/${PACKAGE}-${VERSION}-1.noarch.rpm" ${JFROG_USER}/${PACKAGE}-rpm/${PACKAGE}/${VERSION}
       # Generate deb metadata
