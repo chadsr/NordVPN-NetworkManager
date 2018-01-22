@@ -15,6 +15,10 @@ releases.
 **Warning:** *This tool is still highly under development. I take no
 responsibility for any unforseen problems it may cause.*
 
+**WebRTC warning:** This tool can’t protect against ip leaks through
+WebRTC in browsers, more info: `The WebRTC
+“bug” <https://www.bestvpn.com/a-complete-guide-to-ip-leaks/#webrtc>`__
+
 Features:
 ---------
 
@@ -35,34 +39,44 @@ Features:
 -  Set the NetworkManager MAC address configuration, for simple yet
    powerful control of your MAC address. (optional)
 
-1. Requirements
+1. Installation
 ---------------
 
-Debian/Ubuntu
-~~~~~~~~~~~~~
+1.1 Arch (AUR)
+~~~~~~~~~~~~~~
+
+Use your preferred method of installing packages via AUR. Any easy
+option is to use `yaourt <https://archlinux.fr/yaourt-en>`__:
 
 ::
 
-    sudo apt update && sudo apt install network-manager openvpn network-manager-openvpn-gnome
+    yaourt -S nordnm
 
-Arch
-~~~~
-
-**Note:** nordnm is now available through AUR. If you want to install
-via AUR, then skip to `2.2 AUR <#22-aur>`__.
+1.2 Debian/Ubuntu
+~~~~~~~~~~~~~~~~~
 
 ::
 
-    sudo pacman -S --needed networkmanager openvpn networkmanager-openvpn
+    wget -qO - https://bintray.com/user/downloadSubjectPublicKey?username=bintray | sudo apt-key add -
+    sudo apt-add-repository "https://dl.bintray.com/chadsr/nordnm-deb main"
+    sudo apt update && sudo apt install nordnm
 
-2. Installation
----------------
+1.3 Fedora/CentOS
+~~~~~~~~~~~~~~~~~
 
-2.1 PIP
-~~~~~~~
+::
 
-**Mote:** This tool requires Python 3.5 or later. (May change in the
-future)
+    wget https://bintray.com/chadsr/nordnm-rpm/rpm -O bintray-chadsr-nordnm-rpm.repo
+    sudo mv bintray-chadsr-nordnm-rpm.repo /etc/yum.repos.d/
+    sudo yum install nordnm
+
+1.4 Python PIP
+~~~~~~~~~~~~~~
+
+**Note:** If you install via PIP, system dependencies will need to be
+installed separately. It is therefore recommended to install via your
+system package manager. If you system is not yet listed above, leave an
+issue and it can be added ASAP.
 
 *If your default Python version is 2.x, you will need to use pip3 below*
 
@@ -80,16 +94,7 @@ User Install
 
     pip install --user nordnm
 
-2.2 AUR
-~~~~~~~
-
-Use your preferred method of installing packages via AUR. Any easy
-option is to install and use
-`yaourt <https://archlinux.fr/yaourt-en>`__.
-
-**Package Link:** https://aur.archlinux.org/packages/nordnm/
-
-3. Usage
+2. Usage
 --------
 
 **Note:** Many of the commands below can be chained into one line. A

@@ -28,23 +28,29 @@ This tool can't protect against ip leaks through WebRTC in browsers, more info: 
 - Set a network kill-switch, to disable the network interface being used, if the active VPN disconnects. (optional)
 - Set the NetworkManager MAC address configuration, for simple yet powerful control of your MAC address. (optional)
 
-## 1. Requirements
-
-### Debian/Ubuntu
-
+## 1. Installation
+### 1.1 Arch (AUR)
+Use your preferred method of installing packages via AUR. Any easy option is to use [yaourt](https://archlinux.fr/yaourt-en):
 ```
-sudo apt update && sudo apt install network-manager openvpn network-manager-openvpn-gnome
-```
-
-### Arch
-**Note:** nordnm is now available through AUR. If you want to install via AUR, then skip to [2.2 AUR](#22-aur).
-```
-sudo pacman -S --needed networkmanager openvpn networkmanager-openvpn
+yaourt -S nordnm
 ```
 
-## 2. Installation
-### 2.1 PIP
-**Mote:** This tool requires Python 3.5 or later. (May change in the future)
+### 1.2 Debian/Ubuntu
+```
+wget -qO - https://bintray.com/user/downloadSubjectPublicKey?username=bintray | sudo apt-key add -
+sudo apt-add-repository "https://dl.bintray.com/chadsr/nordnm-deb main"
+sudo apt update && sudo apt install nordnm
+```
+
+### 1.3 Fedora/CentOS
+```
+wget https://bintray.com/chadsr/nordnm-rpm/rpm -O bintray-chadsr-nordnm-rpm.repo
+sudo mv bintray-chadsr-nordnm-rpm.repo /etc/yum.repos.d/
+sudo yum install nordnm
+```
+
+### 1.4 Python PIP
+**Note:** If you install via PIP, system dependencies will need to be installed separately. It is therefore recommended to install via your system package manager. If you system is not yet listed above, leave an issue and it can be added ASAP.
 
 *If your default Python version is 2.x, you will need to use pip3 below*
 
@@ -58,12 +64,7 @@ sudo -H pip install nordnm
 pip install --user nordnm
 ```
 
-### 2.2 AUR
-Use your preferred method of installing packages via AUR. Any easy option is to install and use [yaourt](https://archlinux.fr/yaourt-en).
-
-**Package Link:** [https://aur.archlinux.org/packages/nordnm/](https://aur.archlinux.org/packages/nordnm/)
-
-## 3. Usage
+## 2. Usage
 **Note:** Many of the commands below can be chained into one line. A recommended example of this is to synchronise, update configuration files and set any auto-connect/kill-switch at the same time.
 
 For example:
