@@ -49,6 +49,7 @@ jobs:
       - GH_USER=${TRAVIS_REPO_SLUG%/*}
       - NAME=${TRAVIS_REPO_SLUG#*/}
       - PACKAGE=nordnm
+      - PACKAGE_DIR=/usr/
       - PYTHON_MIN_VERSION=3.5.0
       - DEB_DOCKER=ubuntu:latest
       - DEB_PYTHON=python3
@@ -75,8 +76,8 @@ jobs:
       - mkdir builds && cd builds/
       # Start building packages
       - echo "Deploying ${PACKAGE} v${VERSION} from PyPi to ${GH_USER}/${NAME} - ${DESCRIPTION}"
-      - docker run -e DEB_PYTHON=$DEB_PYTHON -e DEB_PIP=$DEB_PIP -e PYTHON_MIN_VERSION=$PYTHON_MIN_VERSION -e DESCRIPTION="${DESCRIPTION}" -e PACKAGE=$PACKAGE -e GH_USER=$GH_USER -e NAME=$NAME -v $PWD:/mnt/travis ${DEB_DOCKER} /bin/bash -c 'su && cd /mnt/travis && apt-get update && apt-get -y install ${DEB_PYTHON} ${DEB_PYTHON}-pip ruby ruby-dev rubygems-integration build-essential && gem install --no-ri --no-rdoc fpm && ${DEB_PYTHON} --version && fpm --maintainer "${GH_USER}" --description "${DESCRIPTION}" --url "https://github.com/${GH_USER}/${NAME}" --provides "${PACKAGE}" -a "all" --no-python-fix-name --python-package-name-prefix "${DEB_PYTHON}" --python-bin ${DEB_PYTHON} --python-pip ${DEB_PIP} -d "${DEB_PYTHON} >= ${PYTHON_MIN_VERSION}" -d network-manager -d openvpn -d network-manager-openvpn-gnome -s python -t deb ${PACKAGE}'
-      - docker run -e FED_PYTHON=$FED_PYTHON -e FED_PIP=$FED_PIP -e DESCRIPTION="${DESCRIPTION}" -e PACKAGE=$PACKAGE -e GH_USER=$GH_USER -e NAME=$NAME -v $PWD:/mnt/travis ${FED_DOCKER} /bin/bash -c 'su && cd /mnt/travis && dnf install ruby-devel gcc make rpm-build libffi-devel ${FED_PYTHON} ${FED_PYTHON}-pip -y && gem install --no-ri --no-rdoc fpm && ${FED_PYTHON} --version && fpm --maintainer "${GH_USER}" --description "${DESCRIPTION}" --url "https://github.com/${GH_USER}/${NAME}" --provides "${PACKAGE}" -a "all" --no-python-fix-name --python-package-name-prefix "${FED_PYTHON}" --python-bin ${FED_PYTHON} --python-pip ${FED_PIP} -d ${FED_PYTHON} -d NetworkManager -d openvpn -d NetworkManager-openvpn-gnome -s python -t rpm ${PACKAGE}'
+      - docker run -e PACKAGE_DIR=${PACKAGE_DIR} -e DEB_PYTHON=$DEB_PYTHON -e DEB_PIP=$DEB_PIP -e PYTHON_MIN_VERSION=$PYTHON_MIN_VERSION -e DESCRIPTION="${DESCRIPTION}" -e PACKAGE=$PACKAGE -e GH_USER=$GH_USER -e NAME=$NAME -v $PWD:/mnt/travis ${DEB_DOCKER} /bin/bash -c 'su && cd /mnt/travis && apt-get update && apt-get -y install ${DEB_PYTHON} ${DEB_PYTHON}-pip ruby ruby-dev rubygems-integration build-essential && gem install --no-ri --no-rdoc fpm && ${DEB_PYTHON} --version && fpm --maintainer "${GH_USER}" --description "${DESCRIPTION}" --prefix="${PACKAGE_DIR}" --url "https://github.com/${GH_USER}/${NAME}" --provides "${PACKAGE}" -a "all" --no-python-fix-name --python-package-name-prefix "${DEB_PYTHON}" --python-bin ${DEB_PYTHON} --python-pip ${DEB_PIP} -d "${DEB_PYTHON} >= ${PYTHON_MIN_VERSION}" -d network-manager -d openvpn -d network-manager-openvpn-gnome -s python -t deb ${PACKAGE}'
+      - docker run -e PACKAGE_DIR=${PACKAGE_DIR} -e FED_PYTHON=$FED_PYTHON -e FED_PIP=$FED_PIP -e DESCRIPTION="${DESCRIPTION}" -e PACKAGE=$PACKAGE -e GH_USER=$GH_USER -e NAME=$NAME -v $PWD:/mnt/travis ${FED_DOCKER} /bin/bash -c 'su && cd /mnt/travis && dnf install ruby-devel gcc make rpm-build libffi-devel ${FED_PYTHON} ${FED_PYTHON}-pip -y && gem install --no-ri --no-rdoc fpm && ${FED_PYTHON} --version && fpm --maintainer "${GH_USER}" --description "${DESCRIPTION}" --prefix="${PACKAGE_DIR}" --url "https://github.com/${GH_USER}/${NAME}" --provides "${PACKAGE}" -a "all" --no-python-fix-name --python-package-name-prefix "${FED_PYTHON}" --python-bin ${FED_PYTHON} --python-pip ${FED_PIP} -d ${FED_PYTHON} -d NetworkManager -d openvpn -d NetworkManager-openvpn-gnome -s python -t rpm ${PACKAGE}'
 
       before_deploy:
       - pwd && cd ../
