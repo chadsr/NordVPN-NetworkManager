@@ -50,7 +50,7 @@ sudo yum install nordnm
 ```
 
 ### 1.4 Python PIP
-**Note:** If you install via PIP, system dependencies will need to be installed separately. It is therefore recommended to install via your system package manager. If you system is not yet listed above, leave an issue and it can be added ASAP.
+**Note:** If you install via PIP, system dependencies will need to be installed separately. It is therefore recommended to install via your system package manager. If your system is not yet listed above, leave an issue and it can be added ASAP.
 
 *If your default Python version is 2.x, you will need to use pip3 below*
 
