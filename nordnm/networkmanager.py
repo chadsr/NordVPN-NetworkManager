@@ -85,7 +85,7 @@ def get_version():
         output = subprocess.run(['NetworkManager', '--version'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output.check_returncode()
 
-        version_string = re.split(",|-", output.stdout.decode())[0]
+        version_string = re.split(",|-", output.stdout.decode())[0].strip()
 
         return version_string
 
@@ -188,7 +188,7 @@ def set_global_mac_address(value):
                 logger.error("Could not save MAC address configuration to '%s'", paths.MAC_CONFIG)
                 return False
         else:
-            logger.error("NetworkManager v%s or greater required to change MAC address settings. You have v%s.", MIN_VERSION, nm_version)
+            logger.error("NetworkManager v%s or greater is required to change MAC address settings. You have v%s.", MIN_VERSION, nm_version)
             return False
     else:
         logger.error("Could not get the version of NetworkManager in use. Aborting.")
@@ -232,6 +232,7 @@ def set_dns_resolv(dns_list, active_servers):
         '      if [ $interface == "$VPN_INTERFACE" ]; then\n'
         '        chattr -i "$RESOLV_PATH"\n'
         '        if [ -f "$RESOLV_PATH".tmp ]; then\n'  # If a tmp file exists, move it back to the original filename
+        '          chattr -i "$RESOLV_PATH"\n'
         '          mv -f "$RESOLV_PATH".tmp "$RESOLV_PATH"\n'
         '        fi\n'
         '      fi\n'
