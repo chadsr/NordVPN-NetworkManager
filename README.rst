@@ -61,8 +61,8 @@ option is to use `yaourt <https://archlinux.fr/yaourt-en>`__:
     sudo apt-add-repository "https://dl.bintray.com/chadsr/nordnm-deb main"
     sudo apt update && sudo apt install nordnm
 
-1.3 Fedora/CentOS
-~~~~~~~~~~~~~~~~~
+1.3 RPM Based Distributions (Fedora, CentOS, etc)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ::
 
@@ -74,7 +74,7 @@ option is to use `yaourt <https://archlinux.fr/yaourt-en>`__:
 ~~~~~~~~~~~~~~
 
 **Note:** If you install via PIP, system dependencies will need to be
-installed separately. It is therefore recommended to install via your
+installed manually. It is therefore recommended to install via your
 system package manager. If your system is not yet listed above, leave an
 issue and it can be added ASAP.
 
