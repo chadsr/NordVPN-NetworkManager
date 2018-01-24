@@ -3,41 +3,42 @@ NordNM
 
 |Build Status| |GitHub tag| |AUR| |license| |GitHub issues|
 
-This tool removes the need for manually handling OpenVPN configurations
-from NordVPN. It will synchronise the best servers from chosen countries
-into the NetworkManager VPN list. A synchronised VPN can then be chosen
-to auto-connect to, whenever NetworkManager brings an network connection
-up.
+This tool **automates** the importing and **secures** the usage of
+NordVPN OpenVPN configurations through Network Manager.
 
-More documentation will be available when nordnm gets to stable
-releases.
-
-**Warning:** *This tool is still highly under development. I take no
-responsibility for any unforseen problems it may cause.*
-
-**WebRTC warning:** This tool can’t protect against ip leaks through
-WebRTC in browsers, more info: `The WebRTC
+**WebRTC Privacy Warning:** This tool can’t protect against IP leaks
+through WebRTC in browsers. For more information: `The WebRTC
 “bug” <https://www.bestvpn.com/a-complete-guide-to-ip-leaks/#webrtc>`__
 
 Features:
 ---------
 
--  Uses the latest NordVPN OpenVPN configuration files.
--  Imports the ‘best’ server of each available type (country, category,
-   protocol), based on latency and server load.
--  Provides humanly readable connection names, so you can easily tell
-   what each option offers.
--  Provides settings for whitelisting or blacklisting certain countries
-   from being synchronised.
--  Automatically adds user credentials to the imported configurations.
--  Tunnels DNS requests through the VPN, to prevent DNS leaks.
--  Disables IPv6 by default, to avoid IPv6 leaks.
--  Set the auto connect server of your choice for all NetworkManager
-   connections, instead of per connection. (optional)
--  Set a network kill-switch, to disable the network interface being
-   used, if the active VPN disconnects. (optional)
--  Set the NetworkManager MAC address configuration, for simple yet
-   powerful control of your MAC address. (optional)
+**This tool is still under development!** If you encounter a problem or
+have a feature request, please make an issue report and it will be
+looked into ASAP.
+
+-  **Small Footprint:** Nordnm does not use any background processes.
+   Once a synchronise has finished, it’s all handled by Network Manager.
+-  **Improved readability:** Humanly readable connection names, so you
+   can easily tell what each connection offers.
+-  **Only import what you need:** Your preference of countries, VPN
+   categories and protocols can be saved, to synchronise only the
+   options you need.
+-  **Always up-to-date:** The tool can be configured to always check if
+   it is using the latest NordVPN OpenVPN configuration files.
+-  **Server Benchmarking:** Servers are benchmarked according to their
+   latency and server load, to determine the “best” options available.
+-  **Auto-Connect:** A server of your choice can be set to automatically
+   activate whenever you connect to the Internet.
+-  **DNS Tunnelling:** DNS requests are forced to go through the VPN
+   tunnel, to prevent privacy ruining `DNS
+   leaks <https://en.wikipedia.org/wiki/DNS_leak>`__.
+-  **IPv6 Disabled:** IPv6 is disabled by default, to avoid IPv6 leaks.
+-  **Kill-Switch:** Set a network kill-switch, to disable the network
+   interface being used if the active VPN disconnects.
+-  **MAC Address Manipulation:** Change the MAC address used by Network
+   Manager in a variety of ways (randomization, spoofing, etc), to avoid
+   tracking across networks.
 
 1. Installation
 ---------------
@@ -133,13 +134,6 @@ For example:
         mac (m)             Global NetworkManager MAC address preferences. This
                             command will affect ALL NetworkManager connections
                             permanently.
-
-Suggestions/Bugs
-----------------
-
-If you have any feature suggestions or find an interesting bug, please
-let me know. More intuitive options and fixes will be coming in the
-future.
 
 .. |Build Status| image:: https://travis-ci.org/Chadsr/NordVPN-NetworkManager.svg?branch=master
    :target: https://travis-ci.org/Chadsr/NordVPN-NetworkManager

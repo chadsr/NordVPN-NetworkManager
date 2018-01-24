@@ -43,7 +43,7 @@ def input_yes_no(question):
 def get_current_user():
     username = os.getenv("SUDO_USER")
     if not username:
-        username = getpass.getuser()
+        username = str(getpass.getuser())
 
     return username
 
