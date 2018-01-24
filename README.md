@@ -12,7 +12,7 @@ This tool **automates** the importing and **secures** the usage of NordVPN OpenV
 This tool can't protect against IP leaks through WebRTC in browsers. For more information: [The WebRTC “bug”](https://www.bestvpn.com/a-complete-guide-to-ip-leaks/#webrtc)
 
 ## Features:
-**This tool is still under development!** If you encounter a problem or have a feature request, please make an issue report and it will be looked into ASAP.
+If you encounter a **problem** or have a **feature request**, please make an issue report and it will be looked into ASAP.
 
 - **Small Footprint:** Nordnm does not use any background processes. Once a synchronise has finished, it's all handled by Network Manager.
 - **Improved readability:**

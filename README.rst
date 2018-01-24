@@ -13,9 +13,8 @@ through WebRTC in browsers. For more information: `The WebRTC
 Features:
 ---------
 
-**This tool is still under development!** If you encounter a problem or
-have a feature request, please make an issue report and it will be
-looked into ASAP.
+If you encounter a **problem** or have a **feature request**, please
+make an issue report and it will be looked into ASAP.
 
 -  **Small Footprint:** Nordnm does not use any background processes.
    Once a synchronise has finished, it’s all handled by Network Manager.
