@@ -4,6 +4,7 @@ from operator import itemgetter
 import hashlib
 
 API_ADDR = 'https://api.nordvpn.com'
+OVPN_ADDR = 'https://downloads.nordcdn.com/configs/archives/servers/ovpn.zip'
 TIMEOUT = 5
 
 # Mapping of NordVPN category names to their short internal names
@@ -51,7 +52,7 @@ def get_nameservers():
 
 def get_configs(etag=None):
     try:
-        head = requests.head(API_ADDR + '/files/zipv2', timeout=TIMEOUT)
+        head = requests.head(OVPN_ADDR, timeout=TIMEOUT)
 
         # Follow the redirect if there is one
         if head.status_code == requests.codes.moved:
@@ -62,7 +63,7 @@ def get_configs(etag=None):
             header_etag = head.headers['etag']
 
             if header_etag != etag:
-                resp = requests.get(API_ADDR + '/files/zipv2', timeout=TIMEOUT)
+                resp = requests.get(OVPN_ADDR, timeout=TIMEOUT)
                 if resp.status_code == requests.codes.ok:
                     return (resp.content, header_etag)
             else:
