@@ -9,10 +9,10 @@ from nordnm.__init__ import __version__
 
 import argparse
 import os
-from shutil import rmtree
+import shutil
 import pickle
 import sys
-from fnmatch import fnmatch
+import glob
 import logging
 import copy
 from timeit import default_timer as timer
@@ -318,7 +318,7 @@ class NordNM(object):
         return removed
 
     def set_config_info(self, etag):
-        if os.path.exists(paths.DIR_OVPN):
+        if os.path.exists(paths.OVPN_CONFIGS):
             with open(paths.CONFIG_INFO, 'w') as f:
                 f.write(etag)
 
@@ -335,8 +335,19 @@ class NordNM(object):
         else:
             return None
 
+    def delete_configs(self):
+        for f in os.listdir(paths.OVPN_CONFIGS):
+            file_path = os.path.join(paths.OVPN_CONFIGS, f)
+            try:
+                if os.path.isfile(file_path):
+                    os.unlink(file_path)
+                elif os.path.isdir(file_path):
+                    shutil.rmtree(file_path)
+            except Exception as e:
+                self.logger.error("Could not delete config file: %s" % e)
+
     def get_configs(self):
-        self.logger.info("Downloading latest NordVPN OpenVPN configuration files to '%s'." % paths.DIR_OVPN)
+        self.logger.info("Downloading latest NordVPN OpenVPN configuration files to '%s'." % paths.OVPN_CONFIGS)
 
         etag = self.get_config_info()
         config_data = nordapi.get_configs(etag)
@@ -346,7 +357,9 @@ class NordNM(object):
         elif config_data:
             zip_file, etag = config_data
             if zip_file and etag:
-                if not utils.extract_zip(zip_file, paths.DIR_OVPN):
+                self.delete_configs()
+
+                if not utils.extract_zip(zip_file, paths.OVPN_CONFIGS):
                     self.logger.error("Failed to extract configuration files")
                     return False
 
@@ -368,38 +381,33 @@ class NordNM(object):
             networkmanager.reload_connections()
 
     def remove_data(self):
-        if os.path.exists(paths.DIR_ROOT):
+        if os.path.exists(paths.ROOT):
             try:
-                rmtree(paths.DIR_ROOT)
+                shutil.rmtree(paths.ROOT)
             except Exception as e:
-                self.logger.error("Could not remove the data directory '%s': %s" % (paths.DIR_ROOT, e))
+                self.logger.error("Could not remove the data directory '%s': %s" % (paths.ROOT, e))
                 return False
         else:
             self.logger.info("Data directory does not exist. Nothing to remove.")
 
-        self.logger.info("Data directory '%s' removed successfully!" % paths.DIR_ROOT)
+        self.logger.info("Data directory '%s' removed successfully!" % paths.ROOT)
         return True
 
     def create_directories(self):
-        if not os.path.exists(paths.DIR_ROOT):
-            os.mkdir(paths.DIR_ROOT)
-            utils.chown_path_to_user(paths.DIR_ROOT)
+        if not os.path.exists(paths.ROOT):
+            os.mkdir(paths.ROOT)
+            utils.chown_path_to_user(paths.ROOT)
 
-        if not os.path.exists(paths.DIR_OVPN):
-            os.mkdir(paths.DIR_OVPN)
-            utils.chown_path_to_user(paths.DIR_OVPN)
+        if not os.path.exists(paths.OVPN_CONFIGS):
+            os.mkdir(paths.OVPN_CONFIGS)
+            utils.chown_path_to_user(paths.OVPN_CONFIGS)
 
     def get_ovpn_path(self, domain, protocol):
-        wildcard = domain + '.' + protocol + '*'
         ovpn_path = None
 
         try:
-            for f in os.listdir(paths.DIR_OVPN):
-                file_path = os.path.join(paths.DIR_OVPN, f)
-                if os.path.isfile(file_path):
-                    if fnmatch(f, wildcard):
-                        ovpn_path = os.path.join(paths.DIR_OVPN, f)
-
+            files = glob.glob(paths.OVPN_CONFIGS + '/**/' + domain + '.' + protocol + '*.ovpn')
+            ovpn_path = files[0]
         except Exception as ex:
             self.logger.error(ex)
 
@@ -507,7 +515,7 @@ class NordNM(object):
             return False
 
     def configs_exist(self):
-        configs = os.listdir(paths.DIR_OVPN)
+        configs = os.listdir(paths.OVPN_CONFIGS)
         if configs:
             return True
         else:
