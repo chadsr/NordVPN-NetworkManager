@@ -208,14 +208,15 @@ class NordNM(object):
             self.sync(args.update_configs, args.preserve_vpn)
             networkmanager.set_dns_resolv(nordapi.get_nameservers(), self.active_servers)
 
+        if args.kill_switch:
+            networkmanager.set_killswitch()
+
         if args.auto_connect:
             country_code = args.auto_connect[0]
             category = args.auto_connect[1]
             protocol = args.auto_connect[2]
-            self.enable_auto_connect(country_code, category, protocol)
 
-        if args.kill_switch:
-            networkmanager.set_killswitch()
+            self.enable_auto_connect(country_code, category, protocol)
 
         sys.exit(0)
 
@@ -424,7 +425,15 @@ class NordNM(object):
 
             if networkmanager.set_auto_connect(connection_name):
                 self.logger.info("Auto-connect enabled for '%s' (Load: %i%%, Latency: %0.2fs).", connection_name, connection_load, connection_latency)
+
+                # Temporarily remove the kill-switch if there was one
+                kill_switch = networkmanager.remove_killswitch(log=False)
+
                 networkmanager.disconnect_active_vpn(self.active_servers)
+
+                if kill_switch:
+                    networkmanager.set_killswitch(log=False)
+
                 if networkmanager.enable_connection(connection_name):
                     enabled = True
         else:
