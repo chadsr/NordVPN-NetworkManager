@@ -41,6 +41,10 @@ def compare_server(server, best_servers, ping_attempts, valid_protocols):
     domain = server['domain']
     score, load, latency = get_server_score(server, ping_attempts)
 
+    # The ping benchmark failed, so return fail
+    if not latency:
+        return False
+
     for category in server['categories']:
         category_name = nordapi.VPN_CATEGORIES[category['name']]
 
@@ -53,6 +57,8 @@ def compare_server(server, best_servers, ping_attempts, valid_protocols):
             if score > best_score:
                 name = nordnm.generate_connection_name(server, protocol)
                 best_servers[country_code, category_name, protocol] = {'name': name, 'domain': domain, 'score': score, 'load': load, 'latency': latency}
+
+    return True
 
 
 def get_num_processes(num_servers):
@@ -82,7 +88,9 @@ def get_best_servers(server_list, ping_attempts, valid_protocols):
     num_processes = get_num_processes(num_servers)
 
     pool = multiprocessing.Pool(num_processes, maxtasksperchild=1)
-    pool.map(partial(compare_server, best_servers=best_servers, ping_attempts=ping_attempts, valid_protocols=valid_protocols), server_list)
+    results = pool.map(partial(compare_server, best_servers=best_servers, ping_attempts=ping_attempts, valid_protocols=valid_protocols), server_list)
     pool.close()
 
-    return best_servers
+    num_success = results.count(True)
+
+    return (best_servers, num_success)

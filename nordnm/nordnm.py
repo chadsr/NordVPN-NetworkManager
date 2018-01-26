@@ -566,15 +566,25 @@ class NordNM(object):
                     else:
                         self.logger.warning("Active VPN preserved. This may give unreliable results!")
 
-                    self.logger.info("Benchmarking servers...")
+                    num_servers = len(valid_server_list)
+                    self.logger.info("Benchmarking %i servers...", num_servers)
 
                     start = timer()
                     ping_attempts = self.settings.get_ping_attempts()  # We are going to be multiprocessing within a class instance, so this needs getting outside of the multiprocessing
                     valid_protocols = self.settings.get_protocols()
-                    best_servers = benchmarking.get_best_servers(valid_server_list, ping_attempts, valid_protocols)
+                    best_servers, num_success = benchmarking.get_best_servers(valid_server_list, ping_attempts, valid_protocols)
 
                     end = timer()
-                    self.logger.info("Benchmarking complete. Took %0.2f seconds.", end - start)
+
+                    if num_success == 0:
+                        self.logger.error("Benchmarking failed to test any servers. Your network may be blocking large-scale ICMP requests. Exiting.")
+                        sys.exit(1)
+                    else:
+                        percent_success = round(num_success / num_servers * 100, 2)
+                        self.logger.info("Benchmarked %i servers successfully (%0.2f%%). Took %0.2f seconds.", num_success, percent_success, end - start)
+
+                        if percent_success < 90.0:
+                            self.logger.warning("More than 10%% of server tests failed. You might want to check the reliability of your network.")
 
                     # remove all old connections and any auto-connect, until a better sync routine is added
                     if self.remove_active_connections():
