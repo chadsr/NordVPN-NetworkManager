@@ -605,7 +605,7 @@ class NordNM(object):
 
                             file_path = self.get_ovpn_path(domain, protocol)
                             if file_path:
-                                if networkmanager.import_connection(file_path, name, username, password, dns_list):
+                                if networkmanager.import_connection(file_path, name, username, password):
                                     updated = True
                                     new_connections += 1
                                 else:
