@@ -97,6 +97,7 @@ commands:
                         command will affect ALL NetworkManager connections
                         permanently.
 ```
+**Note:** Each command has its own help section, which can be acccessed via `nordnm <COMMAND> --help`.
 
 ### 2.1 Example Usage
 - **View available categories and countries:**
@@ -109,14 +110,14 @@ sudo nordnm list --categories --countries
 sudo nordnm sync -uka us normal udp
 ```
 
-- **Set your MAC address to be randomised each time you connect to a network:**
-```
-sudo nordnm mac --random
-```
-
 - **View metrics of the synchronised servers:**
 ```
 sudo nordnm list --active-servers
+```
+
+- **Set your MAC address to be randomised each time you connect to a network:**
+```
+sudo nordnm mac --random
 ```
 
 - **Change the auto-connect to another synchronised server:**
