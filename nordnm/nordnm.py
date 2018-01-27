@@ -586,7 +586,7 @@ class NordNM(object):
                     self.logger.info("Benchmarked %i servers successfully (%0.2f%%). Took %0.2f seconds.", num_success, percent_success, end - start)
 
                     if percent_success < 90.0:
-                        self.logger.warning("More than 10%% of server tests failed. You might want to check the reliability of your network.")
+                        self.logger.warning("A large quantity of tests failed. You might want to check the reliability of your network.")
 
                 # remove all old connections and any auto-connect, until a better sync routine is added
                 if self.remove_active_connections():
