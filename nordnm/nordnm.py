@@ -275,18 +275,19 @@ class NordNM(object):
         printed_servers = []
         if self.active_servers:
             print("Note: All metrics below are from the last synchronise.\n")
-            format_string = "| %-20s | %-8s | %-11s | %-8s |"
-            print(format_string % ("NAME", "LOAD (%)", "LATENCY (s)", "SCORE"))
-            print("|----------------------+----------+-------------+----------|")
+            format_string = "| %-20s | %-16s | %-8s | %-11s | %-8s |"
+            print(format_string % ("NAME", "PARAMETERS", "LOAD (%)", "LATENCY (s)", "SCORE"))
+            print("|----------------------+------------------+----------+-------------+----------|")
 
             for params in self.active_servers:
+                parameters = ' '.join(params).lower()
                 name = self.active_servers[params]['domain']
                 if name not in printed_servers:
                     printed_servers.append(name)
                     score = self.active_servers[params]['score']
                     load = self.active_servers[params]['load']
                     latency = round(self.active_servers[params]['latency'], 2)
-                    print(format_string % (name, load, latency, score))
+                    print(format_string % (name, parameters, load, latency, score))
 
             print()  # For spacing
         else:
@@ -574,7 +575,8 @@ class NordNM(object):
                 start = timer()
                 ping_attempts = self.settings.get_ping_attempts()  # We are going to be multiprocessing within a class instance, so this needs getting outside of the multiprocessing
                 valid_protocols = self.settings.get_protocols()
-                best_servers, num_success = benchmarking.get_best_servers(valid_server_list, ping_attempts, valid_protocols)
+                valid_categories = self.settings.get_categories()
+                best_servers, num_success = benchmarking.get_best_servers(valid_server_list, ping_attempts, valid_protocols, valid_categories)
 
                 end = timer()
 

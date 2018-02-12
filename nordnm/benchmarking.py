@@ -30,7 +30,7 @@ def get_server_score(server, ping_attempts):
     return (score, load, rtt)
 
 
-def compare_server(server, best_servers, ping_attempts, valid_protocols):
+def compare_server(server, best_servers, ping_attempts, valid_protocols, valid_categories):
     supported_protocols = []
     if server['features']['openvpn_udp'] and 'udp' in valid_protocols:
         supported_protocols.append('udp')
@@ -46,17 +46,19 @@ def compare_server(server, best_servers, ping_attempts, valid_protocols):
         return False
 
     for category in server['categories']:
-        category_name = nordapi.VPN_CATEGORIES[category['name']]
+        category_long_name = category['name']
+        if category_long_name in valid_categories:
+            category_short_name = nordapi.VPN_CATEGORIES[category['name']]
 
-        for protocol in supported_protocols:
-            best_score = 0
+            for protocol in supported_protocols:
+                best_score = 0
 
-            if best_servers.get((country_code, category_name, protocol)):
-                best_score = best_servers[country_code, category_name, protocol]['score']
+                if best_servers.get((country_code, category_short_name, protocol)):
+                    best_score = best_servers[country_code, category_short_name, protocol]['score']
 
-            if score > best_score:
-                name = nordnm.generate_connection_name(server, protocol)
-                best_servers[country_code, category_name, protocol] = {'name': name, 'domain': domain, 'score': score, 'load': load, 'latency': latency}
+                if score > best_score:
+                    name = nordnm.generate_connection_name(server, protocol)
+                    best_servers[country_code, category_short_name, protocol] = {'name': name, 'domain': domain, 'score': score, 'load': load, 'latency': latency}
 
     return True
 
@@ -80,7 +82,7 @@ def get_num_processes(num_servers):
         return num_servers
 
 
-def get_best_servers(server_list, ping_attempts, valid_protocols):
+def get_best_servers(server_list, ping_attempts, valid_protocols, valid_categories):
     manager = multiprocessing.Manager()
     best_servers = manager.dict()
 
@@ -88,7 +90,7 @@ def get_best_servers(server_list, ping_attempts, valid_protocols):
     num_processes = get_num_processes(num_servers)
 
     pool = multiprocessing.Pool(num_processes, maxtasksperchild=1)
-    results = pool.map(partial(compare_server, best_servers=best_servers, ping_attempts=ping_attempts, valid_protocols=valid_protocols), server_list)
+    results = pool.map(partial(compare_server, best_servers=best_servers, ping_attempts=ping_attempts, valid_protocols=valid_protocols, valid_categories=valid_categories), server_list)
     pool.close()
 
     num_success = results.count(True)
