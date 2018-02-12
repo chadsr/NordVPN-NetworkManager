@@ -272,22 +272,20 @@ class NordNM(object):
         if os.path.isfile(paths.ACTIVE_SERVERS):
             self.active_servers = self.load_active_servers(paths.ACTIVE_SERVERS)
 
-        printed_servers = []
         if self.active_servers:
             print("Note: All metrics below are from the last synchronise.\n")
-            format_string = "| %-20s | %-16s | %-8s | %-11s | %-8s |"
-            print(format_string % ("NAME", "PARAMETERS", "LOAD (%)", "LATENCY (s)", "SCORE"))
-            print("|----------------------+------------------+----------+-------------+----------|")
+            format_string = "| %-16s | %-20s | %-8s | %-11s | %-8s |"
+            print(format_string % ("PARAMETER", "SERVER", "LOAD (%)", "LATENCY (s)", "SCORE"))
+            print("|------------------+----------------------+----------+-------------+----------|")
 
             for params in self.active_servers:
                 parameters = ' '.join(params).lower()
-                name = self.active_servers[params]['domain']
-                if name not in printed_servers:
-                    printed_servers.append(name)
-                    score = self.active_servers[params]['score']
-                    load = self.active_servers[params]['load']
-                    latency = round(self.active_servers[params]['latency'], 2)
-                    print(format_string % (name, parameters, load, latency, score))
+                domain = self.active_servers[params]['domain']
+                score = self.active_servers[params]['score']
+                load = self.active_servers[params]['load']
+                latency = round(self.active_servers[params]['latency'], 2)
+
+                print(format_string % (parameters, domain, load, latency, score))
 
             print()  # For spacing
         else:
