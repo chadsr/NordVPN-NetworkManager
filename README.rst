@@ -97,16 +97,6 @@ User Install
 2. Usage
 --------
 
-**Note:** Many of the commands below can be chained into one line. A
-recommended example of this is to synchronise, update configuration
-files and set any auto-connect/kill-switch at the same time.
-
-For example:
-
-::
-
-    sudo nordnm s -uka nl normal tcp
-
 ::
 
     usage: nordnm [-h] [-k] [-a [COUNTRY_CODE] [VPN_CATEGORY] [PROTOCOL]]  ...
@@ -133,6 +123,68 @@ For example:
         mac (m)             Global NetworkManager MAC address preferences. This
                             command will affect ALL NetworkManager connections
                             permanently.
+
+**Note:** Each command has its own help section, which can be acccessed
+via ``nordnm <COMMAND> --help``.
+
+2.1 Example Usage
+~~~~~~~~~~~~~~~~~
+
+-  **View available categories and countries:**
+
+::
+
+    sudo nordnm list --categories --countries
+
+-  **Synchronise, update configuration files, activate the kill-switch
+   and auto-connect to a “normal” UDP server in the US:**
+
+::
+
+    sudo nordnm sync -uka us normal udp
+
+-  **View metrics of the synchronised servers:**
+
+::
+
+    sudo nordnm list --active-servers
+
+-  **Set your MAC address to be randomised each time you connect to a
+   network:**
+
+::
+
+    sudo nordnm mac --random
+
+-  **Change the auto-connect to another synchronised server:**
+
+::
+
+    sudo nordnm -a ru p2p udp
+
+-  **Update the settings:**
+
+::
+
+    sudo nordnm update --settings
+
+-  **Update the user credentials:**
+
+::
+
+    sudo nordnm update --credentials
+
+-  **Disable the network kill-switch:**
+
+::
+
+    sudo nordnm remove --kill-switch
+
+-  **Remove all settings and files:**
+
+::
+
+    sudo nordnm remove --all
 
 .. |Build Status| image:: https://travis-ci.org/Chadsr/NordVPN-NetworkManager.svg?branch=master
    :target: https://travis-ci.org/Chadsr/NordVPN-NetworkManager

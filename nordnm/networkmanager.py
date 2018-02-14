@@ -265,11 +265,18 @@ def remove_dns_resolv():
         return False
 
 
-def remove_killswitch():
+def remove_killswitch(log=True):
+    try:
+        os.remove(paths.KILLSWITCH_DATA)
+    except FileNotFoundError:
+        pass
+
     try:
         os.remove(paths.KILLSWITCH_SCRIPT)
-        os.remove(paths.KILLSWITCH_DATA)
-        logger.info("Network kill-switch disabled.")
+
+        if log:
+            logger.info("Network kill-switch disabled.")
+
         return True
     except FileNotFoundError:
         return False
@@ -278,7 +285,7 @@ def remove_killswitch():
         return False
 
 
-def set_killswitch():
+def set_killswitch(log=True):
     killswitch_script = (
         '#!/bin/bash\n'
         'PERSISTENCE_FILE=' + paths.KILLSWITCH_DATA + '\n\n'
@@ -297,7 +304,10 @@ def set_killswitch():
             print(killswitch_script, file=killswitch)
 
         utils.make_executable(paths.KILLSWITCH_SCRIPT)
-        logger.info("Network kill-switch enabled.")
+
+        if log:
+            logger.info("Network kill-switch enabled.")
+
         return True
     except Exception as e:
         logger.error("Error attempting to set kill-switch: %s" % e)
@@ -434,8 +444,8 @@ def remove_connection(connection_name):
         return False
 
 
-def disconnect_active_vpn(active_servers):
-    disconnected_vpns = set([])
+def get_active_vpns(active_servers):
+    active_vpns = set([])
 
     try:
         output = subprocess.run(['nmcli', '--mode', 'tabular', '--terse', '--fields', 'TYPE,NAME,UUID', 'connection', 'show', '--active'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -446,13 +456,12 @@ def disconnect_active_vpn(active_servers):
             if line:
                 elements = line.strip().split(':')
 
-                if elements[0] == "vpn":  # Only deactivate VPNs managed by this tool. Preserve any not in the active list
+                if elements[0] == "vpn":  # Only count VPNs managed by this tool.
                     for server in active_servers.values():
-                        if elements[1] == server['name'] and elements[2] not in disconnected_vpns:
-                            if disable_connection(elements[2]):
-                                disconnected_vpns.add(elements[2])  # Add the UUID to our set
+                        if elements[1] == server['name'] and elements[2] not in active_vpns:
+                            active_vpns.add(elements[2])  # Add the UUID to our set
 
-        return bool(disconnected_vpns)
+        return active_vpns
 
     except subprocess.CalledProcessError:
         error = utils.format_std_string(output.stderr)
@@ -462,3 +471,14 @@ def disconnect_active_vpn(active_servers):
     except Exception as ex:
         logger.error(ex)
         return False
+
+
+def disconnect_active_vpn(active_servers):
+    active_vpns = get_active_vpns(active_servers)
+    disconnected_vpns = set([])
+
+    for uuid in active_vpns:
+        if disable_connection(uuid):
+            disconnected_vpns.add(uuid)  # Add the UUID to our set
+
+    return bool(disconnected_vpns)
