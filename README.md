@@ -97,6 +97,7 @@ commands:
                         command will affect ALL NetworkManager connections
                         permanently.
 ```
+
 **Note:** Each command has its own help section, which can be acccessed via `nordnm <COMMAND> --help`.
 
 ### 2.1 Example Usage
