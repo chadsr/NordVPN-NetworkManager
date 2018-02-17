@@ -80,18 +80,12 @@ class SettingsHandler(object):
         return False
 
     def get_blacklist(self):
-        blacklist = self.settings.get('Countries', 'country-blacklist')
-        if blacklist:
-            return [code.upper() for code in blacklist.split(' ')]
-        else:
-            return None
+        blacklist = self.settings.get('Countries', 'country-blacklist', fallback='')
+        return [code.upper() for code in blacklist.split(' ')if code]
 
     def get_whitelist(self):
-        whitelist = self.settings.get('Countries', 'country-whitelist')
-        if whitelist:
-            return [code.upper() for code in whitelist.split(' ')]
-        else:
-            return None
+        whitelist = self.settings.get('Countries', 'country-whitelist', fallback='')
+        return [code.upper() for code in whitelist.split(' ') if code]
 
     def get_categories(self):
         categories = []

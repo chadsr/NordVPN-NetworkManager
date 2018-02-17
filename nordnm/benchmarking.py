@@ -1,4 +1,4 @@
-from nordnm import nordnm
+from nordnm import nordmanager
 from nordnm import utils
 from nordnm import nordapi
 
@@ -51,7 +51,7 @@ def compare_server(server, best_servers, ping_attempts, valid_protocols):
                 best_score = best_servers[country_code, category_name, protocol]['score']
 
             if score > best_score:
-                name = nordnm.generate_connection_name(server, protocol)
+                name = nordmanager.generate_connection_name(server, protocol)
                 best_servers[country_code, category_name, protocol] = {'name': name, 'domain': domain, 'score': score, 'load': load, 'latency': latency}
 
 

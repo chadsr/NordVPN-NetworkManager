@@ -1,3 +1,5 @@
+from typing import Tuple, Union
+
 import requests
 import json
 from operator import itemgetter
@@ -50,29 +52,18 @@ def get_nameservers():
     """
 
 
-def get_configs(etag=None):
-    try:
-        head = requests.head(OVPN_ADDR, timeout=TIMEOUT)
-
-        # Follow the redirect if there is one
-        if head.status_code == requests.codes.moved:
-            redirect_url = head.headers['Location']
-            head = requests.head(redirect_url, timeout=TIMEOUT)
-
-        if head.status_code == requests.codes.ok:
-            header_etag = head.headers['etag']
-
-            if header_etag != etag:
-                resp = requests.get(OVPN_ADDR, timeout=TIMEOUT)
-                if resp.status_code == requests.codes.ok:
-                    return (resp.content, header_etag)
-            else:
-                return (None, None)
-        else:
-            return False
-    except Exception as ex:
-        print(ex)
-        return False
+def get_ovpn_configs(etag=None) -> Union[Tuple[bytes, str], None]:
+    """
+    Retrieve openvpn configs from nordvpn servers
+    :return: bytes content, etag
+    """
+    head = requests.head(OVPN_ADDR, timeout=TIMEOUT, allow_redirects=True)
+    header_etag = head.headers['etag']
+    if etag == header_etag:
+        return None
+    resp = requests.get(OVPN_ADDR, timeout=TIMEOUT)
+    if resp.status_code == requests.codes.ok:
+        return resp.content, header_etag
 
 
 def get_user_token(email):

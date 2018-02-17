@@ -64,21 +64,14 @@ def format_std_string(input_string):
 
 
 def extract_zip(input_stream, output_path, chown_to_user=True):
-    try:
-        zipfile = ZipFile(BytesIO(input_stream))
-        zipfile.extractall(output_path)
-        file_list = zipfile.namelist()
-
-        if chown_to_user:
-            # chown the extracted files to the current user, instead of root
-            for file_name in file_list:
-                file_path = os.path.join(output_path, file_name)
-                chown_path_to_user(file_path)
-        return True
-
-    except Exception as ex:
-        logger.error(ex)
-        return False
+    zipfile = ZipFile(BytesIO(input_stream))
+    zipfile.extractall(output_path)
+    file_list = zipfile.namelist()
+    if chown_to_user:
+        # chown the extracted files to the current user, instead of root
+        for file_name in file_list:
+            file_path = os.path.join(output_path, file_name)
+            chown_path_to_user(file_path)
 
 
 def make_executable(file_path):

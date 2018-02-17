@@ -103,7 +103,6 @@ def reload_connections():
     try:
         output = subprocess.run(['nmcli', 'connection', 'reload'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output.check_returncode()
-
         return True
 
     except subprocess.CalledProcessError:
@@ -121,22 +120,18 @@ def get_vpn_connections():
         output = subprocess.run(['nmcli', '--mode', 'tabular', '--terse', '--fields', 'TYPE,NAME', 'connection', 'show'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output.check_returncode()
 
-        lines = output.stdout.decode('utf-8').split('\n')
-
         vpn_connections = []
-        for line in lines:
-            if line:
-                elements = line.strip().split(':')
-
-                if (elements[0] == 'vpn'):
-                    vpn_connections.append(elements[1])
-
+        for line in output.stdout.decode('utf-8').split('\n'):
+            if not line:
+                continue
+            con_type, con = line.strip().split(':', 1)
+            if con_type == 'vpn':
+                vpn_connections.append(con)
         return vpn_connections
-
     except subprocess.CalledProcessError:
         error = utils.format_std_string(output.stderr)
         logger.error(error)
-        return False
+        return []
 
 
 def get_interfaces(wifi=True, ethernet=True):
@@ -435,23 +430,21 @@ def remove_connection(connection_name):
 
 
 def disconnect_active_vpn(active_servers):
-    disconnected_vpns = set([])
+    disconnected_vpns = set()
 
     try:
         output = subprocess.run(['nmcli', '--mode', 'tabular', '--terse', '--fields', 'TYPE,NAME,UUID', 'connection', 'show', '--active'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output.check_returncode()
         lines = output.stdout.decode('utf-8').split('\n')
-
         for line in lines:
-            if line:
-                elements = line.strip().split(':')
-
-                if elements[0] == "vpn":  # Only deactivate VPNs managed by this tool. Preserve any not in the active list
-                    for server in active_servers.values():
-                        if elements[1] == server['name'] and elements[2] not in disconnected_vpns:
-                            if disable_connection(elements[2]):
-                                disconnected_vpns.add(elements[2])  # Add the UUID to our set
-
+            if not line:
+                continue
+            type_, name, uuid = line.strip().split(':')
+            if not type_ == 'vpn':
+                continue
+            for server in active_servers.values():
+                if name == server['name'] and uuid not in disconnected_vpns:
+                    disconnected_vpns.add(uuid)  # Add the UUID to our set
         return bool(disconnected_vpns)
 
     except subprocess.CalledProcessError:
