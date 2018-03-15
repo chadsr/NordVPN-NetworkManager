@@ -37,7 +37,7 @@ def get_server_list(sort_by_load=False, sort_by_country=False):
 
 
 def get_nameservers():
-    return ['162.242.211.137', '78.46.223.24']
+    return ['103.86.96.100', '103.86.99.100']
 
     # Apparently this is not the standard DNS endpoint, but something to do with 'smart-play' and no longer provides valid nameservers
     # so for now we will just return a static list...
