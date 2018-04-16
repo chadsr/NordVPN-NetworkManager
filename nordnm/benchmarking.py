@@ -20,8 +20,8 @@ def get_server_score(server, ping_attempts):
     score = 0  # Lowest starting score
     rtt = None
 
-    # If a server is at 90% load or greater, we don't need to waste time pinging. Just keep starting score.
-    if load < 90:
+    # If a server is at 95% load or greater, we don't need to waste time pinging. Just keep starting score.
+    if load < 95:
         rtt, loss = utils.get_rtt_loss(ip_addr, ping_attempts)
 
         if loss < 5:  # Similarly, if packet loss is >= 5%, the connection is not reliable. Keep the starting score.
@@ -51,7 +51,7 @@ def compare_server(server, best_servers, ping_attempts, valid_protocols, valid_c
             category_short_name = nordapi.VPN_CATEGORIES[category['name']]
 
             for protocol in supported_protocols:
-                best_score = 0
+                best_score = -1
 
                 if best_servers.get((country_code, category_short_name, protocol)):
                     best_score = best_servers[country_code, category_short_name, protocol]['score']
