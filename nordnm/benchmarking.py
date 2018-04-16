@@ -6,6 +6,7 @@ import multiprocessing
 from functools import partial
 import numpy
 import os
+import sys
 import subprocess
 from decimal import Decimal
 import resource
@@ -20,8 +21,8 @@ def get_server_score(server, ping_attempts):
     score = 0  # Lowest starting score
     rtt = None
 
-    # If a server is at 90% load or greater, we don't need to waste time pinging. Just keep starting score.
-    if load < 90:
+    # If a server is at 95% load or greater, we don't need to waste time pinging. Just keep starting score.
+    if load < 95:
         rtt, loss = utils.get_rtt_loss(ip_addr, ping_attempts)
 
         if loss < 5:  # Similarly, if packet loss is >= 5%, the connection is not reliable. Keep the starting score.
@@ -37,7 +38,7 @@ def compare_server(server, best_servers, ping_attempts, valid_protocols, valid_c
     if server['features']['openvpn_tcp'] and 'tcp' in valid_protocols:
         supported_protocols.append('tcp')
 
-    country_code = server['flag']
+    country_code = server['flag'].lower()
     domain = server['domain']
     score, load, latency = get_server_score(server, ping_attempts)
 
@@ -51,7 +52,7 @@ def compare_server(server, best_servers, ping_attempts, valid_protocols, valid_c
             category_short_name = nordapi.VPN_CATEGORIES[category['name']]
 
             for protocol in supported_protocols:
-                best_score = 0
+                best_score = -1
 
                 if best_servers.get((country_code, category_short_name, protocol)):
                     best_score = best_servers[country_code, category_short_name, protocol]['score']
@@ -82,15 +83,26 @@ def get_num_processes(num_servers):
         return num_servers
 
 
-def get_best_servers(server_list, ping_attempts, valid_protocols, valid_categories):
+def get_best_servers(server_list, ping_attempts, valid_protocols, valid_categories, slow_mode=False):
     manager = multiprocessing.Manager()
     best_servers = manager.dict()
 
     num_servers = len(server_list)
-    num_processes = get_num_processes(num_servers)
+
+    if slow_mode:
+        num_processes = multiprocessing.cpu_count()
+    else:
+        num_processes = get_num_processes(num_servers)
 
     pool = multiprocessing.Pool(num_processes, maxtasksperchild=1)
-    results = pool.map(partial(compare_server, best_servers=best_servers, ping_attempts=ping_attempts, valid_protocols=valid_protocols, valid_categories=valid_categories), server_list)
+
+    results = []
+    for i, result in enumerate(pool.imap(partial(compare_server, best_servers=best_servers, ping_attempts=ping_attempts, valid_protocols=valid_protocols, valid_categories=valid_categories), server_list)):
+        sys.stderr.write("\r[INFO] %i/%i benchmarks finished." % (i + 1, num_servers))
+        results.append(result)
+
+    sys.stderr.write('\n')
+
     pool.close()
 
     num_success = results.count(True)

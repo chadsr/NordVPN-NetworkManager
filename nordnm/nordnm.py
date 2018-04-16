@@ -65,6 +65,7 @@ class NordNM(object):
         list_parser.set_defaults(list=True)
 
         sync_parser = subparsers.add_parser('sync', aliases=['s'], help="Synchronise the optimal servers (based on load and latency) to NetworkManager.")
+        sync_parser.add_argument('-s', '--slow-mode', help="Run benchmarking in 'slow mode'. May increase benchmarking success by pinging servers at a slower rate.", action='store_true')
         sync_parser.add_argument('-p', '--preserve-vpn', help="When provided, synchronising will preserve any active VPN instead of disabling it for more accurate benchmarking.", action='store_true')
         sync_parser.add_argument('-u', '--update-configs', help='Download the latest OpenVPN configurations from NordVPN.', action='store_true', default=False)
         sync_parser.add_argument("-k", "--kill-switch", help="Sets a network kill-switch, to disable the active network interface when an active VPN connection disconnects.", action="store_true")
@@ -205,7 +206,7 @@ class NordNM(object):
 
         # Now check for commands that can be chained...
         if "sync" in args and args.sync:
-            self.sync(args.update_configs, args.preserve_vpn)
+            self.sync(args.update_configs, args.preserve_vpn, args.slow_mode)
 
         if args.kill_switch:
             networkmanager.set_killswitch()
@@ -369,14 +370,14 @@ class NordNM(object):
 
             return True
 
-    def sync(self, update_config=True, preserve_vpn=False):
+    def sync(self, update_config=True, preserve_vpn=False, slow_mode=False):
         if self.remove_legacy_files():
             self.logger.info("Removed legacy files")
 
         if update_config:
             self.get_configs()
 
-        if self.sync_servers(preserve_vpn):
+        if self.sync_servers(preserve_vpn, slow_mode):
             networkmanager.reload_connections()
 
     def remove_data(self):
@@ -414,7 +415,7 @@ class NordNM(object):
 
     def enable_auto_connect(self, country_code: str, category: str='normal', protocol: str='tcp'):
         enabled = False
-        selected_parameters = (country_code.upper(), category, protocol)
+        selected_parameters = (country_code.lower(), category.lower(), protocol.lower())
 
         if selected_parameters in self.active_servers:
             connection_name = self.active_servers[selected_parameters]['name']
@@ -505,7 +506,7 @@ class NordNM(object):
         valid_server_list = []
 
         for server in servers:
-            country_code = server['flag']
+            country_code = server['flag'].lower()
 
             # If the server country has been selected, it has a selected protocol and selected categories
             if self.country_is_selected(country_code) and self.has_valid_protocol(server) and self.has_valid_categories(server):
@@ -528,12 +529,16 @@ class NordNM(object):
         else:
             return False
 
-    def sync_servers(self, preserve_vpn):
+    def sync_servers(self, preserve_vpn, slow_mode):
         updated = False
 
         username = self.credentials.get_username()
         password = self.credentials.get_password()
-        dns_list = nordapi.get_nameservers()
+
+        # Check if there are custom DNS servers specified in the settings before loading the defaults
+        dns_list = self.settings.get_custom_dns_servers()
+        if not dns_list:
+            dns_list = nordapi.get_nameservers()
 
         if not self.configs_exist():
             self.logger.warning("No OpenVPN configuration files found.")
@@ -567,6 +572,9 @@ class NordNM(object):
                 else:
                     self.logger.warning("Active VPN preserved. This may give unreliable results!")
 
+                if slow_mode:
+                    self.logger.info("Benchmarking slow mode enabled.")
+
                 num_servers = len(valid_server_list)
                 self.logger.info("Benchmarking %i servers...", num_servers)
 
@@ -574,7 +582,7 @@ class NordNM(object):
                 ping_attempts = self.settings.get_ping_attempts()  # We are going to be multiprocessing within a class instance, so this needs getting outside of the multiprocessing
                 valid_protocols = self.settings.get_protocols()
                 valid_categories = self.settings.get_categories()
-                best_servers, num_success = benchmarking.get_best_servers(valid_server_list, ping_attempts, valid_protocols, valid_categories)
+                best_servers, num_success = benchmarking.get_best_servers(valid_server_list, ping_attempts, valid_protocols, valid_categories, slow_mode)
 
                 end = timer()
 
@@ -586,7 +594,7 @@ class NordNM(object):
                     self.logger.info("Benchmarked %i servers successfully (%0.2f%%). Took %0.2f seconds.", num_success, percent_success, end - start)
 
                     if percent_success < 90.0:
-                        self.logger.warning("A large quantity of tests failed. You might want to check the reliability of your network.")
+                        self.logger.warning("A large quantity of tests failed. Your network may be unreliable, or blocking large-scale ICMP requests. Syncing in slow mode (-s) may fix this.")
 
                 # remove all old connections and any auto-connect, until a better sync routine is added
                 if self.remove_active_connections():
