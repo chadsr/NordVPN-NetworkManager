@@ -34,9 +34,9 @@ class SettingsHandler(object):
         # Populate the Countries section with out input data
         self.settings.add_section('Countries')
         self.settings.set('Countries', '# simply write country codes separated by spaces e.g. country-blacklist = GB US')
-        self.settings.set('Countries', 'country-blacklist', blacklist)
+        self.settings.set('Countries', 'country-blacklist', blacklist.lower())
         self.settings.set('Countries', '\n# same as above. If this is non-empty, the blacklist is ignored')
-        self.settings.set('Countries', 'country-whitelist', whitelist)
+        self.settings.set('Countries', 'country-whitelist', whitelist.lower())
 
         # Prompt for which categories to enable
         self.settings.add_section('Categories')
@@ -82,14 +82,14 @@ class SettingsHandler(object):
     def get_blacklist(self):
         blacklist = self.settings.get('Countries', 'country-blacklist')
         if blacklist:
-            return [code.upper() for code in blacklist.split(' ')]
+            return [code.lower() for code in blacklist.split(' ')]
         else:
             return None
 
     def get_whitelist(self):
         whitelist = self.settings.get('Countries', 'country-whitelist')
         if whitelist:
-            return [code.upper() for code in whitelist.split(' ')]
+            return [code.lower() for code in whitelist.split(' ')]
         else:
             return None
 

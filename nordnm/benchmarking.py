@@ -6,6 +6,7 @@ import multiprocessing
 from functools import partial
 import numpy
 import os
+import sys
 import subprocess
 from decimal import Decimal
 import resource
@@ -37,7 +38,7 @@ def compare_server(server, best_servers, ping_attempts, valid_protocols, valid_c
     if server['features']['openvpn_tcp'] and 'tcp' in valid_protocols:
         supported_protocols.append('tcp')
 
-    country_code = server['flag']
+    country_code = server['flag'].lower()
     domain = server['domain']
     score, load, latency = get_server_score(server, ping_attempts)
 
@@ -82,15 +83,26 @@ def get_num_processes(num_servers):
         return num_servers
 
 
-def get_best_servers(server_list, ping_attempts, valid_protocols, valid_categories):
+def get_best_servers(server_list, ping_attempts, valid_protocols, valid_categories, slow_mode=False):
     manager = multiprocessing.Manager()
     best_servers = manager.dict()
 
     num_servers = len(server_list)
-    num_processes = get_num_processes(num_servers)
+
+    if slow_mode:
+        num_processes = multiprocessing.cpu_count()
+    else:
+        num_processes = get_num_processes(num_servers)
 
     pool = multiprocessing.Pool(num_processes, maxtasksperchild=1)
-    results = pool.map(partial(compare_server, best_servers=best_servers, ping_attempts=ping_attempts, valid_protocols=valid_protocols, valid_categories=valid_categories), server_list)
+
+    results = []
+    for i, result in enumerate(pool.imap(partial(compare_server, best_servers=best_servers, ping_attempts=ping_attempts, valid_protocols=valid_protocols, valid_categories=valid_categories), server_list)):
+        sys.stderr.write("\r[INFO] %i/%i benchmarks finished." % (i + 1, num_servers))
+        results.append(result)
+
+    sys.stderr.write('\n')
+
     pool.close()
 
     num_success = results.count(True)
