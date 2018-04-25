@@ -58,7 +58,14 @@ def compare_server(server, best_servers, ping_attempts, valid_protocols, valid_c
                     best_score = best_servers[country_code, category_short_name, protocol]['score']
 
                 if score > best_score:
-                    name = nordnm.generate_connection_name(server, protocol)
+
+                    if (country_code, category_short_name, protocol) in best_servers:
+                        old_domain = best_servers[country_code, category_short_name, protocol]['domain']
+                    else:
+                        old_domain = "None"
+
+                    print("%s: %f (%s) > %f (%s)" % ([country_code, category_short_name, protocol], score, domain, best_score, old_domain))
+                    name = nordnm.generate_connection_name(domain, country_code, category_short_name, protocol)
                     best_servers[country_code, category_short_name, protocol] = {'name': name, 'domain': domain, 'score': score, 'load': load, 'latency': latency}
 
     return True

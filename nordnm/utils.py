@@ -10,6 +10,17 @@ import requests
 logger = logging.getLogger(__name__)
 
 
+def get_json_response(endpoint):
+    try:
+        resp = requests.get(endpoint, timeout=TIMEOUT)
+        if resp.status_code == requests.codes.ok:
+            return resp.json()
+        else:
+            return None
+    except Exception as ex:
+        return None
+
+
 def get_pypi_package_version(package_name):
     try:
         resp = requests.get("https://pypi.python.org/pypi/" + package_name + "/json", timeout=1)

@@ -1,12 +1,3 @@
-from nordnm.credentials import CredentialsHandler
-from nordnm.settings import SettingsHandler
-from nordnm import nordapi
-from nordnm import networkmanager
-from nordnm import utils
-from nordnm import benchmarking
-from nordnm import paths
-from nordnm.__init__ import __version__
-
 import argparse
 import os
 import shutil
@@ -18,19 +9,22 @@ import copy
 from timeit import default_timer as timer
 from distutils.version import StrictVersion
 
+from nordnm.credentials import CredentialsHandler
+from nordnm.settings import SettingsHandler
+from nordnm import networkmanager
+from nordnm import utils
+from nordnm import benchmarking
+from nordnm import paths
+from nordnm.__init__ import __version__
 
-def generate_connection_name(server, protocol):
-    short_name = server['domain'].split('.')[0]
-    connection_name = short_name + ' ['
+from nordnm.providers.nordvpn import NordVPN
 
-    for i, category in enumerate(server['categories']):
-        category_name = nordapi.VPN_CATEGORIES[category['name']]
-        if i > 0:  # prepend a separator if there is more than one category
-            category_name = '|' + category_name
 
-        connection_name = connection_name + category_name
+def generate_connection_name(domain, country_code, category, protocol):
+    short_name = domain.split('.')[0]
+    connection_name = short_name + ' [' + country_code + ' ' + category + ' ' + protocol + ']'
 
-    return connection_name + '] [' + protocol + ']'
+    return connection_name
 
 
 class NordNM(object):
@@ -243,27 +237,23 @@ class NordNM(object):
         print(format_string % ("SHORT NAME", "LONG NAME"))
         print("|------------+----------------------|")
 
-        for long_name, short_name in nordapi.VPN_CATEGORIES.items():
+        for long_name, short_name in NordVPN.get_available_categories().items():
             print(format_string % (short_name, long_name))
 
         print()  # For spacing
 
     def print_countries(self):
-        servers = nordapi.get_server_list(sort_by_country=True)
-        if servers:
+        server_countries = NordVPN.get_available_countries()
+
+        if server_countries:
             format_string = "| %-22s | %-4s |"
-            countries = []
 
             print("\n Note: You must use the country code, NOT the country name in this tool.\n")
             print(format_string % ("NAME", "CODE"))
             print("|------------------------+------|")
 
-            for server in servers:
-                country_code = server['flag']
-                if country_code not in countries:
-                    countries.append(country_code)
-                    country_name = server['country']
-                    print(format_string % (country_name, country_code))
+            for country in server_countries:
+                print(format_string % (country['name'], country['code']))
 
             print()  # For spacing
         else:
@@ -350,7 +340,7 @@ class NordNM(object):
         self.logger.info("Downloading latest NordVPN OpenVPN configuration files to '%s'." % paths.OVPN_CONFIGS)
 
         etag = self.get_config_info()
-        config_data = nordapi.get_configs(etag)
+        config_data = NordVPN.get_configuration_files(etag)
         if config_data is False:
             self.logger.error("Failed to retrieve configuration files from NordVPN")
             return False
@@ -534,7 +524,7 @@ class NordNM(object):
 
         username = self.credentials.get_username()
         password = self.credentials.get_password()
-        dns_list = nordapi.get_nameservers()
+        dns_list = NordVPN.get_nameservers()
 
         if not self.configs_exist():
             self.logger.warning("No OpenVPN configuration files found.")
@@ -543,7 +533,7 @@ class NordNM(object):
 
         self.logger.info("Checking for new connections to import...")
 
-        server_list = nordapi.get_server_list(sort_by_load=True)
+        server_list = NordVPN.get_servers(country_code, category, protocol, limit)
         if server_list:
 
             valid_server_list = self.get_valid_servers(server_list)
