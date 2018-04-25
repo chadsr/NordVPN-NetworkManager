@@ -34,9 +34,9 @@ class SettingsHandler(object):
         # Populate the Countries section with out input data
         self.settings.add_section('Countries')
         self.settings.set('Countries', '# simply write country codes separated by spaces e.g. country-blacklist = GB US')
-        self.settings.set('Countries', 'country-blacklist', blacklist.lower())
+        self.settings.set('Countries', 'country-blacklist', blacklist.lower().strip())
         self.settings.set('Countries', '\n# same as above. If this is non-empty, the blacklist is ignored')
-        self.settings.set('Countries', 'country-whitelist', whitelist.lower())
+        self.settings.set('Countries', 'country-whitelist', whitelist.lower().strip())
 
         # Prompt for which categories to enable
         self.settings.add_section('Categories')
@@ -49,6 +49,11 @@ class SettingsHandler(object):
         self.settings.set('Protocols', 'tcp', answer)
         answer = str(utils.input_yes_no("Enable UDP configurations?")).lower()
         self.settings.set('Protocols', 'udp', answer)
+
+        self.settings.add_section('DNS')
+        print("\nWARNING: Setting custom DNS servers can compromise your privacy if you don't know what you're doing.")
+        custom_dns = input("Input custom DNS servers you would like to use, separated by spaces. (Press enter to skip): ")
+        self.settings.set('DNS', 'custom-dns-servers', custom_dns.strip())
 
         self.settings.add_section('Benchmarking')
         ping_attempts = input("Input how many ping attempts to make when benchmarking servers (Default: %i attempts): " % self.DEFAULT_PING_ATTEMPTS)
@@ -125,3 +130,11 @@ class SettingsHandler(object):
         self.logger.warning("Invalid ping-attempts value. Using default value of %d.", self.DEFAULT_PING_ATTEMPTS)
         self.settings.set('Benchmarking', 'ping-attempts', str(self.DEFAULT_PING_ATTEMPTS))  # Lets set the default, so we only get this warning once
         return self.DEFAULT_PING_ATTEMPTS
+
+    def get_custom_dns_servers(self) -> list:
+        custom_dns = self.settings.get('DNS', 'custom-dns-servers')
+
+        if custom_dns:
+            return custom_dns.split(' ')
+        else:
+            return []

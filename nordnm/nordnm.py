@@ -534,7 +534,11 @@ class NordNM(object):
 
         username = self.credentials.get_username()
         password = self.credentials.get_password()
-        dns_list = nordapi.get_nameservers()
+
+        # Check if there are custom DNS servers specified in the settings before loading the defaults
+        dns_list = self.settings.get_custom_dns_servers()
+        if not dns_list:
+            dns_list = nordapi.get_nameservers()
 
         if not self.configs_exist():
             self.logger.warning("No OpenVPN configuration files found.")
