@@ -132,9 +132,8 @@ class SettingsHandler(object):
         return self.DEFAULT_PING_ATTEMPTS
 
     def get_custom_dns_servers(self) -> list:
-        custom_dns = self.settings.get('DNS', 'custom-dns-servers')
-
-        if custom_dns:
+        try:
+            custom_dns = self.settings.get('DNS', 'custom-dns-servers')
             return custom_dns.split(' ')
-        else:
+        except (configparser.NoSectionError, configparser.NoOptionError):  # The setting didn't exist, so ignore it
             return []
