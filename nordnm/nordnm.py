@@ -17,7 +17,7 @@ from nordnm import benchmarking
 from nordnm import paths
 from nordnm.__init__ import __version__
 
-from nordnm.providers.nordvpn import NordVPN
+from .providers.nordvpn import NordVPN
 
 
 def generate_connection_name(domain, country_code, category, protocol):
@@ -237,7 +237,7 @@ class NordNM(object):
         print(format_string % ("SHORT NAME", "LONG NAME"))
         print("|------------+----------------------|")
 
-        for long_name, short_name in NordVPN.get_available_categories().items():
+        for short_name, long_name in NordVPN.get_available_categories().items():
             print(format_string % (short_name, long_name))
 
         print()  # For spacing
@@ -524,7 +524,11 @@ class NordNM(object):
 
         username = self.credentials.get_username()
         password = self.credentials.get_password()
-        dns_list = NordVPN.get_nameservers()
+
+        # Check if there are custom DNS servers specified in the settings before loading the defaults
+        dns_list = self.settings.get_custom_dns_servers()
+        if not dns_list:
+            dns_list = nordapi.get_nameservers()
 
         if not self.configs_exist():
             self.logger.warning("No OpenVPN configuration files found.")

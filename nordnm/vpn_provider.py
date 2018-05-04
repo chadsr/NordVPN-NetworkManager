@@ -1,11 +1,30 @@
 from abc import ABC, abstractmethod
 
 
+class VPNServer(object):
+    def __init__(self, domain, address, load):
+        self.domain = domain
+        self.address = address
+        self.load = load
+
+
 class VPNProvider(ABC):
     @abstractmethod
     @staticmethod
-    def get_servers(country_code: str, category: str, protocol: str, limit: int):
-        ...
+    def get_servers(country_code: str, category: str, protocol: str, limit: int) -> list:
+        """
+        Arguments:
+            country_code: A two-character, lower-case country code e.g. 'us'
+            category: An internal category name
+            protocol: An internal protocol NAME
+            limit: The maximum number of servers to return
+
+        Output:
+            [
+                VPNServer(),
+                ...
+            ]
+        """
 
     @abstractmethod
     @staticmethod

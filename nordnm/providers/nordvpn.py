@@ -3,7 +3,7 @@ import json
 import hashlib
 
 from nordnm import utils
-from nordnm.vpn_provider import VPNProvider
+from nordnm.vpn_provider import VPNProvider, VPNServer
 
 
 # See VPNProvider Abstract Base Class for specification
@@ -47,9 +47,11 @@ class NordVPN(VPNProvider):
 
             return protocol_id
 
+        # Get the NordVPN ids directly from the API incase of changes
         category_id = get_category_id(category)
         protocol_id = get_protocol_id(protocol)
 
+        # If we got the IDs, build a response with filter for the server_recommendations endpoint
         if category_id and protocol_id:
             filter = {
                 'flag': country_code,
@@ -58,11 +60,21 @@ class NordVPN(VPNProvider):
             }
 
             url = NordVPN.__ajax_endpoint__ + 'servers_recommendations&filters=' + filter + '&limit=' + str(limit)
-            return utils.get_json_response(url)
+            resp = utils.get_json_response(url)
+            print(resp)
+
+            server_list = []
+            for i, server in enumerate(resp):
+                if i < limit:  # Just in case we can't rely on the NordVPN endpoint to obey out limit param
+                    vpn_server = VPNServer(server['hostname'], server['station'], server['load'])
+                    server_list.append(vpn_server)
+
+            return server_list
         else:
             return None
 
     def get_nameservers(host=None):
+        # TODO: Determine if there's a dynamic way to fetch these, since they do change sometimes
         return ['103.86.96.100', '103.86.99.100']
 
     def get_configuration_files(etag=None):
