@@ -46,8 +46,14 @@ class ConnectionConfig(object):
     def disable_ipv6(self):
         self.config['ipv6']['method'] = 'ignore'
 
-    def set_dns_nameservers(self):
+    def set_dns_nameservers(self, dns_list):
         self.config['ipv4']['dns-priority'] = '-1'
+
+        if dns_list:
+            dns_string = ';'.join(map(str, dns_list))
+
+            self.config['ipv4']['dns'] = dns_string
+            self.config['ipv4']['ignore-auto-dns'] = 'true'
 
     def set_user(self, user):
         self.config['connection']['permissions'] = "user:" + user + ":;"
@@ -309,7 +315,7 @@ def import_connection(file_path, connection_name, username=None, password=None, 
             if not ipv6:
                 config.disable_ipv6()
 
-            config.set_dns_nameservers()
+            config.set_dns_nameservers(dns_list)
             user = utils.get_current_user()
             config.set_user(user)
 
