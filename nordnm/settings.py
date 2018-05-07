@@ -4,6 +4,7 @@ from nordnm import nordapi
 import configparser
 import logging
 import os
+import ipaddress
 
 
 class SettingsHandler(object):
@@ -133,8 +134,16 @@ class SettingsHandler(object):
 
     def get_custom_dns_servers(self) -> list:
         try:
-            custom_dns = self.settings.get('DNS', 'custom-dns-servers')
-            if custom_dns:
-                return custom_dns.split(' ')
+            custom_dns_list = self.settings.get('DNS', 'custom-dns-servers').split(' ')
+
+            for dns in custom_dns_list:
+                try:
+                    ipaddress.ip_address(dns)
+                except ValueError:
+                    # This wasn't a valid IP address, so remove it from the dns_list
+                    custom_dns_list.remove(dns)
+
+            return custom_dns_list
+
         except (configparser.NoSectionError, configparser.NoOptionError):  # The setting didn't exist, so ignore it
             return []
