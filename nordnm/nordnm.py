@@ -138,8 +138,6 @@ class NordNM(object):
                 if os.path.isfile(paths.ACTIVE_SERVERS):
                     self.active_servers = self.load_active_servers(paths.ACTIVE_SERVERS)
 
-                networkmanager.remove_dns_resolv()
-
                 if self.remove_active_connections():
                     removed = True
 
@@ -537,8 +535,6 @@ class NordNM(object):
 
         # Check if there are custom DNS servers specified in the settings before loading the defaults
         dns_list = self.settings.get_custom_dns_servers()
-        if not dns_list:
-            dns_list = nordapi.get_nameservers()
 
         if not self.configs_exist():
             self.logger.warning("No OpenVPN configuration files found.")
@@ -615,7 +611,7 @@ class NordNM(object):
 
                         file_path = self.get_ovpn_path(domain, protocol)
                         if file_path:
-                            if networkmanager.import_connection(file_path, name, username, password):
+                            if networkmanager.import_connection(file_path, name, username, password, dns_list):
                                 updated = True
                                 new_connections += 1
                             else:
@@ -632,8 +628,6 @@ class NordNM(object):
                     self.logger.info("%i new connections added.", new_connections)
                 else:
                     self.logger.info("No new connections added.")
-
-                networkmanager.set_dns_resolv(dns_list, self.active_servers)
 
                 return updated
             else:

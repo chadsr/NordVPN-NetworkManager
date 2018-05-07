@@ -144,5 +144,6 @@ class SettingsHandler(object):
                     custom_dns_list.remove(dns)
 
             return custom_dns_list
+
         except (configparser.NoSectionError, configparser.NoOptionError):  # The setting didn't exist, so ignore it
             return []
