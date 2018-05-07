@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 def get_pypi_package_version(package_name):
     try:
-        resp = requests.get("https://pypi.python.org/pypi/" + package_name + "/json", timeout=1)
+        resp = requests.get("https://pypi.python.org/pypi/" + package_name + "/json", timeout=0.1)
 
         if resp.status_code == requests.codes.ok:
             package = resp.json()
