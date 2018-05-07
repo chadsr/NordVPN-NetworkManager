@@ -17,7 +17,7 @@ from nordnm import benchmarking
 from nordnm import paths
 from nordnm.__init__ import __version__
 
-from .providers.nordvpn import NordVPN
+from nordnm import providers
 
 
 def generate_connection_name(domain, country_code, category, protocol):
@@ -29,6 +29,9 @@ def generate_connection_name(domain, country_code, category, protocol):
 
 class NordNM(object):
     def __init__(self):
+
+        self.provider = providers.NordVPN()
+
         parser = argparse.ArgumentParser()
         subparsers = parser.add_subparsers(title="commands", help="Each command has its own help page, which can be accessed via nordnm <COMMAND> --help", metavar='')
 
@@ -54,14 +57,14 @@ class NordNM(object):
 
         list_parser = subparsers.add_parser('list', aliases=['l'], help="List the specified information.")
         list_parser.add_argument('--active-servers', help='Display a list of the active servers currently synchronised.', action='store_true', default=False)
-        list_parser.add_argument('--countries', help='Display a list of the available NordVPN countries.', action='store_true', default=False)
-        list_parser.add_argument('--categories', help='Display a list of the available NordVPN categories..', action='store_true', default=False)
+        list_parser.add_argument('--countries', help='Display a list of the available countries.', action='store_true', default=False)
+        list_parser.add_argument('--categories', help='Display a list of the available categories..', action='store_true', default=False)
         list_parser.set_defaults(list=True)
 
         sync_parser = subparsers.add_parser('sync', aliases=['s'], help="Synchronise the optimal servers (based on load and latency) to NetworkManager.")
         sync_parser.add_argument('-s', '--slow-mode', help="Run benchmarking in 'slow mode'. May increase benchmarking success by pinging servers at a slower rate.", action='store_true')
         sync_parser.add_argument('-p', '--preserve-vpn', help="When provided, synchronising will preserve any active VPN instead of disabling it for more accurate benchmarking.", action='store_true')
-        sync_parser.add_argument('-u', '--update-configs', help='Download the latest OpenVPN configurations from NordVPN.', action='store_true', default=False)
+        sync_parser.add_argument('-u', '--update-configs', help='Download the latest OpenVPN configuration files', action='store_true', default=False)
         sync_parser.add_argument("-k", "--kill-switch", help="Sets a network kill-switch, to disable the active network interface when an active VPN connection disconnects.", action="store_true")
         sync_parser.add_argument('-a', '--auto-connect', nargs=3, metavar=('[COUNTRY_CODE]', '[VPN_CATEGORY]', '[PROTOCOL]'), help='Configure NetworkManager to auto-connect to the chosen server type. Takes country code, category and protocol.')
         sync_parser.set_defaults(sync=True)
@@ -237,13 +240,13 @@ class NordNM(object):
         print(format_string % ("SHORT NAME", "LONG NAME"))
         print("|------------+----------------------|")
 
-        for short_name, long_name in NordVPN.get_available_categories().items():
+        for short_name, long_name in self.provider.get_available_categories().items():
             print(format_string % (short_name, long_name))
 
         print()  # For spacing
 
     def print_countries(self):
-        server_countries = NordVPN.get_available_countries()
+        server_countries = self.provider.get_available_countries()
 
         if server_countries:
             format_string = "| %-22s | %-4s |"
@@ -257,7 +260,7 @@ class NordNM(object):
 
             print()  # For spacing
         else:
-            self.logger.error("Could not get available countries from the NordVPN API.")
+            self.logger.error("Could not get available countries.")
 
     def print_active_servers(self):
         if os.path.isfile(paths.ACTIVE_SERVERS):
@@ -337,12 +340,12 @@ class NordNM(object):
                 self.logger.error("Could not delete config file: %s" % e)
 
     def get_configs(self):
-        self.logger.info("Downloading latest NordVPN OpenVPN configuration files to '%s'." % paths.OVPN_CONFIGS)
+        self.logger.info("Downloading latest OpenVPN configuration files to '%s'." % paths.OVPN_CONFIGS)
 
         etag = self.get_config_info()
-        config_data = NordVPN.get_configuration_files(etag)
+        config_data = self.provider.get_configuration_files(etag)
         if config_data is False:
-            self.logger.error("Failed to retrieve configuration files from NordVPN")
+            self.logger.error("Failed to retrieve configuration files.")
             return False
         elif config_data:
             zip_file, etag = config_data
@@ -537,7 +540,7 @@ class NordNM(object):
 
         self.logger.info("Checking for new connections to import...")
 
-        server_list = NordVPN.get_servers(country_code, category, protocol, limit)
+        server_list = self.provider.get_servers(country_code, category, protocol, limit)
         if server_list:
 
             valid_server_list = self.get_valid_servers(server_list)
@@ -630,5 +633,5 @@ class NordNM(object):
                 self.logger.error("No servers found matching your settings. Review your settings and try again.")
                 sys.exit(1)
         else:
-            self.logger.error("Could not fetch the server list from NordVPN. Check your Internet connectivity.")
+            self.logger.error("Could not fetch the server list. Check your Internet connectivity.")
             sys.exit(1)

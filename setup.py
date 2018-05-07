@@ -29,7 +29,7 @@ setup(
     version=__version__,
     author='Ross Chadwick',
     author_email='ross@rchadwick.co.uk',
-    packages=[__package__],
+    packages=[__package__, __package__ + '.providers'],
     url='https://github.com/Chadsr/NordVPN-NetworkManager',
     license=__license__,
     description='A CLI tool for automating the importing, securing and usage of NordVPN OpenVPN servers through NetworkManager.',

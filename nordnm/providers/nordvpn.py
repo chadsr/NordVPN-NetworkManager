@@ -13,6 +13,7 @@ class NordVPN(VPNProvider):
     __ovpn_endpoint = 'https://downloads.nordcdn.com/configs/archives/servers/ovpn.zip'
     __timeout__ = 5
 
+    @staticmethod
     def get_servers(country_code, category, protocol, limit):
         # Get the official category ID based on an internal category name
         def get_category_id(category):
@@ -73,11 +74,13 @@ class NordVPN(VPNProvider):
         else:
             return None
 
+    @staticmethod
     def get_nameservers(host=None):
         # TODO: Determine if there's a dynamic way to fetch these, since they do change sometimes
         return ['103.86.96.100', '103.86.99.100']
 
-    def get_configuration_files(etag=None):
+    @staticmethod
+    def get_configuration_files(etag):
         try:
             head = requests.head(NordVPN.__ovpn_endpoint, timeout=NordVPN.__timeout__)
 
@@ -101,10 +104,12 @@ class NordVPN(VPNProvider):
             print(ex)
             return False
 
+    @staticmethod
     def get_available_countries():
         def get_server_countries():
             return utils.get_json_response(NordVPN.__ajax_endpoint__ + 'servers_countries')
 
+    @staticmethod
     def get_available_categories():
         return {
             'normal': 'Standard VPN servers',
@@ -115,12 +120,14 @@ class NordVPN(VPNProvider):
             'ddos': 'Anti DDoS'
         }
 
+    @staticmethod
     def get_available_protocols():
         return {
             'tcp': 'OpenVPN TCP',
             'udp': 'OpenVPN UDP'
         }
 
+    @staticmethod
     def verify_user_credentials(username, password):
         def get_user_token(email):
             """
