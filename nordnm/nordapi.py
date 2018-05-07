@@ -36,20 +36,6 @@ def get_server_list(sort_by_load=False, sort_by_country=False):
         return None
 
 
-def get_nameservers():
-    return ['103.86.96.100', '103.86.99.100']
-
-    # Apparently this is not the standard DNS endpoint, but something to do with 'smart-play' and no longer provides valid nameservers
-    # so for now we will just return a static list...
-    """
-    try:
-        resp = requests.get(API_ADDR + '/dns/smart', headers=HEADERS, timeout=TIMEOUT)
-        return resp.json()
-    except Exception as ex:
-        return None
-    """
-
-
 def get_configs(etag=None):
     try:
         head = requests.head(OVPN_ADDR, timeout=TIMEOUT)
