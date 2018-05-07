@@ -134,6 +134,7 @@ class SettingsHandler(object):
     def get_custom_dns_servers(self) -> list:
         try:
             custom_dns = self.settings.get('DNS', 'custom-dns-servers')
-            return custom_dns.split(' ')
+            if custom_dns:
+                return custom_dns.split(' ')
         except (configparser.NoSectionError, configparser.NoOptionError):  # The setting didn't exist, so ignore it
             return []
