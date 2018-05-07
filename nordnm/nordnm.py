@@ -138,8 +138,6 @@ class NordNM(object):
                 if os.path.isfile(paths.ACTIVE_SERVERS):
                     self.active_servers = self.load_active_servers(paths.ACTIVE_SERVERS)
 
-                networkmanager.remove_dns_resolv()
-
                 if self.remove_active_connections():
                     removed = True
 
@@ -632,8 +630,6 @@ class NordNM(object):
                     self.logger.info("%i new connections added.", new_connections)
                 else:
                     self.logger.info("No new connections added.")
-
-                networkmanager.set_dns_resolv(dns_list, self.active_servers)
 
                 return updated
             else:
