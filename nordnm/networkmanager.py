@@ -201,6 +201,7 @@ def set_global_mac_address(value):
 def remove_global_mac_address():
     try:
         os.remove(paths.MAC_CONFIG)
+        logger.info("Global NetworkManager MAC address settings have been removed successfully.)
         return True
     except FileNotFoundError:
         return False
