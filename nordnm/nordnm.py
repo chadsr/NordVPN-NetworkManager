@@ -44,7 +44,7 @@ class NordNM(object):
         parser.add_argument("-k", "--kill-switch", help="Sets a network kill-switch, to disable the active network interface when an active VPN connection disconnects.", action="store_true")
         parser.add_argument("-a", "--auto-connect", nargs=3, metavar=("[COUNTRY_CODE]", "[VPN_CATEGORY]", "[PROTOCOL]"), help="Configure NetworkManager to auto-connect to the chosen server type. Takes country code, category and protocol.")
 
-        remove_parser = subparsers.add_parser("remove", aliases=['r'], help="Remove either active connections, auto-connect, kill-switch, data or all.")
+        remove_parser = subparsers.add_parser("remove", aliases=['r'], help="Remove active connections, auto-connect, kill-switch, data, mac settings or all.")
         remove_parser.add_argument("--all", dest="remove_all", help="Remove all connections, enabled features and local data.", action="store_true")
         remove_parser.add_argument("-c", "--connections", dest="remove_c", help="Remove all active connections and auto-connect.", action="store_true")
         remove_parser.add_argument("-a", "--auto-connect", dest="remove_ac", help="Remove the active auto-connect feature.", action="store_true")
