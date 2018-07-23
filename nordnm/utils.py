@@ -105,7 +105,7 @@ def get_rtt_loss(host, ping_attempts):
 
         packets_recieved = int(split_info[3])
         if packets_recieved > 0:
-            loss = int(split_info[5].split('%')[0])
+            loss = float(split_info[5].split('%')[0])
             avg_rtt = float(split_rtt[3].split('/')[1])
             return (avg_rtt, loss)
 
