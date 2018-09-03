@@ -298,14 +298,18 @@ def remove_autoconnect():
         return False
 
 
-def import_connection(file_path, connection_name, username=None, password=None, dns_list=None, ipv6=False):
+def import_connection(file_path, connection_name, username=None, password=None, dns_list=None, ipv6=False, create_temp_file=True):
     try:
-        # Create a temporary config with the new name, for importing (and delete afterwards)
-        temp_path = os.path.join(os.path.dirname(file_path), connection_name + '.ovpn')
-        shutil.copy(file_path, temp_path)
+        if create_temp_file:
+            # Create a temporary config with the new name, for importing (and delete afterwards)
+            temp_path = os.path.join(os.path.dirname(file_path), connection_name + '.ovpn')
+            shutil.copy(file_path, temp_path)
+        else:
+            temp_path = file_path
 
         output = subprocess.run(['nmcli', 'connection', 'import', 'type', 'openvpn', 'file', temp_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        os.remove(temp_path)
+        if create_temp_file:
+            os.remove(temp_path)
         output.check_returncode()
 
         config = ConnectionConfig(connection_name)
