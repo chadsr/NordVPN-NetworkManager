@@ -2,14 +2,11 @@ from abc import ABC, abstractmethod
 from typing import Union
 
 
-class VPNServer(object):
-    def __init__(self, domain, address, load):
-        self.domain = domain
-        self.address = address
-        self.load = load
-
-
 class VPNProvider(ABC):
+    @property
+    def name(self):
+        ...
+
     @staticmethod
     @abstractmethod
     def get_servers(country_code: str, category: str, protocol: str, limit: int) -> list:

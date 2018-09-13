@@ -1,5 +1,5 @@
 from nordnm import utils
-from nordnm import nordapi
+from nordnm.vpn_provider import VPNProvider
 
 import configparser
 import logging
@@ -9,13 +9,14 @@ import os
 class SettingsHandler(object):
     DEFAULT_PING_ATTEMPTS = 5
 
-    def __init__(self, path):
+    def __init__(self, path: str, provider: VPNProvider):
         self.logger = logging.getLogger(__name__)
 
         self.path = path
+        self.provider = provider
 
         if not self.load():
-            self.logger.warning("No existing settingss found!")
+            self.logger.warning("No existing settings found!")
             # Prompt for new settings
             self.save_new_settings()
 
@@ -23,6 +24,9 @@ class SettingsHandler(object):
         self.logger.info("Prompting for new settings.\n")
 
         self.settings = configparser.ConfigParser(allow_no_value=True, interpolation=None)
+
+        # Create a new section named after the provider
+        self.settings.add_section(self.provider.name)
 
         # Prompt for which countries to synchronise
         # First offer the whitelist, if the user chooses to skip the whitelist, offer the blacklist
@@ -32,34 +36,29 @@ class SettingsHandler(object):
             blacklist = input("If you wish to blacklist specific countries, enter their country codes separated by spaces. (Press enter to skip): ")
 
         # Populate the Countries section with out input data
-        self.settings.add_section('Countries')
-        self.settings.set('Countries', '# simply write country codes separated by spaces e.g. country-blacklist = GB US')
-        self.settings.set('Countries', 'country-blacklist', blacklist.lower().strip())
-        self.settings.set('Countries', '\n# same as above. If this is non-empty, the blacklist is ignored')
-        self.settings.set('Countries', 'country-whitelist', whitelist.lower().strip())
+        self.settings.set(self.provider.name, '# simply write country codes separated by spaces e.g. country-blacklist = GB US')
+        self.settings.set(self.provider.name, 'country-blacklist', blacklist.lower().strip())
+        self.settings.set(self.provider.name, '\n# same as above. If this is non-empty, the blacklist is ignored')
+        self.settings.set(self.provider.name, 'country-whitelist', whitelist.lower().strip())
 
         # Prompt for which categories to enable
-        self.settings.add_section('Categories')
-        for category in sorted(nordapi.VPN_CATEGORIES.keys()):
+        for category in sorted(self.provider.get_available_categories().values()):
             answer = str(utils.input_yes_no("Enable category '%s'?" % category)).lower()
-            self.settings.set('Categories', category.replace(' ', '-'), answer)
+            self.settings.set(self.provider.name, category.replace(' ', '-'), answer)
 
-        self.settings.add_section('Protocols')
         answer = str(utils.input_yes_no("Enable TCP configurations?")).lower()
-        self.settings.set('Protocols', 'tcp', answer)
+        self.settings.set(self.provider.name, 'tcp', answer)
         answer = str(utils.input_yes_no("Enable UDP configurations?")).lower()
-        self.settings.set('Protocols', 'udp', answer)
+        self.settings.set(self.provider.name, 'udp', answer)
 
-        self.settings.add_section('DNS')
         print("\nWARNING: Setting custom DNS servers can compromise your privacy if you don't know what you're doing.")
         custom_dns = input("Input custom DNS servers you would like to use, separated by spaces. (Press enter to skip): ")
-        self.settings.set('DNS', 'custom-dns-servers', custom_dns.strip())
+        self.settings.set(self.provider.name, 'custom-dns-servers', custom_dns.strip())
 
-        self.settings.add_section('Benchmarking')
         ping_attempts = input("Input how many ping attempts to make when benchmarking servers (Default: %i attempts): " % self.DEFAULT_PING_ATTEMPTS)
         if not ping_attempts:
             ping_attempts = str(self.DEFAULT_PING_ATTEMPTS)
-        self.settings.set('Benchmarking', 'ping-attempts', ping_attempts)
+        self.settings.set(self.provider.name, 'ping-attempts', ping_attempts)
 
         self.save()  # And save it
 
@@ -79,20 +78,22 @@ class SettingsHandler(object):
             try:
                 self.settings = configparser.ConfigParser(allow_no_value=True, interpolation=None)
                 self.settings.read(self.path)
+                self.settings.get(self.provider.name)
+
                 return True
             except Exception as ex:
                 self.logger.error(ex)
         return False
 
     def get_blacklist(self):
-        blacklist = self.settings.get('Countries', 'country-blacklist')
+        blacklist = self.settings.get(self.provider.name, 'country-blacklist')
         if blacklist:
             return [code.lower() for code in blacklist.split(' ')]
         else:
             return None
 
     def get_whitelist(self):
-        whitelist = self.settings.get('Countries', 'country-whitelist')
+        whitelist = self.settings.get(self.provider.name, 'country-whitelist')
         if whitelist:
             return [code.lower() for code in whitelist.split(' ')]
         else:
@@ -101,9 +102,9 @@ class SettingsHandler(object):
     def get_categories(self):
         categories = []
 
-        for category in nordapi.VPN_CATEGORIES.keys():
+        for category in self.provider.get_available_categories().values():
             category_name = category.replace(' ', '-')
-            if self.settings.getboolean('Categories', category_name):
+            if self.settings.getboolean(self.provider.name, category_name):
                 categories.append(category)
 
         return categories
@@ -111,29 +112,29 @@ class SettingsHandler(object):
     def get_protocols(self):
         protocols = []
 
-        if self.settings.getboolean('Protocols', 'tcp'):
+        if self.settings.getboolean(self.provider.name, 'tcp'):
             protocols.append('tcp')
 
-        if self.settings.getboolean('Protocols', 'udp'):
+        if self.settings.getboolean(self.provider.name, 'udp'):
             protocols.append('udp')
 
         return protocols
 
     def get_ping_attempts(self):
         try:
-            ping_attempts = int(self.settings.get('Benchmarking', 'ping-attempts'))
+            ping_attempts = int(self.settings.get(self.provider.name, 'ping-attempts'))
             if ping_attempts > 0:  # If ping-attempts is zero or smaller, revert to default
                 return ping_attempts
         except Exception:
             pass
 
-        self.logger.warning("Invalid ping-attempts value. Using default value of %d.", self.DEFAULT_PING_ATTEMPTS)
-        self.settings.set('Benchmarking', 'ping-attempts', str(self.DEFAULT_PING_ATTEMPTS))  # Lets set the default, so we only get this warning once
+        self.logger.warning("Invalid ping-attempts value. Using default value of %d." % self.DEFAULT_PING_ATTEMPTS)
+        self.settings.set(self.provider.name, 'ping-attempts', str(self.DEFAULT_PING_ATTEMPTS))  # Lets set the default, so we only get this warning once
         return self.DEFAULT_PING_ATTEMPTS
 
     def get_custom_dns_servers(self) -> list:
         try:
-            custom_dns = self.settings.get('DNS', 'custom-dns-servers')
+            custom_dns = self.settings.get(self.provider.name, 'custom-dns-servers')
             return custom_dns.split(' ')
         except (configparser.NoSectionError, configparser.NoOptionError):  # The setting didn't exist, so ignore it
             return []

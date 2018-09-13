@@ -3,15 +3,21 @@ import json
 import hashlib
 
 from nordnm import utils
-from nordnm.vpn_provider import VPNProvider, VPNServer
+from nordnm.vpn_provider import VPNProvider
+from nordnm.vpn_server import VPNServer
 
 
 # See VPNProvider Abstract Base Class for specification
 class NordVPN(VPNProvider):
+    __name__ = 'NordVPN'
     __api_endpoint__ = 'https://api.nordvpn.com'
     __ajax_endpoint__ = 'https://nordvpn.com/wp-admin/admin-ajax.php?action='
     __ovpn_endpoint = 'https://downloads.nordcdn.com/configs/archives/servers/ovpn.zip'
     __timeout__ = 5
+
+    @property
+    def name(self):
+        return self.__class__.__name__
 
     @staticmethod
     def get_servers(country_code, category, protocol, limit):
@@ -67,6 +73,7 @@ class NordVPN(VPNProvider):
             server_list = []
             for i, server in enumerate(resp):
                 if i < limit:  # Just in case we can't rely on the NordVPN endpoint to obey out limit param
+                    print(server)
                     vpn_server = VPNServer(server['hostname'], server['station'], server['load'])
                     server_list.append(vpn_server)
 

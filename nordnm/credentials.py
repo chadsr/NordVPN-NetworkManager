@@ -1,5 +1,5 @@
 from nordnm import utils
-from nordnm import nordapi
+from nordnm.vpn_provider import VPNProvider
 
 import configparser
 import logging
@@ -8,12 +8,12 @@ import os
 
 
 class CredentialsHandler(object):
-    SECTION_TITLE = 'NordVPN Credentials'
 
-    def __init__(self, path):
+    def __init__(self, path: str, provider: VPNProvider):
         self.logger = logging.getLogger(__name__)
 
         self.path = path
+        self.provider = provider
         self.config = configparser.ConfigParser(allow_no_value=True, interpolation=None)
 
         if not self.load():
@@ -41,14 +41,14 @@ class CredentialsHandler(object):
         return False
 
     def get_username(self):
-        username = self.config.get(self.SECTION_TITLE, 'username')
+        username = self.config.get(self.provider.name, 'username')
         if username:
             return username
         else:
             return None
 
     def get_password(self):
-        password = self.config.get(self.SECTION_TITLE, 'password')
+        password = self.config.get(self.provider.name, 'password')
         if password:
             return password
         else:
@@ -57,7 +57,7 @@ class CredentialsHandler(object):
     def save_new_credentials(self):
         valid = False
 
-        print("\nPlease input your NordVPN credentials:")
+        print("\nPlease input your %s credentials:" % self.provider.name)
 
         while not valid:
             username = input("Email: ")
@@ -65,15 +65,15 @@ class CredentialsHandler(object):
 
             if username and password:
                 self.logger.info("Attempting to verify credentials...")
-                if nordapi.verify_user_credentials(username, password):
+                if self.provider.verify_user_credentials(username, password):
                     valid = True
                 else:
                     self.logger.error("The provided credentials could not be verified. Try entering them again and checking your Internet connectivity.")
 
-        if not self.config.has_section(self.SECTION_TITLE):
-            self.config.add_section(self.SECTION_TITLE)
+        if not self.config.has_section(self.provider.name):
+            self.config.add_section(self.provider.name)
 
-        self.config.set(self.SECTION_TITLE, 'username', username)
-        self.config.set(self.SECTION_TITLE, 'password', password)
+        self.config.set(self.provider.name, 'username', username)
+        self.config.set(self.provider.name, 'password', password)
         self.save()
         self.logger.info("New credentials saved successfully!")

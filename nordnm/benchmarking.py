@@ -1,6 +1,6 @@
 from nordnm import nordnm
 from nordnm import utils
-from nordnm import nordapi
+from nordnm.vpn_provider import VPNProvider
 
 import multiprocessing
 from functools import partial

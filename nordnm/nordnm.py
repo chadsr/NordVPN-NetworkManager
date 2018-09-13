@@ -288,8 +288,8 @@ class NordNM(object):
     def setup(self):
         self.create_directories()
 
-        self.settings = SettingsHandler(paths.SETTINGS)
-        self.credentials = CredentialsHandler(paths.CREDENTIALS)
+        self.settings = SettingsHandler(paths.SETTINGS, self.provider)
+        self.credentials = CredentialsHandler(paths.CREDENTIALS, self.provider)
 
         self.black_list = self.settings.get_blacklist()
         self.white_list = self.settings.get_whitelist()
@@ -531,7 +531,7 @@ class NordNM(object):
         # Check if there are custom DNS servers specified in the settings before loading the defaults
         dns_list = self.settings.get_custom_dns_servers()
         if not dns_list:
-            dns_list = nordapi.get_nameservers()
+            dns_list = self.provider.get_nameservers()
 
         if not self.configs_exist():
             self.logger.warning("No OpenVPN configuration files found.")
@@ -539,6 +539,7 @@ class NordNM(object):
                 sys.exit(1)
 
         self.logger.info("Checking for new connections to import...")
+
 
         server_list = self.provider.get_servers(country_code, category, protocol, limit)
         if server_list:
@@ -548,11 +549,11 @@ class NordNM(object):
 
                 if not preserve_vpn:
                     # If there's a kill-switch in place, we need to temporarily remove it, otherwise it will kill out network when disabling an active VPN below
-                    # Disconnect active Nord VPNs, so we get a more reliable benchmark
                     show_warning = False
                     if networkmanager.remove_killswitch():
                         show_warning = True
                         warning_string = "Kill-switch"
+                    # Disconnect active VPNs, so we get a more reliable benchmark
                     if networkmanager.disconnect_active_vpn(self.active_servers):
                         if show_warning:
                             warning_string = "Active VPN(s) and " + warning_string
