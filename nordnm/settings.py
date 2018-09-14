@@ -38,23 +38,27 @@ class SettingsHandler(object):
         # Populate the Countries section with out input data
         self.settings.set(self.provider.name, '# simply write country codes separated by spaces e.g. country-blacklist = GB US')
         self.settings.set(self.provider.name, 'country-blacklist', blacklist.lower().strip())
-        self.settings.set(self.provider.name, '\n# same as above. If this is non-empty, the blacklist is ignored')
+        self.settings.set(self.provider.name, '# same as above. If this is non-empty, the blacklist is ignored')
         self.settings.set(self.provider.name, 'country-whitelist', whitelist.lower().strip())
 
         # Prompt for which categories to enable
+        self.settings.set(self.provider.name, '\n# Categories')
         for category in sorted(self.provider.get_available_categories().values()):
             answer = str(utils.input_yes_no("Enable category '%s'?" % category)).lower()
             self.settings.set(self.provider.name, category.replace(' ', '-'), answer)
 
+        self.settings.set(self.provider.name, '\n# Protocols')
         answer = str(utils.input_yes_no("Enable TCP configurations?")).lower()
         self.settings.set(self.provider.name, 'tcp', answer)
         answer = str(utils.input_yes_no("Enable UDP configurations?")).lower()
         self.settings.set(self.provider.name, 'udp', answer)
 
         print("\nWARNING: Setting custom DNS servers can compromise your privacy if you don't know what you're doing.")
+        self.settings.set(self.provider.name, '\n# DNS Options')
         custom_dns = input("Input custom DNS servers you would like to use, separated by spaces. (Press enter to skip): ")
         self.settings.set(self.provider.name, 'custom-dns-servers', custom_dns.strip())
 
+        self.settings.set(self.provider.name, '\n# Benchmarking Options')
         ping_attempts = input("Input how many ping attempts to make when benchmarking servers (Default: %i attempts): " % self.DEFAULT_PING_ATTEMPTS)
         if not ping_attempts:
             ping_attempts = str(self.DEFAULT_PING_ATTEMPTS)
