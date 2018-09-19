@@ -19,6 +19,9 @@ from timeit import default_timer as timer
 from distutils.version import StrictVersion
 
 
+IMPORTED_SERVER_KEY = ('(imported)', '', '')
+
+
 def generate_connection_name(server, protocol):
     short_name = server['domain'].split('.')[0]
     connection_name = short_name + ' ['
@@ -71,6 +74,14 @@ class NordNM(object):
         sync_parser.add_argument("-k", "--kill-switch", help="Sets a network kill-switch, to disable the active network interface when an active VPN connection disconnects.", action="store_true")
         sync_parser.add_argument('-a', '--auto-connect', nargs=3, metavar=('[COUNTRY_CODE]', '[VPN_CATEGORY]', '[PROTOCOL]'), help='Configure NetworkManager to auto-connect to the chosen server type. Takes country code, category and protocol.')
         sync_parser.set_defaults(sync=True)
+
+        import_parser = subparsers.add_parser('import', aliases=['i'], help="Import an OpenVPN config file to NetworkManager.")
+        import_parser.add_argument("config_file", metavar='CONFIG_FILE', help="The OpenVPN config file to be imported.")
+        import_parser.add_argument("-k", "--kill-switch", help="Sets a network kill-switch, to disable the active network interface when an active VPN connection disconnects.", action="store_true")
+        import_parser.add_argument('-a', '--auto-connect', help='Configure NetworkManager to auto-connect to the the imported config.', action="store_true", dest="auto_connect_imported")
+        import_parser.add_argument('-u', '--username', required=True, help="Specify the username used for the OpenVPN config.", metavar="USERNAME")
+        import_parser.add_argument('-p', '--password', required=True, help="Specify the password used for the OpenVPN config.", metavar="PASSWORD")
+        import_parser.set_defaults(import_config=True)
 
         # For reference: https://blogs.gnome.org/thaller/category/networkmanager/
         mac_parser = subparsers.add_parser('mac', aliases=['m'], help="Global NetworkManager MAC address preferences. This command will affect ALL NetworkManager connections permanently.")
@@ -206,6 +217,10 @@ class NordNM(object):
         if "sync" in args and args.sync:
             self.sync(args.update_configs, args.preserve_vpn, args.slow_mode)
 
+        if "import_config" in args and args.import_config:
+            if not self.import_config(args.config_file, args.username, args.password):
+                sys.exit(1)
+
         if args.kill_switch:
             networkmanager.set_killswitch()
 
@@ -215,6 +230,9 @@ class NordNM(object):
             protocol = args.auto_connect[2]
 
             self.enable_auto_connect(country_code, category, protocol)
+
+        if args.auto_connect_imported:
+            self.enable_auto_connect(*IMPORTED_SERVER_KEY)
 
         sys.exit(0)
 
@@ -377,6 +395,42 @@ class NordNM(object):
 
         if self.sync_servers(preserve_vpn, slow_mode):
             networkmanager.reload_connections()
+
+    def import_config(self, file_path: str, username: str, password: str) -> bool:
+        updated = False
+        imported = False
+        if self.remove_legacy_files():
+            self.logger.info("Removed legacy files")
+
+        if not os.path.isfile(file_path):
+            self.logger.error("Configuration file '%s' does not exist.", file_path)
+            return None
+
+        # remove all old connections and any auto-connect, until a better import routine is added
+        if self.remove_active_connections():
+            updated = True
+        if networkmanager.remove_autoconnect():
+            updated = True
+
+        dns_list = self.settings.get_custom_dns_servers()
+        connection_name = os.path.splitext(os.path.basename(file_path))[0]
+        if networkmanager.import_connection(file_path, connection_name, username, password,
+                                            dns_list, create_temp_file=False):
+            updated = True
+            imported = True
+            self.active_servers[IMPORTED_SERVER_KEY] = {
+                'name': connection_name,
+                'domain': '<' + connection_name + '>',
+                'score': -1,
+                'load': -1,
+                'latency': -1,
+            }
+            self.save_active_servers(self.active_servers, paths.ACTIVE_SERVERS)
+
+        if updated:
+            networkmanager.reload_connections()
+
+        return imported
 
     def remove_data(self):
         if os.path.exists(paths.ROOT):
