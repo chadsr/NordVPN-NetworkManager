@@ -12,6 +12,7 @@ from decimal import Decimal
 import resource
 
 EXP_SENSITIVITY = 50  # Controls the gradient of the exponential score function. The higher the number, the smaller the gradient (change)
+MAX_FD = 512
 
 
 def get_server_score(server, ping_attempts):
@@ -74,8 +75,12 @@ def get_num_processes(num_servers):
     ppid = os.getppid()
     used_file_descriptors = int(subprocess.run('ls -l /proc/' + str(ppid) + '/fd | wc -l', shell=True, stdout=subprocess.PIPE).stdout.decode('utf-8'))
 
-    # Max processes is the number of file descriptors left, before the sof limit (configuration maximum) is reached
-    max_processes = int((soft_limit - used_file_descriptors) / 2)
+    # Max processes is the number of file descriptors left, before the soft limit (configuration maximum) is reached
+    max_processes = int((soft_limit - used_file_descriptors))
+
+    # If the number of free file descriptors is larger than our defined max, the cap it at that
+    if max_processes > MAX_FD:
+        max_processes = MAX_FD
 
     if num_servers > max_processes:
         return max_processes
