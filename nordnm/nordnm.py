@@ -78,7 +78,7 @@ class NordNM(object):
         import_parser = subparsers.add_parser('import', aliases=['i'], help="Import an OpenVPN config file to NetworkManager.")
         import_parser.add_argument("config_file", metavar='CONFIG_FILE', help="The OpenVPN config file to be imported.")
         import_parser.add_argument("-k", "--kill-switch", help="Sets a network kill-switch, to disable the active network interface when an active VPN connection disconnects.", action="store_true")
-        import_parser.add_argument('-a', '--auto-connect', help='Configure NetworkManager to auto-connect to the the imported config.', action="store_true", dest="auto_connect_imported")
+        import_parser.add_argument('-a', '--auto-connect', help='Configure NetworkManager to auto-connect to the the imported config.', action="store_true", dest="auto_connect_imported", default=False)
         import_parser.add_argument('-u', '--username', required=True, help="Specify the username used for the OpenVPN config.", metavar="USERNAME")
         import_parser.add_argument('-p', '--password', required=True, help="Specify the password used for the OpenVPN config.", metavar="PASSWORD")
         import_parser.set_defaults(import_config=True)
@@ -221,6 +221,9 @@ class NordNM(object):
             if not self.import_config(args.config_file, args.username, args.password):
                 sys.exit(1)
 
+            if args.auto_connect_imported:
+                self.enable_auto_connect(*IMPORTED_SERVER_KEY)
+
         if args.kill_switch:
             networkmanager.set_killswitch()
 
@@ -230,9 +233,6 @@ class NordNM(object):
             protocol = args.auto_connect[2]
 
             self.enable_auto_connect(country_code, category, protocol)
-
-        if args.auto_connect_imported:
-            self.enable_auto_connect(*IMPORTED_SERVER_KEY)
 
         sys.exit(0)
 
