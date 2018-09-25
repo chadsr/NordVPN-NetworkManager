@@ -72,10 +72,12 @@ pip install --user nordnm
 
 ## 2. Usage
 ```
-usage: nordnm [-h] [-k] [-a [COUNTRY_CODE] [VPN_CATEGORY] [PROTOCOL]]  ...
+usage: nordnm [-h] [-v] [-k] [-a [COUNTRY_CODE] [VPN_CATEGORY] [PROTOCOL]]
+              ...
 
 optional arguments:
   -h, --help            show this help message and exit
+  -v, --version         Display the package version.
   -k, --kill-switch     Sets a network kill-switch, to disable the active
                         network interface when an active VPN connection
                         disconnects.
@@ -87,12 +89,13 @@ optional arguments:
 commands:
                         Each command has its own help page, which can be
                         accessed via nordnm <COMMAND> --help
-    remove (r)          Remove either active connections, auto-connect, kill-
-                        switch, data or all.
+    remove (r)          Remove active connections, auto-connect, kill-switch,
+                        data, mac settings or all.
     update (u)          Update a specified setting.
     list (l)            List the specified information.
     sync (s)            Synchronise the optimal servers (based on load and
                         latency) to NetworkManager.
+    import (i)          Import an OpenVPN config file to NetworkManager.
     mac (m)             Global NetworkManager MAC address preferences. This
                         command will affect ALL NetworkManager connections
                         permanently.
@@ -124,6 +127,11 @@ sudo nordnm mac --random
 - **Change the auto-connect to another synchronised server:**
 ```
 sudo nordnm -a ru p2p udp
+```
+
+- **Import a specific OpenVPN configuration file while still using the killswitch and autoconnect features (Experimental):**
+```
+sudo nordnm import /home/foo/config.ovpn -ak -u username -p password
 ```
 
 - **Update the settings:**
