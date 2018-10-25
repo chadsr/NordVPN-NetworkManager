@@ -13,6 +13,7 @@ CREDENTIALS = os.path.join(ROOT, 'credentials.conf')
 MAC_CONFIG = "/usr/lib/NetworkManager/conf.d/nordnm_mac.conf"
 AUTO_CONNECT_SCRIPT = "/etc/NetworkManager/dispatcher.d/nordnm_autoconnect_" + __username__
 KILLSWITCH_SCRIPT = "/etc/NetworkManager/dispatcher.d/nordnm_killswitch_" + __username__
+SYSTEM_CONNECTIONS = "/etc/NetworkManager/system-connections/"
 KILLSWITCH_DATA = os.path.join(ROOT, '.killswitch')
 
 # Legacy paths for cleanly updating. These files are removed on startup, if found
