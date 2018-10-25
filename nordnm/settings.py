@@ -5,6 +5,7 @@ import configparser
 import logging
 import os
 import ipaddress
+import sys
 
 
 class SettingsHandler(object):
@@ -103,9 +104,15 @@ class SettingsHandler(object):
         categories = []
 
         for category in nordapi.VPN_CATEGORIES.keys():
-            category_name = category.replace(' ', '-')
-            if self.settings.getboolean('Categories', category_name):
-                categories.append(category)
+            category_name = category.replace(' ', '-').lower()
+
+            try:
+                if self.settings.getboolean('Categories', category_name):
+                    categories.append(category)
+            except configparser.NoOptionError:
+                self.logger.error("VPN category '%s' not found in '%s'. Update settings and try again." % (category_name, self.path))
+                self.save_new_settings()
+                sys.exit(0)
 
         return categories
 
