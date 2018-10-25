@@ -12,7 +12,7 @@ VPN_CATEGORIES = {
     'Standard VPN servers': 'normal',
     'P2P': 'p2p',
     'Double VPN': 'double',
-    'Dedicated IP servers': 'dedicated',
+    'Dedicated IP': 'dedicated',
     'Onion Over VPN': 'onion',
     'Anti DDoS': 'ddos',
 }
