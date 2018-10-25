@@ -15,18 +15,24 @@ logger = logging.getLogger(__name__)
 class ConnectionConfig(object):
     def __init__(self, connection_name):
         self.config = configparser.ConfigParser(interpolation=None)
-        self.path = os.path.join("/etc/NetworkManager/system-connections/", connection_name)
+        self.path = None
 
         try:
-            if os.path.isfile(self.path):
+            # Get all system-connection files and check for a match, with or without the new '.nmconnection' extension
+            _, _, file_names = next(os.walk(paths.SYSTEM_CONNECTIONS, (None, None, [])))
+            for file_name in file_names:
+                if re.search(re.escape(connection_name) + "(.nmconnection)?", file_name):
+                    # Found a match, so store the full path as self.path and break out
+                    self.path = os.path.join(paths.SYSTEM_CONNECTIONS, file_name)
+                    break
+
+            if self.path and os.path.isfile(self.path):
                 self.config.read(self.path)
             else:
-                logger.error("VPN config file not found! (%s)", self.path)
-                self.path = None
+                logger.error("VPN config file not found in system-connections! (%s)", connection_name)
 
         except Exception as ex:
             logger.error(ex)
-            self.path = None
 
     def save(self):
         try:
@@ -187,7 +193,7 @@ def set_global_mac_address(value):
 
                 logger.info("Global NetworkManager MAC address settings set to '%s'.", value)
                 return True
-            except Exception as e:
+            except Exception:
                 logger.error("Could not save MAC address configuration to '%s'", paths.MAC_CONFIG)
                 return False
         else:
