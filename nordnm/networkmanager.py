@@ -12,65 +12,6 @@ import re
 logger = logging.getLogger(__name__)
 
 
-class ConnectionConfig(object):
-    def __init__(self, connection_name):
-        self.config = configparser.ConfigParser(interpolation=None)
-        self.path = None
-
-        try:
-            # Get all system-connection files and check for a match, with or without the new '.nmconnection' extension
-            _, _, file_names = next(os.walk(paths.SYSTEM_CONNECTIONS, (None, None, [])))
-            for file_name in file_names:
-                if re.search(re.escape(connection_name) + "(.nmconnection)?", file_name):
-                    # Found a match, so store the full path as self.path and break out
-                    self.path = os.path.join(paths.SYSTEM_CONNECTIONS, file_name)
-                    break
-
-            if self.path and os.path.isfile(self.path):
-                self.config.read(self.path)
-            else:
-                logger.error("VPN config file not found in system-connections! (%s)", connection_name)
-
-        except Exception as ex:
-            logger.error(ex)
-
-    def save(self):
-        try:
-            if self.path:
-                with open(self.path, 'w') as config_file:
-                    self.config.write(config_file)
-
-                return True
-            else:
-                logger.error("Could not save VPN Config. Invalid path.")
-                return False
-
-        except Exception as ex:
-            logger.error(ex)
-            return False
-
-    def disable_ipv6(self):
-        self.config['ipv6']['method'] = 'ignore'
-
-    def set_dns_nameservers(self, dns_list):
-        self.config['ipv4']['dns-priority'] = '-1'
-
-        if dns_list:
-            dns_string = ';'.join(map(str, dns_list))
-
-            self.config['ipv4']['dns'] = dns_string
-            self.config['ipv4']['ignore-auto-dns'] = 'true'
-
-    def set_user(self, user):
-        self.config['connection']['permissions'] = "user:" + user + ":;"
-
-    def set_credentials(self, username, password):
-        self.config['vpn']['password-flags'] = "0"
-        self.config['vpn']['username'] = username
-        self.config['vpn-secrets'] = {}
-        self.config['vpn-secrets']['password'] = password
-
-
 def restart():
     try:
         output = subprocess.run(['systemctl', 'restart', 'NetworkManager'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -304,35 +245,35 @@ def remove_autoconnect():
         return False
 
 
-def import_connection(file_path, connection_name, username=None, password=None, dns_list=None, ipv6=False, create_temp_file=True):
+def import_connection(file_path, connection_name, username=None, password=None, dns_list=None, ipv6=False):
+    # Create a temporary config with the connection name, so we can import the config with its prettified name
+    temp_path = os.path.join(os.path.dirname(file_path), connection_name + '.ovpn')
+    shutil.copy(file_path, temp_path)
+
+    output = subprocess.run(['nmcli', 'connection', 'import', 'type', 'openvpn', 'file', temp_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    os.remove(temp_path) # Remove the temporary renamed config we created
+    output.check_returncode()
+
+    # Populate all connection options into connection_options
+    connection_options = {
+        '+vpn.secrets': ['password='+password],
+        '+vpn.data': ['username='+username, 'password-flags=0'],
+        '+connection.permissions': ['user:'+utils.get_current_user()],
+    }
+
+    if not ipv6:
+        connection_options['ipv6.method'] = ['ignore']
+
+    if dns_list:
+        dns_string = ';'.join(map(str, dns_list))
+        connection_options['+ipv4.dns'] = [dns_string]
+        connection_options['+ipv4.ignore-auto-dns'] = ['true']
+
     try:
-        if create_temp_file:
-            # Create a temporary config with the new name, for importing (and delete afterwards)
-            temp_path = os.path.join(os.path.dirname(file_path), connection_name + '.ovpn')
-            shutil.copy(file_path, temp_path)
-        else:
-            temp_path = file_path
-
-        output = subprocess.run(['nmcli', 'connection', 'import', 'type', 'openvpn', 'file', temp_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        if create_temp_file:
-            os.remove(temp_path)
-        output.check_returncode()
-
-        config = ConnectionConfig(connection_name)
-        if config.path:  # If the config has a path, then it was loaded correctly
-            if username and password:
-                config.set_credentials(username, password)
-
-            if not ipv6:
-                config.disable_ipv6()
-
-            config.set_dns_nameservers(dns_list)
-            user = utils.get_current_user()
-            config.set_user(user)
-
-            config.save()
-        else:
-            return False
+        for location, values in connection_options.items():
+            for value in values:
+                output = subprocess.run(['nmcli', 'connection', 'modify', connection_name, location, value], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                output.check_returncode()
 
         return True
 
