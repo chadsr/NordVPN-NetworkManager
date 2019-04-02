@@ -70,7 +70,7 @@ class NordNM(object):
         sync_parser = subparsers.add_parser('sync', aliases=['s'], help="Synchronise the optimal servers (based on load and latency) to NetworkManager.")
         sync_parser.add_argument('-s', '--slow-mode', help="Run benchmarking in 'slow mode'. May increase benchmarking success by pinging servers at a slower rate.", action='store_true')
         sync_parser.add_argument('-p', '--preserve-vpn', help="When provided, synchronising will preserve any active VPN instead of disabling it for more accurate benchmarking.", action='store_true')
-        sync_parser.add_argument('-u', '--update-configs', help='Download the latest OpenVPN configurations from NordVPN.', action='store_true', default=False)
+        sync_parser.add_argument('-n', '--no-update', help='Do not download the latest OpenVPN configurations from NordVPN.', action='store_true', default=False)
         sync_parser.add_argument("-k", "--kill-switch", help="Sets a network kill-switch, to disable the active network interface when an active VPN connection disconnects.", action="store_true")
         sync_parser.add_argument('-a', '--auto-connect', nargs=3, metavar=('[COUNTRY_CODE]', '[VPN_CATEGORY]', '[PROTOCOL]'), help='Configure NetworkManager to auto-connect to the chosen server type. Takes country code, category and protocol.')
         sync_parser.set_defaults(sync=True)
@@ -215,7 +215,8 @@ class NordNM(object):
 
         # Now check for commands that can be chained...
         if "sync" in args and args.sync:
-            self.sync(args.update_configs, args.preserve_vpn, args.slow_mode)
+            # Take the inverse of no_update arg as update parameter
+            self.sync(not args.no_update, args.preserve_vpn, args.slow_mode)
 
         if "import_config" in args and args.import_config:
             if not self.import_config(args.config_file, args.username, args.password):
