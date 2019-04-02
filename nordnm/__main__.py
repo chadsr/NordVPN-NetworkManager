@@ -16,10 +16,6 @@ def sig_clean_exit(signal, frame):
 
 
 def main():
-    if os.getuid() != 0:
-        print("%s must be run as root! Exiting." % __package__)
-        sys.exit(1)
-
     # Add our custom logging formatter function to handle all logging output
     formatter = utils.LoggingFormatter()
     loggingHandler = logging.StreamHandler(sys.stdout)
