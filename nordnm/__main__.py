@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from nordnm import nordnm, __package__
+from nordnm import nordnm, __package__, utils
 import sys
 import logging
 import os
@@ -20,7 +20,13 @@ def main():
         print("%s must be run as root! Exiting." % __package__)
         sys.exit(1)
 
-    logging.basicConfig(format='[%(levelname)s] [%(name)s]: %(message)s', level=logging.INFO, stream=sys.stdout)
+    # Add our custom logging formatter function to handle all logging output
+    formatter = utils.LoggingFormatter()
+    loggingHandler = logging.StreamHandler(sys.stdout)
+    loggingHandler.setFormatter(formatter)
+    logging.root.addHandler(loggingHandler)
+    logging.root.setLevel(logging.INFO)
+
     signal.signal(signal.SIGINT, sig_clean_exit)
 
     nordnm.NordNM()

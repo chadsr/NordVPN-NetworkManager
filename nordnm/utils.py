@@ -10,6 +10,31 @@ import requests
 logger = logging.getLogger(__name__)
 
 
+class LoggingFormatter(logging.Formatter):
+    info_format = "[%(levelname)s]: %(message)s"
+    error_format = "[%(levelname)s] [%(name)s.%(funcName)s:%(lineno)d]: %(message)s"
+
+    def __init__(self):
+        super().__init__(fmt=self.info_format, datefmt=None, style='%')
+
+    def format(self, record):
+        # Save the current format so we can restore it later
+        default_fmt = self._style._fmt
+
+        if record.levelno == logging.ERROR:
+            self._style._fmt = self.error_format
+        else:
+            self._style._fmt = self.info_format
+
+        # Call the original class to do the actual logging
+        result = logging.Formatter.format(self, record)
+
+        # Restore the default format
+        self._fmt = default_fmt
+
+        return result
+
+
 def get_pypi_package_version(package_name):
     try:
         resp = requests.get("https://pypi.python.org/pypi/" + package_name + "/json", timeout=0.1)
