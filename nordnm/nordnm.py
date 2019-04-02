@@ -459,6 +459,10 @@ class NordNM(object):
 
         try:
             files = glob.glob(paths.OVPN_CONFIGS + '/**/' + domain + '.' + protocol + '*.ovpn')
+            
+            if not files:
+                return False
+
             ovpn_path = files[0]
         except Exception as ex:
             self.logger.error(ex)
