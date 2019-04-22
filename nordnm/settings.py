@@ -69,7 +69,7 @@ class SettingsHandler(object):
         try:
             with open(self.path, 'w') as settings_file:
                 self.settings.write(settings_file)
-            utils.chown_path_to_user(self.path)
+
             self.logger.info("Settings saved successfully.")
             return True
         except Exception as ex:

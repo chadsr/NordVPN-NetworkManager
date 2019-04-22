@@ -248,11 +248,11 @@ class NordNM(object):
                 version_string = version_string + " (Latest)"
 
         print("     _   _               _ _   _ ___  ___\n"
-              "    | \ | |             | | \ | ||  \/  |\n"
-              "    |  \| | ___  _ __ __| |  \| || .  . |\n"
-              "    | . ` |/ _ \| '__/ _` | . ` || |\/| |\n"
-              "    | |\  | (_) | | | (_| | |\  || |  | |\n"
-              "    \_| \_/\___/|_|  \__,_\_| \_/\_|  |_/   v%s\n" % version_string)
+            "    | \ | |             | | \ | ||  \/  |\n"
+            "    |  \| | ___  _ __ __| |  \| || .  . |\n"
+            "    | . ` |/ _ \| '__/ _` | . ` || |\/| |\n"
+            "    | |\  | (_) | | | (_| | |\  || |  | |\n"
+            "    \_| \_/\___/|_|  \__,_\_| \_/\_|  |_/   v%s\n" % version_string)
 
     def print_categories(self):
         format_string = "| %-10s | %-20s |"
@@ -415,8 +415,8 @@ class NordNM(object):
 
         dns_list = self.settings.get_custom_dns_servers()
         connection_name = os.path.splitext(os.path.basename(file_path))[0]
-        if networkmanager.import_connection(file_path, connection_name, username, password,
-                                            dns_list, create_temp_file=False):
+
+        if networkmanager.import_connection(file_path, connection_name, username, password, dns_list):
             updated = True
             imported = True
             self.active_servers[IMPORTED_SERVER_KEY] = {
@@ -449,11 +449,9 @@ class NordNM(object):
     def create_directories(self):
         if not os.path.exists(paths.ROOT):
             os.mkdir(paths.ROOT)
-            utils.chown_path_to_user(paths.ROOT)
 
         if not os.path.exists(paths.OVPN_CONFIGS):
             os.mkdir(paths.OVPN_CONFIGS)
-            utils.chown_path_to_user(paths.OVPN_CONFIGS)
 
     def get_ovpn_path(self, domain, protocol):
         ovpn_path = None
@@ -528,7 +526,7 @@ class NordNM(object):
         try:
             with open(paths.ACTIVE_SERVERS, 'wb') as fp:
                 pickle.dump(active_servers, fp)
-            utils.chown_path_to_user(paths.ACTIVE_SERVERS)
+
         except Exception as ex:
             self.logger.error(ex)
 

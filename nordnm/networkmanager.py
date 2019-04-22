@@ -13,21 +13,25 @@ logger = logging.getLogger(__name__)
 
 
 def restart():
-    try:
-        output = subprocess.run(['systemctl', 'restart', 'NetworkManager'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        output.check_returncode()
+    def main():
+        try:
+            output = subprocess.run(['systemctl', 'restart', 'NetworkManager'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            output.check_returncode()
 
-        logger.info("NetworkManager restarted successfully!")
-        return True
+            logger.info("NetworkManager restarted successfully!")
+            return True
 
-    except subprocess.CalledProcessError:
-        error = utils.format_std_string(output.stderr)
-        logger.error(error)
+        except subprocess.CalledProcessError:
+            error = utils.format_std_string(output.stderr)
+            logger.error(error)
+
+        except Exception as ex:
+            logger.error(ex)
+
         return False
 
-    except Exception as ex:
-        logger.error(ex)
-        return False
+    # Requires root priveledge
+    return utils.run_as_root(main)
 
 
 def get_version():
@@ -117,142 +121,184 @@ def get_interfaces(wifi=True, ethernet=True):
 
 
 def set_global_mac_address(value):
-    MIN_VERSION = "1.4.0"
-    nm_version = get_version()
+    def main():
+        MIN_VERSION = "1.4.0"
+        nm_version = get_version()
 
-    if nm_version:
-        if LooseVersion(nm_version) >= LooseVersion(MIN_VERSION):
-            mac_config = configparser.ConfigParser(interpolation=None)
+        if nm_version:
+            if LooseVersion(nm_version) >= LooseVersion(MIN_VERSION):
+                mac_config = configparser.ConfigParser(interpolation=None)
 
-            mac_config['connection-mac-randomization'] = {}
-            mac_config['connection-mac-randomization']['wifi.cloned-mac-address'] = value
-            mac_config['connection-mac-randomization']['ethernet.cloned-mac-address'] = value
+                mac_config['connection-mac-randomization'] = {}
+                mac_config['connection-mac-randomization']['wifi.cloned-mac-address'] = value
+                mac_config['connection-mac-randomization']['ethernet.cloned-mac-address'] = value
 
-            try:
-                with open(paths.MAC_CONFIG, 'w') as config_file:
-                    mac_config.write(config_file)
+                try:
+                    with open(paths.MAC_CONFIG, 'w') as config_file:
+                        mac_config.write(config_file)
 
-                logger.info("Global NetworkManager MAC address settings set to '%s'.", value)
-                return True
-            except Exception:
-                logger.error("Could not save MAC address configuration to '%s'", paths.MAC_CONFIG)
+                    logger.info("Global NetworkManager MAC address settings set to '%s'.", value)
+                    return True
+                except Exception:
+                    logger.error("Could not save MAC address configuration to '%s'", paths.MAC_CONFIG)
+                    return False
+            else:
+                logger.error("NetworkManager v%s or greater is required to change MAC address settings. You have v%s.", MIN_VERSION, nm_version)
                 return False
         else:
-            logger.error("NetworkManager v%s or greater is required to change MAC address settings. You have v%s.", MIN_VERSION, nm_version)
+            logger.error("Could not get the version of NetworkManager in use. Aborting.")
             return False
-    else:
-        logger.error("Could not get the version of NetworkManager in use. Aborting.")
-        return False
+
+    # Requires root priveledge
+    return utils.run_as_root(main)
 
 
 def remove_global_mac_address():
-    try:
-        os.remove(paths.MAC_CONFIG)
-        logger.info("Global NetworkManager MAC address settings have been removed successfully.")
-        return True
-    except FileNotFoundError:
-        return False
-    except Exception as e:
-        logger.error("Could not remove the MAC address settings file '%s': %s" % (paths.MAC_CONFIG, e))
+    def main():
+        try:
+            os.remove(paths.MAC_CONFIG)
+            logger.info("Global NetworkManager MAC address settings have been removed successfully.")
+            return True
+        except FileNotFoundError:
+            pass
+        except Exception as e:
+            logger.error("Could not remove the MAC address settings file '%s': %s" % (paths.MAC_CONFIG, e))
+
         return False
 
+    # Requires root priveledge
+    return utils.run_as_root(main)
 
 def remove_killswitch(log=True):
-    try:
-        os.remove(paths.KILLSWITCH_DATA)
-    except FileNotFoundError:
-        pass
+    def main():
+        try:
+            os.remove(paths.KILLSWITCH_DATA)
+        except FileNotFoundError:
+            pass
 
-    try:
-        os.remove(paths.KILLSWITCH_SCRIPT)
+        try:
+            os.remove(paths.KILLSWITCH_SCRIPT)
 
-        if log:
-            logger.info("Network kill-switch disabled.")
+            if log:
+                logger.info("Network kill-switch disabled.")
 
-        return True
-    except FileNotFoundError:
+            return True
+        except FileNotFoundError:
+            pass
+        except Exception as e:
+            logger.error("Error attempting to remove kill-switch: %s" % e)
+
         return False
-    except Exception as e:
-        logger.error("Error attempting to remove kill-switch: %s" % e)
-        return False
+
+    # Requires root priveledge
+    return utils.run_as_root(main)
 
 
 def set_killswitch(log=True):
-    killswitch_script = (
-        '#!/bin/bash\n'
-        'PERSISTENCE_FILE=' + paths.KILLSWITCH_DATA + '\n\n'
-        'case $2 in'
-        '  vpn-up)\n'
-        '    nmcli -f type,device connection | awk \'$1~/^vpn$/ && $2~/[^\-][^\-]/ { print $2; }\' > "${PERSISTENCE_FILE}"\n'
-        '  ;;\n'
-        '  vpn-down)\n'
-        '    xargs -n 1 -a "${PERSISTENCE_FILE}" nmcli device disconnect\n'
-        '  ;;\n'
-        'esac\n'
-        )
-
-    try:
-        with open(paths.KILLSWITCH_SCRIPT, "w") as killswitch:
-            print(killswitch_script, file=killswitch)
-
-        utils.make_executable(paths.KILLSWITCH_SCRIPT)
-
-        if log:
-            logger.info("Network kill-switch enabled.")
-
-        return True
-    except Exception as e:
-        logger.error("Error attempting to set kill-switch: %s" % e)
-        return False
-
-
-def set_auto_connect(connection_name):
-    interfaces = get_interfaces()
-
-    if interfaces:
-        interface_string = '|'.join(interfaces)
-
-        auto_script = (
-            '#!/bin/bash\n\n'
-            'if [[ "$1" =~ ' + interface_string + ' ]] && [[ "$2" =~ up|connectivity-change ]]; then\n'
-            '  nmcli con up id "' + connection_name + '" &\n'
-            'fi\n'
+    def main():
+        killswitch_script = (
+            r'#!/bin/bash\n'
+            'PERSISTENCE_FILE=' + paths.KILLSWITCH_DATA + '\n\n'
+            'case $2 in'
+            '  vpn-up)\n'
+            '    nmcli -f type,device connection | awk \'$1~/^vpn$/ && $2~/[^\-][^\-]/ { print $2; }\' > "${PERSISTENCE_FILE}"\n'
+            '  ;;\n'
+            '  vpn-down)\n'
+            '    xargs -n 1 -a "${PERSISTENCE_FILE}" nmcli device disconnect\n'
+            '  ;;\n'
+            'esac\n'
             )
 
         try:
-            with open(paths.AUTO_CONNECT_SCRIPT, "w") as auto_connect:
-                print(auto_script, file=auto_connect)
+            with open(paths.KILLSWITCH_SCRIPT, "w") as killswitch:
+                print(killswitch_script, file=killswitch)
 
-            utils.make_executable(paths.AUTO_CONNECT_SCRIPT)
+            utils.make_executable(paths.KILLSWITCH_SCRIPT)
+
+            if log:
+                logger.info("Network kill-switch enabled.")
+
             return True
         except Exception as e:
-            logger.error("Error attempting to set auto-conect: %s" % e)
+            logger.error("Error attempting to set kill-switch: %s" % e)
             return False
-    else:
-        logger.error("No interfaces found to use with auto-connect")
+
+    # Requires root priveledge
+    return utils.run_as_root(main)
+
+
+def set_auto_connect(connection_name):
+    def main():
+        interfaces = get_interfaces()
+
+        if interfaces:
+            interface_string = '|'.join(interfaces)
+
+            auto_script = (
+                '#!/bin/bash\n\n'
+                'if [[ "$1" =~ ' + interface_string + ' ]] && [[ "$2" =~ up|connectivity-change ]]; then\n'
+                '  nmcli con up id "' + connection_name + '" &\n'
+                'fi\n'
+                )
+
+            try:
+                with open(paths.AUTO_CONNECT_SCRIPT, "w") as auto_connect:
+                    print(auto_script, file=auto_connect)
+
+                utils.make_executable(paths.AUTO_CONNECT_SCRIPT)
+                return True
+            except Exception as e:
+                logger.error("Error attempting to set auto-conect: %s" % e)
+        else:
+            logger.error("No interfaces found to use with auto-connect")
+
         return False
+
+    # Requires root priveledge
+    return utils.run_as_root(main)
 
 
 def remove_autoconnect():
-    try:
-        os.remove(paths.AUTO_CONNECT_SCRIPT)
-        logger.info("Auto-connect disabled.")
-        return True
-    except FileNotFoundError:
+    def main():
+        try:
+            os.remove(paths.AUTO_CONNECT_SCRIPT)
+            logger.info("Auto-connect disabled.")
+            return True
+        except FileNotFoundError:
+            pass
+        except Exception as e:
+            logger.error("Error attempting to remove auto-connect: %s" % e)
+
         return False
-    except Exception as e:
-        logger.error("Error attempting to remove auto-connect: %s" % e)
-        return False
+
+    # Requires root priveledge
+    return utils.run_as_root(main)
 
 
 def import_connection(file_path, connection_name, username=None, password=None, dns_list=None, ipv6=False):
-    # Create a temporary config with the connection name, so we can import the config with its prettified name
-    temp_path = os.path.join(os.path.dirname(file_path), connection_name + '.ovpn')
-    shutil.copy(file_path, temp_path)
+    def nmcli_import():
+        try:
+            # Create a temporary config with the connection name, so we can import the config with its prettified name
+            temp_path = os.path.join(os.path.dirname(file_path), connection_name + '.ovpn')
+            shutil.copy(file_path, temp_path)
+        except Exception as ex:
+            logger.error("Failed to copy configuration file: %s" % ex)
+            return False
 
-    output = subprocess.run(['nmcli', 'connection', 'import', 'type', 'openvpn', 'file', temp_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    os.remove(temp_path) # Remove the temporary renamed config we created
-    output.check_returncode()
+        try:
+            output = subprocess.run(['nmcli', 'connection', 'import', 'type', 'openvpn', 'file', temp_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            os.remove(temp_path) # Remove the temporary renamed config we created
+            output.check_returncode()
+        except subprocess.CalledProcessError:
+            error = utils.format_std_string(output.stderr)
+            logger.error("Could not add options to the connection: %s" % error)
+        except Exception as ex:
+            logger.error(ex)
+
+        return False
+
+    if not utils.run_as_root(nmcli_import):
+        return False
 
     # Populate all connection options into connection_options
     connection_options = {
@@ -279,7 +325,7 @@ def import_connection(file_path, connection_name, username=None, password=None, 
 
     except subprocess.CalledProcessError:
         error = utils.format_std_string(output.stderr)
-        logger.error(error)
+        logger.error("Could not add options to the connection: %s" % error)
         return False
 
     except Exception as ex:
