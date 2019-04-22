@@ -237,7 +237,7 @@ def set_auto_connect(connection_name):
             auto_script = (
                 '#!/bin/bash\n\n'
                 'if [[ "$1" =~ ' + interface_string + ' ]] && [[ "$2" =~ up|connectivity-change ]]; then\n'
-                '  nmcli con up id "' + connection_name + '"\n'
+                '  nmcli con up id "' + connection_name + '" &\n'
                 'fi\n'
                 )
 
