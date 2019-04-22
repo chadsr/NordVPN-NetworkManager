@@ -11,8 +11,8 @@ logger = logging.getLogger(__name__)
 
 
 class LoggingFormatter(logging.Formatter):
-    info_format = "[%(levelname)s]: %(message)s"
-    error_format = "[%(levelname)s] [%(name)s.%(funcName)s:%(lineno)d]: %(message)s"
+    info_format = "[%(levelname)s] %(message)s"
+    error_format = "[%(levelname)s] [%(name)s.%(funcName)s:%(lineno)d] %(message)s"
 
     def __init__(self):
         super().__init__(fmt=self.info_format, datefmt=None, style='%')
@@ -45,8 +45,8 @@ def get_pypi_package_version(package_name):
             if 'version' in package['info']:
                 return package['info']['version']
 
-    except Exception as ex:
-        logger.error("Could not check PyPi for latest version.")
+    except Exception:
+        logger.warning("Could not check for latest version.")
 
     return False
 
@@ -64,6 +64,15 @@ def input_yes_no(question):
             return False
 
 
+# Returns the process back to root user to run a given function, then back to normal user
+def run_as_root(method):
+    os.seteuid(0) # Be root
+    result = method()
+    os.seteuid(int(os.getenv("SUDO_UID")))
+
+    return result
+
+
 # Since we're running with root priveledges, this will return the current username
 def get_current_user():
     username = os.getenv("SUDO_USER")
@@ -73,32 +82,16 @@ def get_current_user():
     return username
 
 
-# Change the owner and group of a given path to the current user
-def chown_path_to_user(path):
-    if os.path.exists(path):
-        uid = int(os.getenv('SUDO_UID'))
-        gid = int(os.getenv('SUDO_GID'))
-        os.chown(path, uid, gid)
-        return True
-    else:
-        return False
-
-
 def format_std_string(input_string):
     return input_string.decode('utf-8').replace('\n', ' ')
 
 
-def extract_zip(input_stream, output_path, chown_to_user=True):
+def extract_zip(input_stream, output_path):
     try:
         zipfile = ZipFile(BytesIO(input_stream))
         zipfile.extractall(output_path)
         file_list = zipfile.namelist()
 
-        if chown_to_user:
-            # chown the extracted files to the current user, instead of root
-            for file_name in file_list:
-                file_path = os.path.join(output_path, file_name)
-                chown_path_to_user(file_path)
         return True
 
     except Exception as ex:
