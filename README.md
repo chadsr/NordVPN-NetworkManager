@@ -22,7 +22,7 @@ If you encounter a **problem** or have a **feature request**, please make an iss
 - **Always up-to-date:**
   The tool can be configured to always check if it is using the latest NordVPN OpenVPN configuration files.
 - **Server Benchmarking:**
-  Servers are benchmarked according to their latency and server load, to determine the "best" options available.
+  Servers are benchmarked according to their latency and server load, to determine the optimal options available.
 - **Auto-Connect:**
   A server of your choice can be set to automatically activate whenever you connect to the Internet.
 - **DNS Tunnelling:**
@@ -109,9 +109,14 @@ commands:
 sudo nordnm list --categories --countries
 ```
 
-- **Synchronise, update configuration files, activate the kill-switch and auto-connect to a "normal" UDP server in the US:**
+- **Synchronise current optimal servers, activate the kill-switch and auto-connect to a "normal" UDP server in the US:**
 ```
-sudo nordnm sync -uka us normal udp
+sudo nordnm sync -ka us normal udp
+```
+
+- **Same as above, but don't check for latest configuration files:**
+```
+sudo nordnm sync -nka us normal udp
 ```
 
 - **View metrics of the synchronised servers:**
