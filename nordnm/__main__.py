@@ -20,8 +20,10 @@ def main():
         print("%s must be run as root (unfortunately). Exiting." % __package__)
         sys.exit(1)
 
-    # We are running with root priveledges, which is kinda scary, so lets switch to the original user until we actually need root
-    os.seteuid(int(os.getenv("SUDO_UID")))
+    # We are running with root priveledges, which is kinda scary, so lets switch to the original user until we actually need root (if there is one)
+    user_uid = os.getenv("SUDO_UID")
+    if user_uid:
+        os.seteuid(int(user_uid))
 
     # Add our custom logging formatter function to handle all logging output
     formatter = utils.LoggingFormatter()
