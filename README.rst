@@ -26,7 +26,7 @@ make an issue report and it will be looked into ASAP.
 -  **Always up-to-date:** The tool can be configured to always check if
    it is using the latest NordVPN OpenVPN configuration files.
 -  **Server Benchmarking:** Servers are benchmarked according to their
-   latency and server load, to determine the “best” options available.
+   latency and server load, to determine the optimal options available.
 -  **Auto-Connect:** A server of your choice can be set to automatically
    activate whenever you connect to the Internet.
 -  **DNS Tunnelling:** DNS requests are forced to go through the VPN
@@ -50,25 +50,25 @@ option is to use `yaourt <https://archlinux.fr/yaourt-en>`__:
 
 ::
 
-    yaourt -S nordnm
+   yaourt -S nordnm
 
 1.2 Debian/Ubuntu
 ~~~~~~~~~~~~~~~~~
 
 ::
 
-    wget -qO - https://bintray.com/user/downloadSubjectPublicKey?username=bintray | sudo apt-key add -
-    sudo apt-add-repository "https://dl.bintray.com/chadsr/nordnm-deb main"
-    sudo apt update && sudo apt install nordnm
+   wget -qO - https://bintray.com/user/downloadSubjectPublicKey?username=bintray | sudo apt-key add -
+   sudo apt-add-repository "https://dl.bintray.com/chadsr/nordnm-deb main"
+   sudo apt update && sudo apt install nordnm
 
 1.3 RPM Based Distributions (Fedora, CentOS, etc)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ::
 
-    wget https://bintray.com/chadsr/nordnm-rpm/rpm -O bintray-chadsr-nordnm-rpm.repo
-    sudo mv bintray-chadsr-nordnm-rpm.repo /etc/yum.repos.d/
-    sudo yum install nordnm
+   wget https://bintray.com/chadsr/nordnm-rpm/rpm -O bintray-chadsr-nordnm-rpm.repo
+   sudo mv bintray-chadsr-nordnm-rpm.repo /etc/yum.repos.d/
+   sudo yum install nordnm
 
 1.4 Python PIP
 ~~~~~~~~~~~~~~
@@ -78,51 +78,55 @@ installed manually. It is therefore recommended to install via your
 system package manager. If your system is not yet listed above, leave an
 issue and it can be added ASAP.
 
-*If your default Python version is 2.x, you will need to use pip3 below*
+*If your default Python version is 2.x (check using ``python -V``), you
+will need to use pip3 below*
 
 System Install
 ^^^^^^^^^^^^^^
 
 ::
 
-    sudo -H pip install nordnm
+   sudo -H pip install nordnm
 
 User Install
 ^^^^^^^^^^^^
 
 ::
 
-    pip install --user nordnm
+   pip install --user nordnm
 
 2. Usage
 --------
 
 ::
 
-    usage: nordnm [-h] [-k] [-a [COUNTRY_CODE] [VPN_CATEGORY] [PROTOCOL]]  ...
+   usage: nordnm [-h] [-v] [-k] [-a [COUNTRY_CODE] [VPN_CATEGORY] [PROTOCOL]]
+                 ...
 
-    optional arguments:
-      -h, --help            show this help message and exit
-      -k, --kill-switch     Sets a network kill-switch, to disable the active
-                            network interface when an active VPN connection
-                            disconnects.
-      -a [COUNTRY_CODE] [VPN_CATEGORY] [PROTOCOL], --auto-connect [COUNTRY_CODE] [VPN_CATEGORY] [PROTOCOL]
-                            Configure NetworkManager to auto-connect to the chosen
-                            server type. Takes country code, category and
-                            protocol.
+   optional arguments:
+     -h, --help            show this help message and exit
+     -v, --version         Display the package version.
+     -k, --kill-switch     Sets a network kill-switch, to disable the active
+                           network interface when an active VPN connection
+                           disconnects.
+     -a [COUNTRY_CODE] [VPN_CATEGORY] [PROTOCOL], --auto-connect [COUNTRY_CODE] [VPN_CATEGORY] [PROTOCOL]
+                           Configure NetworkManager to auto-connect to the chosen
+                           server type. Takes country code, category and
+                           protocol.
 
-    commands:
-                            Each command has its own help page, which can be
-                            accessed via nordnm <COMMAND> --help
-        remove (r)          Remove either active connections, auto-connect, kill-
-                            switch, data or all.
-        update (u)          Update a specified setting.
-        list (l)            List the specified information.
-        sync (s)            Synchronise the optimal servers (based on load and
-                            latency) to NetworkManager.
-        mac (m)             Global NetworkManager MAC address preferences. This
-                            command will affect ALL NetworkManager connections
-                            permanently.
+   commands:
+                           Each command has its own help page, which can be
+                           accessed via nordnm <COMMAND> --help
+       remove (r)          Remove active connections, auto-connect, kill-switch,
+                           data, mac settings or all.
+       update (u)          Update a specified setting.
+       list (l)            List the specified information.
+       sync (s)            Synchronise the optimal servers (based on load and
+                           latency) to NetworkManager.
+       import (i)          Import an OpenVPN config file to NetworkManager.
+       mac (m)             Global NetworkManager MAC address preferences. This
+                           command will affect ALL NetworkManager connections
+                           permanently.
 
 **Note:** Each command has its own help section, which can be acccessed
 via ``nordnm <COMMAND> --help``.
@@ -134,57 +138,70 @@ via ``nordnm <COMMAND> --help``.
 
 ::
 
-    sudo nordnm list --categories --countries
+   sudo nordnm list --categories --countries
 
--  **Synchronise, update configuration files, activate the kill-switch
-   and auto-connect to a “normal” UDP server in the US:**
+-  **Synchronise current optimal servers, activate the kill-switch and
+   auto-connect to a “normal” UDP server in the US:**
 
 ::
 
-    sudo nordnm sync -uka us normal udp
+   sudo nordnm sync -ka us normal udp
+
+-  **Same as above, but don’t check for latest configuration files:**
+
+::
+
+   sudo nordnm sync -nka us normal udp
 
 -  **View metrics of the synchronised servers:**
 
 ::
 
-    sudo nordnm list --active-servers
+   sudo nordnm list --active-servers
 
 -  **Set your MAC address to be randomised each time you connect to a
    network:**
 
 ::
 
-    sudo nordnm mac --random
+   sudo nordnm mac --random
 
 -  **Change the auto-connect to another synchronised server:**
 
 ::
 
-    sudo nordnm -a ru p2p udp
+   sudo nordnm -a ru p2p udp
+
+-  **Import a specific OpenVPN configuration file while still using the
+   killswitch and autoconnect features (Experimental):**
+
+::
+
+   sudo nordnm import /home/foo/config.ovpn -ak -u username -p password
 
 -  **Update the settings:**
 
 ::
 
-    sudo nordnm update --settings
+   sudo nordnm update --settings
 
 -  **Update the user credentials:**
 
 ::
 
-    sudo nordnm update --credentials
+   sudo nordnm update --credentials
 
 -  **Disable the network kill-switch:**
 
 ::
 
-    sudo nordnm remove --kill-switch
+   sudo nordnm remove --kill-switch
 
 -  **Remove all settings and files:**
 
 ::
 
-    sudo nordnm remove --all
+   sudo nordnm remove --all
 
 .. |Build Status| image:: https://travis-ci.org/Chadsr/NordVPN-NetworkManager.svg?branch=master
    :target: https://travis-ci.org/Chadsr/NordVPN-NetworkManager
