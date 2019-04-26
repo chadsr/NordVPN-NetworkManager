@@ -36,9 +36,9 @@ If you encounter a **problem** or have a **feature request**, please make an iss
 
 ## 1. Installation
 ### 1.1 Arch (AUR)
-Use your preferred method of installing packages via AUR. Any easy option is to use [yaourt](https://archlinux.fr/yaourt-en):
+Use your preferred method of installing packages via AUR. An easy option is to use [yay](https://github.com/Jguer/yay):
 ```
-yaourt -S nordnm
+yay -S nordnm
 ```
 
 ### 1.2 Debian/Ubuntu
