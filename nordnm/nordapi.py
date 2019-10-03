@@ -21,7 +21,7 @@ VPN_CATEGORIES = {
 def get_server_list(sort_by_load=False, sort_by_country=False):
     try:
         resp = requests.get(API_ADDR + '/server', timeout=TIMEOUT)
-        if resp.status_code == requests.codes.ok:
+        if resp.ok:
             server_list = resp.json()
 
             if sort_by_load:
