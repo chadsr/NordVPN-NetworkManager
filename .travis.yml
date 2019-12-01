@@ -3,32 +3,31 @@ sudo: required
 
 jobs:
   include:
+    - stage: lint
+      python:
+      - '3.5'
+      install:
+      - pip install flake8
+      script:
+      - flake8 --ignore=E121,E123,E126,E226,E24,E704,E501 .
     - stage: testing
-      python: '3.5'
-      install: true
+      python: 
+      - '3.5'
+      - '3.6'
+      - '3.7'
+      - 'nightly'
+      install:
+      - pip install -r requirements.txt
+      - pip install bandit
       script:
+      - bandit -r ./
       - python setup.py install
-    -
-      python: '3.6'
-      install: true
-      script:
-      - python setup.py install
-    -
-      python: '3.7-dev'
-      install: true
-      script:
-      - python setup.py install
-    -
-      python: nightly
-      install: true
-      script:
-      - python setup.py install
-
     - stage: deploy_pypi
       python: '3.5'
       install: true
       script:
       - python setup.py install
+      - nordnm --help
 
       deploy:
         provider: pypi
