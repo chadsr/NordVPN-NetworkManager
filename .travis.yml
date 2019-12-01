@@ -22,12 +22,12 @@ jobs:
       script:
       - bandit -r --skip B322,B301,B404,B602,B603,B403,B607 ./nordnm
       - python setup.py install
+      - nordnm  --help
     - stage: deploy_pypi
       python: '3.5'
       install: true
       script:
       - python setup.py install
-      - nordnm --help
 
       deploy:
         provider: pypi
