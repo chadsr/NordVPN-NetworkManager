@@ -1,4 +1,3 @@
-from nordnm import utils
 from nordnm import nordapi
 
 import configparser
@@ -14,7 +13,8 @@ class CredentialsHandler(object):
         self.logger = logging.getLogger(__name__)
 
         self.path = path
-        self.config = configparser.ConfigParser(allow_no_value=True, interpolation=None)
+        self.config = configparser.ConfigParser(allow_no_value=True,
+                                                interpolation=None)
 
         if not self.load():
             self.logger.warning("No credentials found!")
@@ -67,7 +67,9 @@ class CredentialsHandler(object):
                 if nordapi.verify_user_credentials(username, password):
                     valid = True
                 else:
-                    self.logger.error("The provided credentials could not be verified. Try entering them again and checking your Internet connectivity.")
+                    self.logger.error(
+                        "The provided credentials could not be verified. Try entering them again and checking your Internet connectivity."
+                    )
 
         if not self.config.has_section(self.SECTION_TITLE):
             self.config.add_section(self.SECTION_TITLE)

@@ -32,7 +32,7 @@ def get_server_list(sort_by_load=False, sort_by_country=False):
                 return server_list
         else:
             return None
-    except Exception as ex:
+    except Exception:
         return None
 
 
@@ -67,12 +67,13 @@ def get_user_token(email):
     """
 
     try:
-        resp = requests.get(API_ADDR + '/token/token/' + email, timeout=TIMEOUT)
+        resp = requests.get(API_ADDR + '/token/token/' + email,
+                            timeout=TIMEOUT)
         if resp.status_code == requests.codes.ok:
             return json.loads(resp.text)
         else:
             return None
-    except Exception as ex:
+    except Exception:
         return None
 
 
@@ -82,15 +83,18 @@ def validate_user_token(token_json, password):
     key = token_json['key']
 
     password_hash = hashlib.sha512(salt.encode() + password.encode())
-    final_hash = hashlib.sha512(password_hash.hexdigest().encode() + key.encode())
+    final_hash = hashlib.sha512(password_hash.hexdigest().encode() +
+                                key.encode())
 
     try:
-        resp = requests.get(API_ADDR + '/token/verify/' + token + '/' + final_hash.hexdigest(), timeout=TIMEOUT)
+        resp = requests.get(API_ADDR + '/token/verify/' + token + '/' +
+                            final_hash.hexdigest(),
+                            timeout=TIMEOUT)
         if resp.status_code == requests.codes.ok:
             return True
         else:
             return False
-    except Exception as ex:
+    except Exception:
         return None
 
 
