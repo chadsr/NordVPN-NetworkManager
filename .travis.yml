@@ -9,7 +9,7 @@ jobs:
       install:
       - pip install flake8
       script:
-      - flake8 --ignore=E121,E123,E126,E226,E24,E704,E501 .
+      - flake8 --ignore=E121,E123,E126,E226,E24,E704,E501 ./nordnm
     - stage: testing
       python: 
       - '3.5'
@@ -20,7 +20,7 @@ jobs:
       - pip install -r requirements.txt
       - pip install bandit
       script:
-      - bandit -r ./
+      - bandit -r --skip B322,B301,B404,B602,B603,B403,B607 ./nordnm
       - python setup.py install
     - stage: deploy_pypi
       python: '3.5'
