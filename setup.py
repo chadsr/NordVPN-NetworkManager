@@ -7,7 +7,7 @@ PYTHON_VERSION = 3
 PYTHON_SUBVERSION = 5
 
 if sys.version_info < (PYTHON_VERSION, PYTHON_SUBVERSION):
-    sys.exit("Error: %s requires Python %i.%i or greater to be installed. Please use a pip corresponding to this version or greater." % (__package__, PYTHON_VERSION, PYTHON_SUBVERSION))
+    sys.exit("Error: %s requires Python %i.%i or greater to be installed, found v%i.%i.%i. Please use a pip corresponding to this version or greater." % (__package__, PYTHON_VERSION, PYTHON_SUBVERSION, sys.version_info.major, sys.version_info.minor, sys.version_info.micro))
 
 
 def get_readme():
