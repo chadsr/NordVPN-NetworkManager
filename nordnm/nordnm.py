@@ -353,15 +353,19 @@ class NordNM(object):
             return None
 
     def delete_configs(self):
-        for f in os.listdir(paths.OVPN_CONFIGS):
-            file_path = os.path.join(paths.OVPN_CONFIGS, f)
-            try:
-                if os.path.isfile(file_path):
-                    os.unlink(file_path)
-                elif os.path.isdir(file_path):
-                    shutil.rmtree(file_path)
-            except Exception as e:
-                self.logger.error("Could not delete config file: %s" % e)
+        def main():
+            for f in os.listdir(paths.OVPN_CONFIGS):
+                file_path = os.path.join(paths.OVPN_CONFIGS, f)
+                try:
+                    if os.path.isfile(file_path):
+                        os.unlink(file_path)
+                    elif os.path.isdir(file_path):
+                        shutil.rmtree(file_path)
+                except Exception as e:
+                    self.logger.error("Could not delete config file: %s" % e)
+
+        # Requires root privilege
+        return utils.run_as_root(main)
 
     def get_configs(self):
         self.logger.info("Downloading latest NordVPN OpenVPN configuration files to '%s'." % paths.OVPN_CONFIGS)

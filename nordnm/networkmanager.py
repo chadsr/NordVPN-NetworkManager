@@ -32,7 +32,7 @@ def restart():
 
         return False
 
-    # Requires root priveledge
+    # Requires root privilege
     return utils.run_as_root(main)
 
 
@@ -58,22 +58,26 @@ def get_version():
 
 
 def reload_connections():
-    try:
-        output = subprocess.run(['nmcli', 'connection', 'reload'],
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE)
-        output.check_returncode()
+    def main():
+        try:
+            output = subprocess.run(['nmcli', 'connection', 'reload'],
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
+            output.check_returncode()
 
-        return True
+            return True
 
-    except subprocess.CalledProcessError:
-        error = utils.format_std_string(output.stderr)
-        logger.error(error)
-        return False
+        except subprocess.CalledProcessError:
+            error = utils.format_std_string(output.stderr)
+            logger.error(error)
+            return False
 
-    except Exception as ex:
-        logger.error(ex)
-        return False
+        except Exception as ex:
+            logger.error(ex)
+            return False
+
+    # Requires root privilege
+    return utils.run_as_root(main)
 
 
 def get_vpn_connections():
@@ -176,7 +180,7 @@ def set_global_mac_address(value):
             )
             return False
 
-    # Requires root priveledge
+    # Requires root privilege
     return utils.run_as_root(main)
 
 
@@ -197,7 +201,7 @@ def remove_global_mac_address():
 
         return False
 
-    # Requires root priveledge
+    # Requires root privilege
     return utils.run_as_root(main)
 
 
@@ -222,7 +226,7 @@ def remove_killswitch(log=True):
 
         return False
 
-    # Requires root priveledge
+    # Requires root privilege
     return utils.run_as_root(main)
 
 
@@ -254,7 +258,7 @@ def set_killswitch(log=True):
             logger.error("Error attempting to set kill-switch: %s" % e)
             return False
 
-    # Requires root priveledge
+    # Requires root privilege
     return utils.run_as_root(main)
 
 
@@ -285,7 +289,7 @@ def set_auto_connect(connection_name):
 
         return False
 
-    # Requires root priveledge
+    # Requires root privilege
     return utils.run_as_root(main)
 
 
@@ -302,7 +306,7 @@ def remove_autoconnect():
 
         return False
 
-    # Requires root priveledge
+    # Requires root privilege
     return utils.run_as_root(main)
 
 
@@ -332,6 +336,7 @@ def import_connection(file_path,
             os.remove(
                 temp_path)  # Remove the temporary renamed config we created
             output.check_returncode()
+            return True
         except subprocess.CalledProcessError:
             error = utils.format_std_string(output.stderr)
             logger.error("Could not add options to the connection: %s" % error)
@@ -358,27 +363,31 @@ def import_connection(file_path,
         connection_options['+ipv4.dns'] = [dns_string]
         connection_options['+ipv4.ignore-auto-dns'] = ['true']
 
-    try:
-        for location, values in connection_options.items():
-            for value in values:
-                output = subprocess.run([
-                    'nmcli', 'connection', 'modify', connection_name, location,
-                    value
-                ],
-                                        stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE)
-                output.check_returncode()
+    def nmcli_modify():
+        try:
+            for location, values in connection_options.items():
+                for value in values:
+                    output = subprocess.run([
+                        'nmcli', 'connection', 'modify',
+                        connection_name, location, value
+                    ],
+                                            stdout=subprocess.PIPE,
+                                            stderr=subprocess.PIPE)
+                    output.check_returncode()
 
-        return True
+            return True
 
-    except subprocess.CalledProcessError:
-        error = utils.format_std_string(output.stderr)
-        logger.error("Could not add options to the connection: %s" % error)
-        return False
+        except subprocess.CalledProcessError:
+            error = utils.format_std_string(output.stderr)
+            logger.error("Could not add options to the connection: %s" % error)
+            return False
 
-    except Exception as ex:
-        logger.error(ex)
-        return False
+        except Exception as ex:
+            logger.error(ex)
+            return False
+
+    # Requires root privilege
+    return utils.run_as_root(nmcli_modify)
 
 
 def enable_connection(connection_name):
