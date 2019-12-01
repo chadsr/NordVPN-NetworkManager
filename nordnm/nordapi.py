@@ -5,6 +5,9 @@ API_ADDR = 'https://api.nordvpn.com'
 OVPN_ADDR = 'https://downloads.nordcdn.com/configs/archives/servers/ovpn.zip'
 TIMEOUT = 5
 
+STATUS_OK = 200
+STATUS_MOVED_PERM = 301
+
 # Mapping of NordVPN category names to their short internal names
 VPN_CATEGORIES = {
     'Standard VPN servers': 'normal',
@@ -19,7 +22,7 @@ VPN_CATEGORIES = {
 def get_server_list(sort_by_load=False, sort_by_country=False):
     try:
         resp = requests.get(API_ADDR + '/server', timeout=TIMEOUT)
-        if resp.status_code == requests.codes.ok:
+        if resp.status_code == STATUS_OK:
             server_list = resp.json()
 
             if sort_by_load:
@@ -39,16 +42,16 @@ def get_configs(etag=None):
         head = requests.head(OVPN_ADDR, timeout=TIMEOUT)
 
         # Follow the redirect if there is one
-        if head.status_code == requests.codes.moved:
+        if head.status_code == STATUS_MOVED_PERM:
             redirect_url = head.headers['Location']
             head = requests.head(redirect_url, timeout=TIMEOUT)
 
-        if head.status_code == requests.codes.ok:
+        if head.status_code == STATUS_OK:
             header_etag = head.headers['etag']
 
             if header_etag != etag:
                 resp = requests.get(OVPN_ADDR, timeout=TIMEOUT)
-                if resp.status_code == requests.codes.ok:
+                if resp.status_code == STATUS_OK:
                     return (resp.content, header_etag)
             else:
                 return (None, None)
@@ -63,21 +66,23 @@ def get_user_token(email, password):
     """
     Returns
     {
-      "user_id": 1234567,
-      "token": "some_token",
-      "expires_at": "date",
-      "updated_at": "date",
-      "created_at": "date",
-      "id": 1234567890,
-      "renew_token": "some_renew_token"
+        "user_id": 1234567,
+        "token": "some_token",
+        "expires_at": "date",
+        "updated_at": "date",
+        "created_at": "date",
+        "id": 1234567890,
+        "renew_token": "some_renew_token"
     }
     """
 
     json_data = {'username': email, 'password': password}
 
     try:
-        resp = requests.post(API_ADDR + '/v1/users/tokens', json=json_data, timeout=TIMEOUT)
-        if resp:
+        resp = requests.post(API_ADDR + '/v1/users/tokens',
+                             json=json_data,
+                             timeout=TIMEOUT)
+        if resp.status_code == STATUS_OK:
             return True
         else:
             return None
