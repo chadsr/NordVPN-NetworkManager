@@ -248,11 +248,11 @@ class NordNM(object):
                 version_string = version_string + " (Latest)"
 
         print("     _   _               _ _   _ ___  ___\n"
-            "    | \ | |             | | \ | ||  \/  |\n"
-            "    |  \| | ___  _ __ __| |  \| || .  . |\n"
-            "    | . ` |/ _ \| '__/ _` | . ` || |\/| |\n"
-            "    | |\  | (_) | | | (_| | |\  || |  | |\n"
-            "    \_| \_/\___/|_|  \__,_\_| \_/\_|  |_/   v%s\n" % version_string)
+              "    | \\ | |             | | \\ | ||  \\/  |\n"
+              "    |  \\| | ___  _ __ __| |  \\| || .  . |\n"
+              "    | . ` |/ _ \\| '__/ _` | . ` || |\\/| |\n"
+              "    | |\\  | (_) | | | (_| | |\\  || |  | |\n"
+              "    \\_| \\_/\\___/|_|  \\__,_\\_| \\_/\\_|  |_/   v%s\n" % version_string)
 
     def print_categories(self):
         format_string = "| %-10s | %-20s |"
@@ -345,10 +345,10 @@ class NordNM(object):
 
     def get_config_info(self):
         if os.path.exists(paths.CONFIG_INFO):
-                with open(paths.CONFIG_INFO, 'r') as f:
-                    info = f.read().replace('\n', '')
+            with open(paths.CONFIG_INFO, 'r') as f:
+                info = f.read().replace('\n', '')
 
-                return info
+            return info
         else:
             return None
 
@@ -450,7 +450,6 @@ class NordNM(object):
         self.logger.info("Data directory '%s' removed successfully!" % paths.ROOT)
         return True
 
-
     def create_directories(self):
         if not os.path.exists(paths.ROOT):
             os.mkdir(paths.ROOT)
@@ -473,7 +472,7 @@ class NordNM(object):
 
         return ovpn_path
 
-    def enable_auto_connect(self, country_code: str, category: str='normal', protocol: str='tcp'):
+    def enable_auto_connect(self, country_code: str, category: str = 'normal', protocol: str = 'tcp'):
         enabled = False
         selected_parameters = (country_code.lower(), category.lower(), protocol.lower())
 

@@ -24,26 +24,40 @@ class SettingsHandler(object):
     def save_new_settings(self):
         self.logger.info("Prompting for new settings.\n")
 
-        self.settings = configparser.ConfigParser(allow_no_value=True, interpolation=None)
+        self.settings = configparser.ConfigParser(allow_no_value=True,
+                                                  interpolation=None)
 
         # Prompt for which countries to synchronise
         # First offer the whitelist, if the user chooses to skip the whitelist, offer the blacklist
         blacklist = ''
-        whitelist = input("If you wish to synchronise only specific countries, enter their country codes separated by spaces. (Press enter to skip): ")
+        whitelist = input(
+            "If you wish to synchronise only specific countries, enter their country codes separated by spaces. (Press enter to skip): "
+        )
         if not whitelist:
-            blacklist = input("If you wish to blacklist specific countries, enter their country codes separated by spaces. (Press enter to skip): ")
+            blacklist = input(
+                "If you wish to blacklist specific countries, enter their country codes separated by spaces. (Press enter to skip): "
+            )
 
         # Populate the Countries section with out input data
         self.settings.add_section('Countries')
-        self.settings.set('Countries', '# simply write country codes separated by spaces e.g. country-blacklist = GB US')
-        self.settings.set('Countries', 'country-blacklist', blacklist.lower().strip())
-        self.settings.set('Countries', '\n# same as above. If this is non-empty, the blacklist is ignored')
-        self.settings.set('Countries', 'country-whitelist', whitelist.lower().strip())
+        self.settings.set(
+            'Countries',
+            '# simply write country codes separated by spaces e.g. country-blacklist = GB US'
+        )
+        self.settings.set('Countries', 'country-blacklist',
+                          blacklist.lower().strip())
+        self.settings.set(
+            'Countries',
+            '\n# same as above. If this is non-empty, the blacklist is ignored'
+        )
+        self.settings.set('Countries', 'country-whitelist',
+                          whitelist.lower().strip())
 
         # Prompt for which categories to enable
         self.settings.add_section('Categories')
         for category in sorted(nordapi.VPN_CATEGORIES.keys()):
-            answer = str(utils.input_yes_no("Enable category '%s'?" % category)).lower()
+            answer = str(utils.input_yes_no("Enable category '%s'?" %
+                                            category)).lower()
             self.settings.set('Categories', category.replace(' ', '-'), answer)
 
         self.settings.add_section('Protocols')
@@ -53,12 +67,18 @@ class SettingsHandler(object):
         self.settings.set('Protocols', 'udp', answer)
 
         self.settings.add_section('DNS')
-        print("\nWARNING: Setting custom DNS servers can compromise your privacy if you don't know what you're doing.")
-        custom_dns = input("Input custom DNS servers you would like to use, separated by spaces. (Press enter to skip): ")
+        print(
+            "\nWARNING: Setting custom DNS servers can compromise your privacy if you don't know what you're doing."
+        )
+        custom_dns = input(
+            "Input custom DNS servers you would like to use, separated by spaces. (Press enter to skip): "
+        )
         self.settings.set('DNS', 'custom-dns-servers', custom_dns.strip())
 
         self.settings.add_section('Benchmarking')
-        ping_attempts = input("Input how many ping attempts to make when benchmarking servers (Default: %i attempts): " % self.DEFAULT_PING_ATTEMPTS)
+        ping_attempts = input(
+            "Input how many ping attempts to make when benchmarking servers (Default: %i attempts): "
+            % self.DEFAULT_PING_ATTEMPTS)
         if not ping_attempts:
             ping_attempts = str(self.DEFAULT_PING_ATTEMPTS)
         self.settings.set('Benchmarking', 'ping-attempts', ping_attempts)
@@ -79,7 +99,8 @@ class SettingsHandler(object):
     def load(self):
         if os.path.isfile(self.path):
             try:
-                self.settings = configparser.ConfigParser(allow_no_value=True, interpolation=None)
+                self.settings = configparser.ConfigParser(allow_no_value=True,
+                                                          interpolation=None)
                 self.settings.read(self.path)
                 return True
             except Exception as ex:
@@ -110,7 +131,9 @@ class SettingsHandler(object):
                 if self.settings.getboolean('Categories', category_name):
                     categories.append(category)
             except configparser.NoOptionError:
-                self.logger.error("VPN category '%s' not found in '%s'. Update settings and try again." % (category_name, self.path))
+                self.logger.error(
+                    "VPN category '%s' not found in '%s'. Update settings and try again."
+                    % (category_name, self.path))
                 self.save_new_settings()
                 sys.exit(0)
 
@@ -129,19 +152,24 @@ class SettingsHandler(object):
 
     def get_ping_attempts(self):
         try:
-            ping_attempts = int(self.settings.get('Benchmarking', 'ping-attempts'))
+            ping_attempts = int(
+                self.settings.get('Benchmarking', 'ping-attempts'))
             if ping_attempts > 0:  # If ping-attempts is zero or smaller, revert to default
                 return ping_attempts
         except Exception:
-            pass
-
-        self.logger.warning("Invalid ping-attempts value. Using default value of %d.", self.DEFAULT_PING_ATTEMPTS)
-        self.settings.set('Benchmarking', 'ping-attempts', str(self.DEFAULT_PING_ATTEMPTS))  # Lets set the default, so we only get this warning once
-        return self.DEFAULT_PING_ATTEMPTS
+            self.logger.warning(
+                "Invalid ping-attempts value. Using default value of %d.",
+                self.DEFAULT_PING_ATTEMPTS)
+            self.settings.set(
+                'Benchmarking', 'ping-attempts',
+                str(self.DEFAULT_PING_ATTEMPTS)
+            )  # Lets set the default, so we only get this warning once
+            return self.DEFAULT_PING_ATTEMPTS
 
     def get_custom_dns_servers(self) -> list:
         try:
-            custom_dns_list = self.settings.get('DNS', 'custom-dns-servers').split(' ')
+            custom_dns_list = self.settings.get(
+                'DNS', 'custom-dns-servers').split(' ')
 
             for dns in custom_dns_list:
                 try:
@@ -152,5 +180,6 @@ class SettingsHandler(object):
 
             return custom_dns_list
 
-        except (configparser.NoSectionError, configparser.NoOptionError):  # The setting didn't exist, so ignore it
+        except (configparser.NoSectionError, configparser.NoOptionError
+                ):  # The setting didn't exist, so ignore it
             return []
