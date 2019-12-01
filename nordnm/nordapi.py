@@ -1,7 +1,5 @@
 import requests
-import json
 from operator import itemgetter
-import hashlib
 
 API_ADDR = 'https://api.nordvpn.com'
 OVPN_ADDR = 'https://downloads.nordcdn.com/configs/archives/servers/ovpn.zip'
@@ -32,7 +30,7 @@ def get_server_list(sort_by_load=False, sort_by_country=False):
                 return server_list
         else:
             return None
-    except Exception as ex:
+    except Exception:
         return None
 
 
@@ -83,7 +81,7 @@ def get_user_token(email, password):
             return True
         else:
             return None
-    except Exception as ex:
+    except Exception:
         return None
 
 

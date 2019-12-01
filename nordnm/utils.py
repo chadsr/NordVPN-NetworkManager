@@ -37,7 +37,9 @@ class LoggingFormatter(logging.Formatter):
 
 def get_pypi_package_version(package_name):
     try:
-        resp = requests.get("https://pypi.python.org/pypi/" + package_name + "/json", timeout=0.1)
+        resp = requests.get("https://pypi.python.org/pypi/" + package_name +
+                            "/json",
+                            timeout=0.1)
 
         if resp.status_code == requests.codes.ok:
             package = resp.json()
@@ -66,7 +68,7 @@ def input_yes_no(question):
 
 # Returns the process back to root user to run a given function, then back to normal user
 def run_as_root(method):
-    os.seteuid(0) # Be root
+    os.seteuid(0)  # Be root
     result = method()
     os.seteuid(int(os.getenv("SUDO_UID")))
 
@@ -112,7 +114,12 @@ def make_executable(file_path):
 
 def get_rtt_loss(host, ping_attempts):
     try:
-        output = subprocess.run(['ping', '-c', str(ping_attempts), '-n', '-i', '0.2', '-W', '1', host], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output = subprocess.run([
+            'ping', '-c',
+            str(ping_attempts), '-n', '-i', '0.2', '-W', '1', host
+        ],
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE)
         output.check_returncode()
 
         lines = output.stdout.decode('utf-8').splitlines()
@@ -127,7 +134,8 @@ def get_rtt_loss(host, ping_attempts):
             return (avg_rtt, loss)
 
     except IndexError as ex:
-        logger.error("Could not interpret output of ping command.\nOutput: %s", ex)
+        logger.error("Could not interpret output of ping command.\nOutput: %s",
+                     ex)
 
     except subprocess.CalledProcessError:
         err = format_std_string(output.stderr)
