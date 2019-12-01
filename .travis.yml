@@ -111,6 +111,7 @@ jobs:
           tags: true
 
 stages:
+- lint
 - testing
 - name: deploy_pypi
   if: tag IS present
