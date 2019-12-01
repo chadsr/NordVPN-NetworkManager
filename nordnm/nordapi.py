@@ -1,7 +1,5 @@
 import requests
-import json
 from operator import itemgetter
-import hashlib
 
 API_ADDR = 'https://api.nordvpn.com'
 OVPN_ADDR = 'https://downloads.nordcdn.com/configs/archives/servers/ovpn.zip'
@@ -61,43 +59,31 @@ def get_configs(etag=None):
         return False
 
 
-def get_user_token(email):
+def get_user_token(email, password):
     """
-    Returns {"token": "some_token", "key": "some_key", "salt": "some_salt"}
+    Returns
+    {
+      "user_id": 1234567,
+      "token": "some_token",
+      "expires_at": "date",
+      "updated_at": "date",
+      "created_at": "date",
+      "id": 1234567890,
+      "renew_token": "some_renew_token"
+    }
     """
 
+    json_data = {'username': email, 'password': password}
+
     try:
-        resp = requests.get(API_ADDR + '/token/token/' + email,
-                            timeout=TIMEOUT)
-        if resp.status_code == requests.codes.ok:
-            return json.loads(resp.text)
+        resp = requests.post(API_ADDR + '/v1/users/tokens', json=json_data, timeout=TIMEOUT)
+        if resp:
+            return True
         else:
             return None
     except Exception:
         return None
 
 
-def validate_user_token(token_json, password):
-    token = token_json['token']
-    salt = token_json['salt']
-    key = token_json['key']
-
-    password_hash = hashlib.sha512(salt.encode() + password.encode())
-    final_hash = hashlib.sha512(password_hash.hexdigest().encode() +
-                                key.encode())
-
-    try:
-        resp = requests.get(API_ADDR + '/token/verify/' + token + '/' +
-                            final_hash.hexdigest(),
-                            timeout=TIMEOUT)
-        if resp.status_code == requests.codes.ok:
-            return True
-        else:
-            return False
-    except Exception:
-        return None
-
-
 def verify_user_credentials(email, password):
-    token_json = get_user_token(email)
-    return validate_user_token(token_json, password)
+    return get_user_token(email, password)
