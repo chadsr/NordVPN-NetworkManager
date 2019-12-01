@@ -9,7 +9,7 @@ jobs:
       install:
       - pip install flake8
       script:
-      - flake8 --ignore=E121,E123,E126,E226,E24,E704,E501 ./nordnm
+      - flake8 --ignore=E121,E123,E126,E226,E24,E704,E501,W504 ./nordnm
     - stage: testing
       python: 
       - '3.5'
