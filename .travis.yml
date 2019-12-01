@@ -17,9 +17,9 @@ jobs:
       - '3.7'
       - 'nightly'
       install:
-      - sudo pip install -r requirements.txt
+      - pip install -r requirements.txt
       - pip install bandit
-      - sudo python setup.py install
+      - python setup.py install --root ./
       script:
       - bandit -r --skip B322,B301,B404,B602,B603,B403,B607 ./nordnm
       - sudo nordnm --help
