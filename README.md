@@ -8,7 +8,7 @@
 
 This tool **automates** the importing and **secures** the usage of NordVPN OpenVPN configurations through Network Manager.
 
-**Disclaimer:** I am not associated with NordVPN in any shape or form, nor do I recommend their services for sensitive traffic (or any other private VPN provider for that matter). If you plan on using this tool for anonymity much beyond circumventing geo-blocking, I would recommend a different approach. 
+**Disclaimer:** I am not associated with [Tesonet](https://tesonet.com)/[NordVPN](https://nordvpn.com) in any shape or form, nor do I recommend their services for sensitive traffic (or any other private VPN provider for that matter). If you plan on using this tool for anonymity much beyond circumventing geo-blocking, I would recommend a different approach. 
 
 Using a self-hosted VPN provides higher assurance that your traffic isn't being monitored by a bad actor on the local network. Better yet, use TOR or another [mix network](https://en.wikipedia.org/wiki/Mix_network).
 
