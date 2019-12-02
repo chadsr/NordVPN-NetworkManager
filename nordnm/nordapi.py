@@ -5,8 +5,25 @@ API_ADDR = 'https://api.nordvpn.com'
 OVPN_ADDR = 'https://downloads.nordcdn.com/configs/archives/servers/ovpn.zip'
 TIMEOUT = 5
 
+# 2xx Status codes
 STATUS_OK = 200
+STATUS_CREATED = 201
+STATUS_SUCCESS = [
+    STATUS_OK,
+    STATUS_CREATED,
+]
+
+# 3xx Status codes
 STATUS_MOVED_PERM = 301
+STATUS_FOUND = 302
+STATUS_MOVED_TEMP = 307
+STATUS_REDIRECT_PERM = 308
+STATUS_REDIRECT = [
+    STATUS_MOVED_PERM,
+    STATUS_FOUND,
+    STATUS_MOVED_TEMP,
+    STATUS_REDIRECT_PERM,
+]
 
 # Mapping of NordVPN category names to their short internal names
 VPN_CATEGORIES = {
@@ -22,7 +39,7 @@ VPN_CATEGORIES = {
 def get_server_list(sort_by_load=False, sort_by_country=False):
     try:
         resp = requests.get(API_ADDR + '/server', timeout=TIMEOUT)
-        if resp.status_code == STATUS_OK:
+        if resp.status_code in STATUS_SUCCESS:
             server_list = resp.json()
 
             if sort_by_load:
@@ -42,16 +59,16 @@ def get_configs(etag=None):
         head = requests.head(OVPN_ADDR, timeout=TIMEOUT)
 
         # Follow the redirect if there is one
-        if head.status_code == STATUS_MOVED_PERM:
+        if head.status_code in STATUS_REDIRECT:
             redirect_url = head.headers['Location']
             head = requests.head(redirect_url, timeout=TIMEOUT)
 
-        if head.status_code == STATUS_OK:
+        if head.status_code in STATUS_SUCCESS:
             header_etag = head.headers['etag']
 
             if header_etag != etag:
                 resp = requests.get(OVPN_ADDR, timeout=TIMEOUT)
-                if resp.status_code == STATUS_OK:
+                if resp.status_code in STATUS_SUCCESS:
                     return (resp.content, header_etag)
             else:
                 return (None, None)
@@ -82,7 +99,7 @@ def get_user_token(email, password):
         resp = requests.post(API_ADDR + '/v1/users/tokens',
                              json=json_data,
                              timeout=TIMEOUT)
-        if resp.status_code == STATUS_OK:
+        if resp.status_code in STATUS_SUCCESS:
             return True
         else:
             return None
