@@ -69,7 +69,10 @@ def get_num_processes(num_servers):
     # Since each process is not resource heavy and simply takes time waiting for pings, maximise the number of processes (within constraints of the current configuration)
 
     # Maximum open file descriptors of current configuration
-    soft_limit, _ = resource.getrlimit(resource.RLIMIT_NOFILE)
+    soft_limit, hard_limit = resource.getrlimit(resource.RLIMIT_NOFILE)
+
+    if soft_limit <= 1024:
+        resource.setrlimit(resource.RLIMIT_NOFILE, (2048, hard_limit))
 
     # Find how many file descriptors are already in use by the parent process
     ppid = os.getppid()
