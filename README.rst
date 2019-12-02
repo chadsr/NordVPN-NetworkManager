@@ -6,6 +6,12 @@ NordNM
 This tool **automates** the importing and **secures** the usage of
 NordVPN OpenVPN configurations through Network Manager.
 
+**Disclaimer:** I am not associated with NordVPN in any shape or form,
+nor do I recommend their services for sensitive traffic. Using a
+self-hosted VPN provides higher assurance that your traffic isn’t being
+monitored by a local network. Better yet, use TOR or another `mix
+network <https://en.wikipedia.org/wiki/Mix_network>`__.
+
 **WebRTC Privacy Warning:** This tool can’t protect against IP leaks
 through WebRTC in browsers. For more information: `The WebRTC
 “bug” <https://www.bestvpn.com/a-complete-guide-to-ip-leaks/#webrtc>`__
@@ -45,8 +51,8 @@ make an issue report and it will be looked into ASAP.
 1.1 Arch (AUR)
 ~~~~~~~~~~~~~~
 
-Use your preferred method of installing packages via AUR. An easy
-option is to use `yay <https://github.com/Jguer/yay>`__:
+Use your preferred method of installing packages via AUR. An easy option
+is to use `yay <https://github.com/Jguer/yay>`__:
 
 ::
 
