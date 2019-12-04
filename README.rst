@@ -4,7 +4,8 @@ NordNM
 |Build Status| |GitHub tag| |AUR| |license| |GitHub issues|
 
 This tool **automates** the importing and **secures** the usage of
-NordVPN OpenVPN configurations through Network Manager.
+NordVPN (and eventually any) OpenVPN configurations through Network
+Manager.
 
 **Disclaimer:** I am not associated with
 `Tesonet <https://tesonet.com>`__/`NordVPN <https://nordvpn.com>`__ in
@@ -14,9 +15,8 @@ on using this tool for anonymity much beyond circumventing geo-blocking,
 I would recommend a different approach.
 
 Using a self-hosted VPN provides higher assurance that your traffic
-isn’t being monitored by a bad actor on the local network. Better yet,
-use TOR or another `mix
-network <https://en.wikipedia.org/wiki/Mix_network>`__.
+isn’t being monitored by a bad actor. Better yet, use TOR or another
+`mix network <https://en.wikipedia.org/wiki/Mix_network>`__.
 
 **WebRTC Privacy Warning:** This tool can’t protect against IP leaks
 through WebRTC in browsers. For more information: `The WebRTC
