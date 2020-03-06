@@ -115,8 +115,8 @@ def make_executable(file_path):
 def get_rtt_loss(host, ping_attempts):
     try:
         output = subprocess.run([
-            'ping', '-c',
-            str(ping_attempts), '-n', '-i', '0.2', '-W', '1', host
+            '(', 'export LANG=C;', 'ping', '-c',
+            str(ping_attempts), '-n', '-i', '0.2', '-W', '1', host, ')'
         ],
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
