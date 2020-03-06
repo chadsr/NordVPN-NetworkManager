@@ -230,6 +230,31 @@ def remove_killswitch(log=True):
     return utils.run_as_root(main)
 
 
+def remove_ipv6(log=True):
+    def main():
+        try:
+            os.remove(paths.IPV6_DATA)
+        except FileNotFoundError:
+            pass
+
+        try:
+            os.remove(paths.IPV6_SCRIPT)
+
+            if log:
+                logger.info("IPv6 disable script disabled.")
+
+            return True
+        except FileNotFoundError:
+            pass
+        except Exception as e:
+            logger.error("Error attempting to remove IPv6 disable script: %s" % e)
+
+        return False
+
+    # Requires root privilege
+    return utils.run_as_root(main)
+
+
 def set_killswitch(log=True):
     def main():
         killswitch_script = (
@@ -261,6 +286,36 @@ def set_killswitch(log=True):
     # Requires root privilege
     return utils.run_as_root(main)
 
+
+def set_ipv6(log=True):
+    def main():
+        ipv6_script = (
+            '#!/bin/sh\n'
+            'case "$2" in\n'
+            '    vpn-up)\n'
+            '        echo 1 > /proc/sys/net/ipv6/conf/all/disable_ipv6\n'
+            '        ;;\n'
+            '    vpn-down)\n'
+            '        echo 0 > /proc/sys/net/ipv6/conf/all/disable_ipv6\n'
+            '        ;;\n'
+            'esac\n')
+
+        try:
+            with open(paths.IPV6_SCRIPT, "w") as ipv6:
+                print(ipv6_script, file=ipv6)
+
+            utils.make_executable(paths.IPV6_SCRIPT)
+
+            if log:
+                logger.info("IPv6 disable script enabled.")
+
+            return True
+        except Exception as e:
+            logger.error("Error attempting to set IPv6 disable script: %s" % e)
+            return False
+
+    # Requires root privilege
+    return utils.run_as_root(main)
 
 def set_auto_connect(connection_name):
     def main():

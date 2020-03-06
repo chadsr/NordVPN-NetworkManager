@@ -45,13 +45,15 @@ class NordNM(object):
         # TODO: Find out if there's a way to re-use the attributes so they don't need to be manually repeated
         parser.add_argument("-v", "--version", help="Display the package version.", action="store_true")
         parser.add_argument("-k", "--kill-switch", help="Sets a network kill-switch, to disable the active network interface when an active VPN connection disconnects.", action="store_true")
+        parser.add_argument("-i", "--disable-ipv6", help="Disable IPv6 when enabling a VPN connection", action="store_true")
         parser.add_argument("-a", "--auto-connect", nargs=3, metavar=("[COUNTRY_CODE]", "[VPN_CATEGORY]", "[PROTOCOL]"), help="Configure NetworkManager to auto-connect to the chosen server type. Takes country code, category and protocol.")
 
-        remove_parser = subparsers.add_parser("remove", aliases=['r'], help="Remove active connections, auto-connect, kill-switch, data, mac settings or all.")
+        remove_parser = subparsers.add_parser("remove", aliases=['r'], help="Remove active connections, auto-connect, kill-switch, disabling ipv6, data, mac settings or all.")
         remove_parser.add_argument("--all", dest="remove_all", help="Remove all connections, enabled features and local data.", action="store_true")
         remove_parser.add_argument("-c", "--connections", dest="remove_c", help="Remove all active connections and auto-connect.", action="store_true")
         remove_parser.add_argument("-a", "--auto-connect", dest="remove_ac", help="Remove the active auto-connect feature.", action="store_true")
         remove_parser.add_argument("-k", "--kill-switch", dest="remove_ks", help="Remove the active kill-switch feature.", action="store_true")
+        remove_parser.add_argument("-i", "--disable-ipv6", dest="remove_ipv6", help="Remove the feature to disable IPv6.", action="store_true")
         remove_parser.add_argument("-d", "--data", dest="remove_d", help="Remove existing local data (VPN Configs, Credentials & Settings).", action="store_true")
         remove_parser.add_argument("-m", "--mac-settings", dest="remove_m", help="Remove existing MAC Address settings configured by nordnm.", action="store_true")
         remove_parser.set_defaults(remove=True)
@@ -72,12 +74,14 @@ class NordNM(object):
         sync_parser.add_argument('-p', '--preserve-vpn', help="When provided, synchronising will preserve any active VPN instead of disabling it for more accurate benchmarking.", action='store_true')
         sync_parser.add_argument('-n', '--no-update', help='Do not download the latest OpenVPN configurations from NordVPN.', action='store_true', default=False)
         sync_parser.add_argument("-k", "--kill-switch", help="Sets a network kill-switch, to disable the active network interface when an active VPN connection disconnects.", action="store_true")
+        sync_parser.add_argument("-i", "--disable-ipv6", help="Disable IPv6 when enabling a VPN connection", action="store_true")
         sync_parser.add_argument('-a', '--auto-connect', nargs=3, metavar=('[COUNTRY_CODE]', '[VPN_CATEGORY]', '[PROTOCOL]'), help='Configure NetworkManager to auto-connect to the chosen server type. Takes country code, category and protocol.')
         sync_parser.set_defaults(sync=True)
 
         import_parser = subparsers.add_parser('import', aliases=['i'], help="Import an OpenVPN config file to NetworkManager.")
         import_parser.add_argument("config_file", metavar='CONFIG_FILE', help="The OpenVPN config file to be imported.")
         import_parser.add_argument("-k", "--kill-switch", help="Sets a network kill-switch, to disable the active network interface when an active VPN connection disconnects.", action="store_true")
+        import_parser.add_argument("-i", "--disable-ipv6", help="Disable IPv6 when enabling a VPN connection", action="store_true")
         import_parser.add_argument('-a', '--auto-connect', help='Configure NetworkManager to auto-connect to the the imported config.', action="store_true", dest="auto_connect_imported", default=False)
         import_parser.add_argument('-u', '--username', required=True, help="Specify the username used for the OpenVPN config.", metavar="USERNAME")
         import_parser.add_argument('-p', '--password', required=True, help="Specify the password used for the OpenVPN config.", metavar="PASSWORD")
@@ -121,13 +125,14 @@ class NordNM(object):
         if "remove" in args and args.remove:
             removed = False
 
-            if not args.remove_c and not args.remove_d and not args.remove_ac and not args.remove_ks and not args.remove_m and not args.remove_all:
+            if not args.remove_c and not args.remove_d and not args.remove_ac and not args.remove_ks and not args.remove_ipv6 and not args.remove_m and not args.remove_all:
                 remove_parser.print_help()
                 sys.exit(1)
 
             if args.remove_all:
                 # Removing all, so set all args to True
                 args.remove_ks = True
+                args.remove_ipv6 = True
                 args.remove_ac = True
                 args.remove_c = True
                 args.remove_d = True
@@ -138,6 +143,10 @@ class NordNM(object):
 
             if args.remove_ks:
                 if networkmanager.remove_killswitch():
+                    removed = True
+
+            if args.remove_ipv6:
+                if networkmanager.remove_ipv6():
                     removed = True
 
             if args.remove_ac:
@@ -227,6 +236,9 @@ class NordNM(object):
 
         if args.kill_switch:
             networkmanager.set_killswitch()
+
+        if args.disable_ipv6:
+            networkmanager.set_ipv6()
 
         if args.auto_connect:
             country_code = args.auto_connect[0]
@@ -487,10 +499,15 @@ class NordNM(object):
                 # Temporarily remove the kill-switch if there was one
                 kill_switch = networkmanager.remove_killswitch(log=False)
 
+                disable_ipv6 = networkmanager.remove_ipv6(log=False)
+
                 networkmanager.disconnect_active_vpn(self.active_servers)
 
                 if kill_switch:
                     networkmanager.set_killswitch(log=False)
+
+                if disable_ipv6:
+                    networkmanager.set_ipv6(log=False)
 
                 if networkmanager.enable_connection(connection_name):
                     enabled = True
