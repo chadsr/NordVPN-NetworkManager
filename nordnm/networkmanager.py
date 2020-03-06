@@ -317,6 +317,7 @@ def set_ipv6(log=True):
     # Requires root privilege
     return utils.run_as_root(main)
 
+
 def set_auto_connect(connection_name):
     def main():
         interfaces = get_interfaces()
