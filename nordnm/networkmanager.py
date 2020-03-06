@@ -233,9 +233,9 @@ def remove_killswitch(log=True):
 def set_killswitch(log=True):
     def main():
         killswitch_script = (
-            '#!/bin/bash\n'
+            '#!/bin/sh\n'
             r'PERSISTENCE_FILE=' + paths.KILLSWITCH_DATA + '\n\n'
-            r'case $2 in'
+            'case $2 in\n'
             '  vpn-up)\n'
             r'    nmcli -f type,device connection | awk \'$1~/^vpn$/ && $2~/[^\-][^\-]/ { print $2; }\' > "${PERSISTENCE_FILE}"' + '\n'
             '  ;;\n'
