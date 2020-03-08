@@ -114,12 +114,15 @@ def make_executable(file_path):
 
 def get_rtt_loss(host, ping_attempts):
     try:
+        ping_env = os.environ.copy()
+        ping_env["LANG"] = "C"
         output = subprocess.run([
-            '(', 'export LANG=C;', 'ping', '-c',
-            str(ping_attempts), '-n', '-i', '0.2', '-W', '1', host, ')'
+            'ping', '-c', str(ping_attempts),
+            '-n', '-i', '0.2', '-W', '1', host
         ],
                                 stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE)
+                                stderr=subprocess.PIPE,
+                                env=ping_env)
         output.check_returncode()
 
         lines = output.stdout.decode('utf-8').splitlines()
