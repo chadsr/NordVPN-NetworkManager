@@ -233,16 +233,16 @@ def remove_killswitch(log=True):
 def set_killswitch(log=True):
     def main():
         killswitch_script = (
-            r'#!/bin/bash\n'
+            '#!/bin/sh\n'
             r'PERSISTENCE_FILE=' + paths.KILLSWITCH_DATA + '\n\n'
-            r'case $2 in'
-            r'  vpn-up)\n'
-            r'    nmcli -f type,device connection | awk \'$1~/^vpn$/ && $2~/[^\-][^\-]/ { print $2; }\' > "${PERSISTENCE_FILE}"\n'
-            r'  ;;\n'
-            r'  vpn-down)\n'
-            r'    xargs -n 1 -a "${PERSISTENCE_FILE}" nmcli device disconnect\n'
-            r'  ;;\n'
-            r'esac\n')
+            'case $2 in\n'
+            '  vpn-up)\n'
+            r'    nmcli -f type,device connection | awk \'$1~/^vpn$/ && $2~/[^\-][^\-]/ { print $2; }\' > "${PERSISTENCE_FILE}"' + '\n'
+            '  ;;\n'
+            '  vpn-down)\n'
+            '    xargs -n 1 -a ' + r'"${PERSISTENCE_FILE}"' + ' nmcli device disconnect\n'
+            '  ;;\n'
+            'esac\n')
 
         try:
             with open(paths.KILLSWITCH_SCRIPT, "w") as killswitch:
