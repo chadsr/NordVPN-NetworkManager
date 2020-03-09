@@ -17,7 +17,7 @@ def sig_clean_exit(signal, frame):
 
 def main():
     if os.getuid() != 0:
-        print("%s must be run as root (unfortunately). Exiting." % __package__)
+        print("%s must be run as root. Exiting." % __package__)
         sys.exit(1)
 
     # We are running with root priveledges, which is kinda scary, so lets switch to the original user until we actually need root (if there is one)
