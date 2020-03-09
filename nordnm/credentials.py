@@ -56,9 +56,9 @@ class CredentialsHandler(object):
     def save_new_credentials(self):
         valid = False
 
-        print("\nPlease input your NordVPN credentials:")
-
         while not valid:
+            print("\nPlease input your NordVPN credentials:")
+
             username = input("Email: ")
             password = getpass.getpass("Password: ")
 
