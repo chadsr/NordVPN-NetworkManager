@@ -70,6 +70,8 @@ class CredentialsHandler(object):
                     self.logger.error(
                         "The provided credentials could not be verified. Try entering them again and checking your Internet connectivity."
                     )
+            else:
+                self.logger.error("Email or password missing. Try again.")
 
         if not self.config.has_section(self.SECTION_TITLE):
             self.config.add_section(self.SECTION_TITLE)
