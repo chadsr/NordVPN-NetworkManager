@@ -76,33 +76,24 @@ pip install --user nordnm
 
 ## 2. Usage
 ```
-usage: nordnm [-h] [-v] [-k] [-a [COUNTRY_CODE] [VPN_CATEGORY] [PROTOCOL]]
-              ...
+usage: nordnm [-h] [-v] [-k] [-i] [-a [COUNTRY_CODE] [VPN_CATEGORY] [PROTOCOL]]  ...
 
 optional arguments:
   -h, --help            show this help message and exit
   -v, --version         Display the package version.
-  -k, --kill-switch     Sets a network kill-switch, to disable the active
-                        network interface when an active VPN connection
-                        disconnects.
+  -k, --kill-switch     Sets a network kill-switch, to disable the active network interface when an active VPN connection disconnects.
+  -i, --disable-ipv6    Disable IPv6 when enabling a VPN connection
   -a [COUNTRY_CODE] [VPN_CATEGORY] [PROTOCOL], --auto-connect [COUNTRY_CODE] [VPN_CATEGORY] [PROTOCOL]
-                        Configure NetworkManager to auto-connect to the chosen
-                        server type. Takes country code, category and
-                        protocol.
+                        Configure NetworkManager to auto-connect to the chosen server type. Takes country code, category and protocol.
 
 commands:
-                        Each command has its own help page, which can be
-                        accessed via nordnm <COMMAND> --help
-    remove (r)          Remove active connections, auto-connect, kill-switch,
-                        data, mac settings or all.
+                        Each command has its own help page, which can be accessed via nordnm <COMMAND> --help
+    remove (r)          Remove active connections, auto-connect, kill-switch, disabling ipv6, data, mac settings or all.
     update (u)          Update a specified setting.
     list (l)            List the specified information.
-    sync (s)            Synchronise the optimal servers (based on load and
-                        latency) to NetworkManager.
+    sync (s)            Synchronise the optimal servers (based on load and latency) to NetworkManager.
     import (i)          Import an OpenVPN config file to NetworkManager.
-    mac (m)             Global NetworkManager MAC address preferences. This
-                        command will affect ALL NetworkManager connections
-                        permanently.
+    mac (m)             Global NetworkManager MAC address preferences. This command will affect ALL NetworkManager connections permanently.
 ```
 
 **Note:** Each command has its own help section, which can be acccessed via `nordnm <COMMAND> --help`.

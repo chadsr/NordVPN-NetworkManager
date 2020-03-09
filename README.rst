@@ -14,9 +14,11 @@ traffic (or any other private VPN provider for that matter). If you plan
 on using this tool for anonymity much beyond circumventing geo-blocking,
 I would recommend a different approach.
 
-Using a self-hosted VPN provides higher assurance that your traffic
-isn’t being monitored by a bad actor. Better yet, use TOR or another
-`mix network <https://en.wikipedia.org/wiki/Mix_network>`__.
+Using a self-hosted VPN solution (such as
+`Algo <https://github.com/trailofbits/algo>`__) provides higher
+assurance that your traffic isn’t being monitored by a bad actor. Better
+yet, use TOR or another `mix
+network <https://en.wikipedia.org/wiki/Mix_network>`__.
 
 **WebRTC Privacy Warning:** This tool can’t protect against IP leaks
 through WebRTC in browsers. For more information: `The WebRTC
@@ -112,33 +114,24 @@ User Install
 
 ::
 
-   usage: nordnm [-h] [-v] [-k] [-a [COUNTRY_CODE] [VPN_CATEGORY] [PROTOCOL]]
-                 ...
+   usage: nordnm [-h] [-v] [-k] [-i] [-a [COUNTRY_CODE] [VPN_CATEGORY] [PROTOCOL]]  ...
 
    optional arguments:
      -h, --help            show this help message and exit
      -v, --version         Display the package version.
-     -k, --kill-switch     Sets a network kill-switch, to disable the active
-                           network interface when an active VPN connection
-                           disconnects.
+     -k, --kill-switch     Sets a network kill-switch, to disable the active network interface when an active VPN connection disconnects.
+     -i, --disable-ipv6    Disable IPv6 when enabling a VPN connection
      -a [COUNTRY_CODE] [VPN_CATEGORY] [PROTOCOL], --auto-connect [COUNTRY_CODE] [VPN_CATEGORY] [PROTOCOL]
-                           Configure NetworkManager to auto-connect to the chosen
-                           server type. Takes country code, category and
-                           protocol.
+                           Configure NetworkManager to auto-connect to the chosen server type. Takes country code, category and protocol.
 
    commands:
-                           Each command has its own help page, which can be
-                           accessed via nordnm <COMMAND> --help
-       remove (r)          Remove active connections, auto-connect, kill-switch,
-                           data, mac settings or all.
+                           Each command has its own help page, which can be accessed via nordnm <COMMAND> --help
+       remove (r)          Remove active connections, auto-connect, kill-switch, disabling ipv6, data, mac settings or all.
        update (u)          Update a specified setting.
        list (l)            List the specified information.
-       sync (s)            Synchronise the optimal servers (based on load and
-                           latency) to NetworkManager.
+       sync (s)            Synchronise the optimal servers (based on load and latency) to NetworkManager.
        import (i)          Import an OpenVPN config file to NetworkManager.
-       mac (m)             Global NetworkManager MAC address preferences. This
-                           command will affect ALL NetworkManager connections
-                           permanently.
+       mac (m)             Global NetworkManager MAC address preferences. This command will affect ALL NetworkManager connections permanently.
 
 **Note:** Each command has its own help section, which can be acccessed
 via ``nordnm <COMMAND> --help``.
