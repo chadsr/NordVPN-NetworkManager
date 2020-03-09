@@ -3,6 +3,12 @@ NordNM
 
 |Build Status| |GitHub tag| |AUR| |license| |GitHub issues|
 
+**I don’t plan to actively maintain this repository any further. I
+haven’t used NordVPN’s services in quite some time and lacking an
+account also makes testing it more difficult. If you are interested in
+becoming a maintainer, please contact me at ``nordnm@ross.ch`` and I can
+provide direct access to the repository.**
+
 This tool **automates** the importing and **secures** the usage of
 NordVPN (and eventually any) OpenVPN configurations through Network
 Manager.
