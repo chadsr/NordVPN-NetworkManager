@@ -233,11 +233,6 @@ def remove_killswitch(log=True):
 def remove_ipv6(log=True):
     def main():
         try:
-            os.remove(paths.IPV6_DATA)
-        except FileNotFoundError:
-            pass
-
-        try:
             os.remove(paths.IPV6_SCRIPT)
 
             if log:
@@ -247,7 +242,8 @@ def remove_ipv6(log=True):
         except FileNotFoundError:
             pass
         except Exception as e:
-            logger.error("Error attempting to remove IPv6 disable script: %s" % e)
+            logger.error("Error attempting to remove IPv6 disable script: %s" %
+                         e)
 
         return False
 
@@ -262,10 +258,12 @@ def set_killswitch(log=True):
             r'PERSISTENCE_FILE=' + paths.KILLSWITCH_DATA + '\n\n'
             'case $2 in\n'
             '  vpn-up)\n'
-            r'    nmcli -f type,device connection | awk \'$1~/^vpn$/ && $2~/[^\-][^\-]/ { print $2; }\' > "${PERSISTENCE_FILE}"' + '\n'
+            r'    nmcli -f type,device connection | awk \'$1~/^vpn$/ && $2~/[^\-][^\-]/ { print $2; }\' > "${PERSISTENCE_FILE}"'
+            + '\n'
             '  ;;\n'
             '  vpn-down)\n'
-            '    xargs -n 1 -a ' + r'"${PERSISTENCE_FILE}"' + ' nmcli device disconnect\n'
+            '    xargs -n 1 -a ' + r'"${PERSISTENCE_FILE}"' +
+            ' nmcli device disconnect\n'
             '  ;;\n'
             'esac\n')
 
@@ -424,8 +422,8 @@ def import_connection(file_path,
             for location, values in connection_options.items():
                 for value in values:
                     output = subprocess.run([
-                        'nmcli', 'connection', 'modify',
-                        connection_name, location, value
+                        'nmcli', 'connection', 'modify', connection_name,
+                        location, value
                     ],
                                             stdout=subprocess.PIPE,
                                             stderr=subprocess.PIPE)
