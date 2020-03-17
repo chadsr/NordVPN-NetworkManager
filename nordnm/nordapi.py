@@ -100,7 +100,7 @@ def get_user_token(email, password):
                              json=json_data,
                              timeout=TIMEOUT)
         if resp.status_code in STATUS_SUCCESS:
-            return resp.content['token']
+            return resp.content
         else:
             return None
     except Exception:
@@ -108,7 +108,9 @@ def get_user_token(email, password):
 
 
 def verify_user_credentials(email, password):
-    if get_user_token(email, password):
-        return True
-    else:
+    token = get_user_token(email, password)
+
+    if token is None:
         return False
+
+    return True
