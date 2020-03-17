@@ -259,7 +259,7 @@ def set_killswitch(log=True):
             'case $2 in\n'
             '  vpn-up)\n'
             r'    nmcli -f type,device connection | awk \'$1~/^vpn$/ && $2~/[^\-][^\-]/ { print $2; }\' > "${PERSISTENCE_FILE}"'
-            + '\n'
+            '\n'
             '  ;;\n'
             '  vpn-down)\n'
             '    xargs -n 1 -a ' + r'"${PERSISTENCE_FILE}"' +
